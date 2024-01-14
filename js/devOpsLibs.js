@@ -21,9 +21,14 @@
     return { name: i.name, variablesGroupes: i.variableGroups}
   })
 
-  const groupIDs = [...new Set (stages.reduce((prev, i) => { return prev.concat(i.variablesGroupes) }, []))]
+  const groupIDs = [...new Set (stages.reduce((prev, i) => {
+    return prev.concat(i.variablesGroupes) }, []
+  ))]
 
-  const usedVariables = variableGroups.value.filter(i => { return groupIDs.includes(i.id) }).map(i => { return {
+  const usedVariables = variableGroups.value
+    .filter(i => {
+      return groupIDs.includes(i.id) }
+    ).map(i => { return {
       id: i.id,
       name: i.name,
       variables: Object.keys(i.variables).reduce((prev, j) => {
