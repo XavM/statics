@@ -1,4 +1,4 @@
-async (function () {
+(async function () {
   const baseURL = window.location.origin + window.location.pathname.split('/').slice(0,3).join('/')
 
   const variableGroups = await (await fetch(`${baseURL}/_apis/distributedtask/variablegroups?continuationToken=0&queryOrder=0`, {
