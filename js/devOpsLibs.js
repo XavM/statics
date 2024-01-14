@@ -55,23 +55,21 @@ async (function () {
   //console.table(table)
 
   const exportData = (data) => {
-    const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
-    saveFile(blob);
+    const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' })
+    saveFile(blob)
   }
 
   const saveFile = (blob) => {
     const filename = definitionName + '_' + new Date().toISOString() + '.csv'
-    console.info(`Starting call for html5 download`);
-    const link = document.createElement("a");
-    if (link.download !== undefined) { // feature detection
-      // Browsers that support HTML5 download attribute
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    const link = document.createElement("a")
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob)
+      link.href = url
+      link.download = filename
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     }
   }
 
