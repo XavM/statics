@@ -1,9 +1,5 @@
 async (function () {
   const baseURL = window.location.origin + window.location.pathname.split('/').slice(0,3).join('/')
-  // 'https://dev.azure.com/ddslogistics2/Saas_Factory'
-
-  //var projectID = (await (await fetch(`${baseURL}/_build?__rt=fps&__ver=2`)).json()).fps.dataProviders.data["ms.vss-tfs-web.page-data"].project.id
-  // 'ef240edc-287a-4888-8b46-abea9c87c3e3'
 
   const variableGroups = await (await fetch(`${baseURL}/_apis/distributedtask/variablegroups?continuationToken=0&queryOrder=0`, {
     "headers": {
@@ -11,7 +7,6 @@ async (function () {
     }
   })).json()
 
-  //const definitionId = 71
   const definitionId = (new URL(document.location)).searchParams.get("definitionId")
 
   const definition = await (await fetch(`${baseURL}//_releaseDefinition?definitionId=${definitionId}&_a=environments-editor-preview&__rt=fps&__ver=2`, {
@@ -36,7 +31,6 @@ async (function () {
       }, {})
     }
   })
-
 
   var table = []
 
