@@ -1,4 +1,4 @@
-async function (() {
+async (function () {
   const baseURL = window.location.origin + window.location.pathname.split('/').slice(0,3).join('/')
   // 'https://dev.azure.com/ddslogistics2/Saas_Factory'
 
