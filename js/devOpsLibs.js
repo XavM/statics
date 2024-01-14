@@ -17,7 +17,9 @@
 
   const definitionName = definition.fps.dataProviders.data["ms.vss-releaseManagement-web.cdworkflow.webpage.data-provider"].releaseDefinition.name
 
-  const stages = definition.fps.dataProviders.data["ms.vss-releaseManagement-web.cdworkflow.webpage.data-provider"].releaseDefinition.environments.map(i => { return { name: i.name, variablesGroupes: i.variableGroups} })
+  const stages = definition.fps.dataProviders.data["ms.vss-releaseManagement-web.cdworkflow.webpage.data-provider"].releaseDefinition.environments.map(i => {
+    return { name: i.name, variablesGroupes: i.variableGroups}
+  })
 
   const groupIDs = [...new Set (stages.reduce((prev, i) => { return prev.concat(i.variablesGroupes) }, []))]
 
