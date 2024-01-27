@@ -355,816 +355,220 @@ function drawChart(elName, datasets) {
 })
 */
 
-const sampleData = {
-    "matches_data": [
-        {
-            "game_start_time_utc": "2024-01-22T17:43:02.650Z",
-            "total_turn_count": 30,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Bard",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Bard",
-                "Mordekaiser"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-22T17:32:56.354Z",
-            "total_turn_count": 28,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Viego",
-                "Mordekaiser",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-22T17:21:45.755Z",
-            "total_turn_count": 30,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Shurima",
-                null
-            ],
-            "op_champions": [
-                "Azir",
-                "Renekton"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-22T17:11:35.801Z",
-            "total_turn_count": 14,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Aatrox",
-                "Kayn"
-            ],
-            "op_champions": [
-                "Aatrox",
-                "Kayn"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-21T21:04:22.342Z",
-            "total_turn_count": 24,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Freljord",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Taliyah",
-                "Lissandra",
-                "Volibear"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-21T20:54:36.138Z",
-            "total_turn_count": 26,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Bilgewater",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Maokai",
-                "Nautilus"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-21T20:44:48.370Z",
-            "total_turn_count": 21,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CQEQCAIBCYAQCAYLAEBACBQBAIBQKAIFBKQQCAIFAEDACBYBCAAQQAYTAIEACEYYAIAQCAIEAIAQGDJGAQAQCAIFAEAQGGIBAIBQGAIEAEFA",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "Gnar",
-                "Darius"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Freljord"
-            ],
-            "op_champions": [
-                "Volibear",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-21T15:07:25.034Z",
-            "total_turn_count": 28,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CQEQCAIBCYAQCAYLAEBACBQBAIBQKAIFBKQQCAIFAEDACBYBCAAQQAYTAIEACEYYAIAQCAIEAIAQGDJGAQAQCAIFAEAQGGIBAIBQGAIEAEFA",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "Gnar",
-                "Darius"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Galio",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-21T07:39:44.547Z",
-            "total_turn_count": 63,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Garen",
-                "Galio",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-20T18:48:25.200Z",
-            "total_turn_count": 40,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Elder Dragon",
-                "Shyvana"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-20T18:44:58.104Z",
-            "total_turn_count": 4,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "ShadowIsles",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Senna",
-                "Nasus"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-20T17:44:20.307Z",
-            "total_turn_count": 33,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Bilgewater",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Pyke",
-                "Rek'Sai"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-20T14:36:28.049Z",
-            "total_turn_count": 36,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Freljord",
-                "Jax"
-            ],
-            "op_champions": [
-                "Jax",
-                "Ornn"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-19T15:23:14.276Z",
-            "total_turn_count": 31,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Piltover",
-                "Ryze"
-            ],
-            "op_champions": [
-                "Ryze",
-                "Janna"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-19T14:43:59.631Z",
-            "total_turn_count": 20,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Bilgewater",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Maokai",
-                "Nautilus"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-19T14:27:00.682Z",
-            "total_turn_count": 34,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Galio",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-19T14:20:20.648Z",
-            "total_turn_count": 16,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Jhin",
-                "Noxus"
-            ],
-            "op_champions": [
-                "Jhin",
-                "Annie"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-19T12:57:34.765Z",
-            "total_turn_count": 26,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Shyvana",
-                "Morgana",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-18T06:24:24.667Z",
-            "total_turn_count": 29,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "BandleCity"
-            ],
-            "op_champions": [
-                "Norra",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-17T18:46:38.232Z",
-            "total_turn_count": 33,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Piltover"
-            ],
-            "op_champions": [
-                "Seraphine",
-                "Janna",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-17T17:48:41.590Z",
-            "total_turn_count": 31,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Demacia",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Mordekaiser"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-17T17:08:49.109Z",
-            "total_turn_count": 21,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "Ionia"
-            ],
-            "op_champions": [
-                "Kennen",
-                "Ahri",
-                "Elder Dragon"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-17T16:54:36.026Z",
-            "total_turn_count": 39,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "BandleCity",
-                "Piltover"
-            ],
-            "op_champions": [
-                "Seraphine",
-                "Caitlyn"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-17T06:20:05.551Z",
-            "total_turn_count": 24,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Ionia",
-                "Piltover"
-            ],
-            "op_champions": [
-                "Teemo"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-16T17:50:11.135Z",
-            "total_turn_count": 20,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "MtTargon",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Viego",
-                "Kalista"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-16T11:55:08.962Z",
-            "total_turn_count": 18,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "MtTargon",
-                "Noxus"
-            ],
-            "op_champions": [
-                "Darius",
-                "Kayle",
-                "LeBlanc"
-            ]
-        },
-        {
-            "game_start_time_utc": "2024-01-16T11:38:36.027Z",
-            "total_turn_count": 33,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEDACAYCCQAQIAQOAIAQEBQJAIAQKFIWAIDAEAYJAQDAKEAUEYUQEAIBAUPACBQFBYAA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "op_factions": [
-                "Runeterra",
-                "BandleCity"
-            ],
-            "op_champions": [
-                "Norra",
-                "Elder Dragon"
-            ]
-        }
-    ]
-}
+async function main() {
 
-// Sort chronologically asc
-sampleData.matches_data.sort((a, b) => {
-  return new Date(a.game_start_time_utc).getTime() - new Date(b.game_start_time_utc).getTime()
-})
+  const sampleData = await (await fetch('https://xavm.github.io/statics/PMA/data/games.json')).json()
 
-const data = Object.values(sampleData.matches_data.reduce((prev, i) => {
+  // Sort chronologically asc
+  sampleData.matches_data.sort((a, b) => {
+    return new Date(a.game_start_time_utc).getTime() - new Date(b.game_start_time_utc).getTime()
+  })
+
+  const data = Object.values(sampleData.matches_data.reduce((prev, i) => {
+      
+    const day = new Date(i.game_start_time_utc).toISOString().slice(0,10)
+
+    prev[day] = prev[day] || {x: day, games: 0, turns: 0, win: 0, loss: 0, winRate: 0, cum_winRate: 0}
+    // Nbr of games
+    prev[day].games++
+    // Nbr of turns
+    prev[day].turns += i.total_turn_count
+    // Nbr of win / loss
+    prev[day][i.outcome]++
+    // Daily winRate
+    prev[day].winRate = prev[day].win / (prev[day].win + prev[day].loss) * 100
+    // Cumulative winRate
+    prev.total[i.outcome]++
+    prev[day].cum_winRate = prev.total.win / (prev.total.win + prev.total.loss) * 100
+
+    prev.total.decks[i.deck_code] = prev.total.decks[i.deck_code] || 0
+    prev.total.decks[i.deck_code]++
     
-  const day = new Date(i.game_start_time_utc).toISOString().slice(0,10)
-
-  prev[day] = prev[day] || {x: day, games: 0, turns: 0, win: 0, loss: 0, winRate: 0, cum_winRate: 0}
-  // Nbr of games
-  prev[day].games++
-  // Nbr of turns
-  prev[day].turns += i.total_turn_count
-  // Nbr of win / loss
-  prev[day][i.outcome]++
-  // Daily winRate
-  prev[day].winRate = prev[day].win / (prev[day].win + prev[day].loss) * 100
-  // Cumulative winRate
-  prev.total[i.outcome]++
-  prev[day].cum_winRate = prev.total.win / (prev.total.win + prev.total.loss) * 100
-
-  prev.total.decks[i.deck_code] = prev.total.decks[i.deck_code] || 0
-  prev.total.decks[i.deck_code]++
-  
-  return prev;
-}, {total: {win: 0, loss: 0, decks: {}}} ))
+    return prev;
+  }, {total: {win: 0, loss: 0, decks: {}}} ))
 
 
-/*
-drawChart('chart_games',
-  [{ 
-     label: "games",
-     type: 'bar',
-     data: data.map(i => {
-      return {x: i.x, y: i.games}
-    })
-  }]
-)
-*/
-
-drawChart('chart_games',
-  [
-    { 
-      label: "games",
-      type: 'bar',
-      yAxisID: 'y1',
-      data: data.map(i => {
+  /*
+  drawChart('chart_games',
+    [{ 
+       label: "games",
+       type: 'bar',
+       data: data.map(i => {
         return {x: i.x, y: i.games}
       })
-    },
-    { 
-      label: "winRate",
-      type: 'line',
-      yAxisID: 'y2',
-      data: data.map(i => {
-        return {x: i.x, y: i.winRate}
-      })
-    }
-  ]
-)
+    }]
+  )
+  */
+
+  drawChart('chart_games',
+    [
+      { 
+        label: "games",
+        type: 'bar',
+        yAxisID: 'y1',
+        data: data.map(i => {
+          return {x: i.x, y: i.games}
+        })
+      },
+      { 
+        label: "winRate",
+        type: 'line',
+        yAxisID: 'y2',
+        data: data.map(i => {
+          return {x: i.x, y: i.winRate}
+        })
+      }
+    ]
+  )
 
 
 
-drawChart('chart_turns',
-  [
-    { 
-       label: "turns",
-       type: 'bar',
-       yAxisID: 'y1',
-       data: data.map(i => {
-        return {x: i.x, y: i.turns}
-       })
-    },
-    { 
-      label: "winRate",
-      type: 'line',
-      yAxisID: 'y2',
-      data: data.map(i => {
-        return {x: i.x, y: i.winRate}
-      })
-    }
-  ]
-)
+  drawChart('chart_turns',
+    [
+      { 
+         label: "turns",
+         type: 'bar',
+         yAxisID: 'y1',
+         data: data.map(i => {
+          return {x: i.x, y: i.turns}
+         })
+      },
+      { 
+        label: "winRate",
+        type: 'line',
+        yAxisID: 'y2',
+        data: data.map(i => {
+          return {x: i.x, y: i.winRate}
+        })
+      }
+    ]
+  )
 
-drawChart('chart_winRate',
-  [
-    { 
-      label: "winRate",
-      type: 'line',
-      yAxisID: 'y1',
-      data: data.map(i => {
-        return {x: i.x, y: i.winRate}
-      })
-    },
-    { 
-      label: "cum_winRate",
-      type: 'line',
-      yAxisID: 'y1',
-      data: data.map(i => {
-        return {x: i.x, y: i.cum_winRate}
-      })
-    }
-  ]
-)
+  drawChart('chart_winRate',
+    [
+      { 
+        label: "winRate",
+        type: 'line',
+        yAxisID: 'y1',
+        data: data.map(i => {
+          return {x: i.x, y: i.winRate}
+        })
+      },
+      { 
+        label: "cum_winRate",
+        type: 'line',
+        yAxisID: 'y1',
+        data: data.map(i => {
+          return {x: i.x, y: i.cum_winRate}
+        })
+      }
+    ]
+  )
 
-/*
-drawChart('chart_decks',
-  [
-    { 
-      label: "winRate",
-      type: 'pie',
-      yAxisID: 'y1',
-      data: data[0].decks
-    }
-  ]
-)
-*/
+  /*
+  drawChart('chart_decks',
+    [
+      { 
+        label: "winRate",
+        type: 'pie',
+        yAxisID: 'y1',
+        data: data[0].decks
+      }
+    ]
+  )
+  */
 
-//drawChart('chart_decks', [{ data: [10, 20, 30] }] )
+  //drawChart('chart_decks', [{ data: [10, 20, 30] }] )
 
-/*
-drawChart('chart_decks',
-  [
-    { 
-      label: "winRate",
-      type: 'pie',
-      yAxisID: 'y1',
-      data:   [
+  /*
+  drawChart('chart_decks',
+    [
+      { 
+        label: "winRate",
+        type: 'pie',
+        yAxisID: 'y1',
+        data:   [
+          {x: '1', y: 10},
+          {x: '2', y: 20},
+          {x: '3', y: 30}
+        ]
+      }
+    ]
+  )
+  */
+
+  /*
+  drawChart('chart_decks',
+    [{
+      label: 'My First Dataset',
+      data: [
         {x: '1', y: 10},
         {x: '2', y: 20},
         {x: '3', y: 30}
-      ]
-    }
-  ]
-)
-*/
-
-/*
-drawChart('chart_decks',
-  [{
-    label: 'My First Dataset',
-    data: [
-      {x: '1', y: 10},
-      {x: '2', y: 20},
-      {x: '3', y: 30}
-    ],
-    backgroundColor: [
-      'rgb(255, 99, 132)',
-      'rgb(54, 162, 235)',
-      'rgb(255, 205, 86)'
-    ],
-    hoverOffset: 4
-  }]
-)
-*/
-
-const config = {
-  type: 'pie',
-  data: {
-    labels: Object.keys(data[0].decks).map((i, idx) => 'decks '+(idx+1)),
-    datasets: [{
-      data: Object.values(data[0].decks),
+      ],
+      backgroundColor: [
+        'rgb(255, 99, 132)',
+        'rgb(54, 162, 235)',
+        'rgb(255, 205, 86)'
+      ],
+      hoverOffset: 4
     }]
-  },
-  options: {
-    plugins: {
-      legend: {
-        display: false
+  )
+  */
+
+  const config = {
+    type: 'pie',
+    data: {
+      labels: Object.keys(data[0].decks).map((i, idx) => 'decks '+(idx+1)),
+      datasets: [{
+        data: Object.values(data[0].decks),
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          display: false
+        }
       }
+    },
+    animation: {
+      duration: 0
     }
-  },
-  animation: {
-    duration: 0
   }
+
+  new Chart(document.getElementById('chart_decks'), config)
 }
 
-new Chart(document.getElementById('chart_decks'), config)
+main()
+
+
+/*
+
+# Games Played
+
+Le tableau donne betement  la liste de tous les match en date desc 
+
+# Win rate 
+
+Calculer pour chaque op_faction sur toute la durée de date range le nbr de match joué et le winrate associé 
+
+# Turns Players 
+
+Faires de buckets de 10 en 10 ;
+Ex: match de 0 à 10 turns 
+    <- Combien de match en 0 à 10 
+      <- Quel winrate associé 
+
+Le tableau donne betement  la liste de tous les match en turns desc 
+
+# Ecran 1 : Deck used avec 1 seul deck 
+
+La liste de chaque carte unique avec le nbr associé + cost + type 
+<- manque la data pour l'instant 
+
+# Ecran 2 : Deck used avec 1 seul deck 
+
+La liste de chaque ability unique avec le nbr associé 
+<- manque la data pour l'instant 
+
+*/
