@@ -80,7 +80,7 @@ const appHTML = `
         <div class="tabs">
           <div id="tab-1" class="page-content tab tab-active">
             <div class="block">
-              <div>
+              <div class="chart-container" style="position: relative; height:200px; width:100%">
                 <canvas id="chart_games"></canvas>
               </div>
               <div class="data-table">
@@ -116,7 +116,7 @@ const appHTML = `
           </div>
           <div id="tab-2" class="page-content tab">
             <div class="block">
-              <div>
+              <div class="chart-container" style="position: relative; height:200px; width:100%">
                 <canvas id="chart_turns"></canvas>
               </div>
               <div class="data-table">
@@ -151,7 +151,7 @@ const appHTML = `
           </div>
           <div id="tab-3" class="page-content tab">
             <div class="block">
-              <div>
+              <div class="chart-container" style="position: relative; height:200px; width:100%">
                 <canvas id="chart_winRate"></canvas>
               </div>
               <div class="data-table">
@@ -299,6 +299,8 @@ function drawChart(elName, datasets) {
       datasets: datasets
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           //display: false
@@ -1072,12 +1074,6 @@ drawChart('chart_turns',
     }
   ]
 )
-
-/*
-drawChart('chart_winRate', data.map(i => {
-  return {x: i.x, y: i.cum_winRate}
-}), 'line')
-*/
 
 drawChart('chart_winRate',
   [
