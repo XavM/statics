@@ -76,157 +76,158 @@ const appHTML = `
 
 
         <!-- Tabs -->
-        <div class="tabs">
-          <div id="tab-1" class="page-content tab tab-active">
-            <div class="block">
-              <div class="chart-container" style="position: relative; height:200px; width:100%">
-                <canvas id="chart_games"></canvas>
-              </div>
-              <div class="data-table">
-                <table id="table_games">
-                  <!-- 
-                  <thead>
-                    <tr>
-                      <th class="label-cell">Date</th>
-                      <th class="numeric-cell">Outcome</th>
-                      <th class="numeric-cell">Turns</th>
-                      <th class="numeric-cell">Versus</th>
-                      <th class="numeric-cell">Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="label-cell">21-JAN</td>
-                      <td class="numeric-cell">WIN</td>
-                      <td class="numeric-cell">63</td>
-                      <td class="numeric-cell">FRE+NOX</td>
-                      <td class="numeric-cell">24000</td>
-                    </tr>
-                    <tr>
-                      <td class="label-cell">20-JAN</td>
-                      <td class="numeric-cell">LOSS</td>
-                      <td class="numeric-cell">24</td>
-                      <td class="numeric-cell">SI+DEM</td>
-                      <td class="numeric-cell">36200</td>
-                    </tr>
-                  </tbody>
-                  -->
-                </table>
-              </div>
-            </div>
-          </div>
-          <div id="tab-2" class="page-content tab">
-            <div class="block">
-              <div class="chart-container" style="position: relative; height:200px; width:100%">
-                <canvas id="chart_turns"></canvas>
-              </div>
-              <div class="data-table">
-                <table id="table_turns">
-                  <!--
-                  <thead>
-                    <tr>
-                      <th class="label-cell">Faction</th>
-                      <th class="numeric-cell">Played</th>
-                      <th class="numeric-cell">Win Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="label-cell">Frejlord</td>
-                      <td class="numeric-cell">24</td>
-                      <td class="numeric-cell">33%</td>
-                    </tr>
-                    <tr>
-                      <td class="label-cell">Demacia</td>
-                      <td class="numeric-cell">12</td>
-                      <td class="numeric-cell">55%</td>
-                    </tr>
-                    <tr>
-                      <td class="label-cell">Shadow</td>
-                      <td class="numeric-cell">5</td>
-                      <td class="numeric-cell">12%</td>
-                    </tr>
-                  </tbody>
-                  -->
-                </table>
+        <div class="tabs-animated-wrap">
+          <div class="tabs">
+            <div id="tab-1" class="page-content tab tab-active">
+              <div class="block">
+                <div class="chart-container" style="position: relative; height:200px; width:100%">
+                  <canvas id="chart_games"></canvas>
+                </div>
+                <div class="data-table">
+                  <table id="table_games">
+                    <!-- 
+                    <thead>
+                      <tr>
+                        <th class="label-cell">Date</th>
+                        <th class="numeric-cell">Outcome</th>
+                        <th class="numeric-cell">Turns</th>
+                        <th class="numeric-cell">Versus</th>
+                        <th class="numeric-cell">Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="label-cell">21-JAN</td>
+                        <td class="numeric-cell">WIN</td>
+                        <td class="numeric-cell">63</td>
+                        <td class="numeric-cell">FRE+NOX</td>
+                        <td class="numeric-cell">24000</td>
+                      </tr>
+                      <tr>
+                        <td class="label-cell">20-JAN</td>
+                        <td class="numeric-cell">LOSS</td>
+                        <td class="numeric-cell">24</td>
+                        <td class="numeric-cell">SI+DEM</td>
+                        <td class="numeric-cell">36200</td>
+                      </tr>
+                    </tbody>
+                    -->
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-          <div id="tab-3" class="page-content tab">
-            <div class="block">
-              <div class="chart-container" style="position: relative; height:200px; width:100%">
-                <canvas id="chart_winRate"></canvas>
-              </div>
-              <div class="data-table">
-                <table id="table_winRate">
-                  <!--
-                  <thead>
-                    <tr>
-                      <th class="label-cell">Date</th>
-                      <th class="numeric-cell">Outcome</th>
-                      <th class="numeric-cell">Turns</th>
-                      <th class="numeric-cell">Factions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="label-cell">21-JAN</td>
-                      <td class="numeric-cell">WIN</td>
-                      <td class="numeric-cell">63</td>
-                      <td class="numeric-cell">FRE+NOX</td>
-                    </tr>
-                    <tr>
-                      <td class="label-cell">20-JAN</td>
-                      <td class="numeric-cell">LOSS</td>
-                      <td class="numeric-cell">24</td>
-                      <td class="numeric-cell">SI+DEM</td>
-                    </tr>
-                  </tbody>
-                  -->
-                </table>
+            <div id="tab-2" class="page-content tab">
+              <div class="block">
+                <div class="chart-container" style="position: relative; height:200px; width:100%">
+                  <canvas id="chart_turns"></canvas>
+                </div>
+                <div class="data-table">
+                  <table id="table_turns">
+                    <!--
+                    <thead>
+                      <tr>
+                        <th class="label-cell">Faction</th>
+                        <th class="numeric-cell">Played</th>
+                        <th class="numeric-cell">Win Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="label-cell">Frejlord</td>
+                        <td class="numeric-cell">24</td>
+                        <td class="numeric-cell">33%</td>
+                      </tr>
+                      <tr>
+                        <td class="label-cell">Demacia</td>
+                        <td class="numeric-cell">12</td>
+                        <td class="numeric-cell">55%</td>
+                      </tr>
+                      <tr>
+                        <td class="label-cell">Shadow</td>
+                        <td class="numeric-cell">5</td>
+                        <td class="numeric-cell">12%</td>
+                      </tr>
+                    </tbody>
+                    -->
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-          <div id="tab-4" class="page-content tab">
-            <div class="block">
-              <div>
-                <canvas id="chart_decks"></canvas>
+            <div id="tab-3" class="page-content tab">
+              <div class="block">
+                <div class="chart-container" style="position: relative; height:200px; width:100%">
+                  <canvas id="chart_winRate"></canvas>
+                </div>
+                <div class="data-table">
+                  <table id="table_winRate">
+                    <!--
+                    <thead>
+                      <tr>
+                        <th class="label-cell">Date</th>
+                        <th class="numeric-cell">Outcome</th>
+                        <th class="numeric-cell">Turns</th>
+                        <th class="numeric-cell">Factions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="label-cell">21-JAN</td>
+                        <td class="numeric-cell">WIN</td>
+                        <td class="numeric-cell">63</td>
+                        <td class="numeric-cell">FRE+NOX</td>
+                      </tr>
+                      <tr>
+                        <td class="label-cell">20-JAN</td>
+                        <td class="numeric-cell">LOSS</td>
+                        <td class="numeric-cell">24</td>
+                        <td class="numeric-cell">SI+DEM</td>
+                      </tr>
+                    </tbody>
+                    -->
+                  </table>
+                </div>
               </div>
-              <div class="data-table">
-                <table id="table_winRate">
-                  <!--
-                  <thead>
-                    <tr>
-                      <th class="label-cell">Date</th>
-                      <th class="numeric-cell">Outcome</th>
-                      <th class="numeric-cell">Turns</th>
-                      <th class="numeric-cell">Versus</th>
-                      <th class="numeric-cell">Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="label-cell">21-JAN</td>
-                      <td class="numeric-cell">WIN</td>
-                      <td class="numeric-cell">63</td>
-                      <td class="numeric-cell">FRE+NOX</td>
-                      <td class="numeric-cell">24000</td>
-                    </tr>
-                    <tr>
-                      <td class="label-cell">20-JAN</td>
-                      <td class="numeric-cell">LOSS</td>
-                      <td class="numeric-cell">24</td>
-                      <td class="numeric-cell">SI+DEM</td>
-                      <td class="numeric-cell">36200</td>
-                    </tr>
-                  </tbody>
-                  -->
-                </table>
+            </div>
+            <div id="tab-4" class="page-content tab">
+              <div class="block">
+                <div>
+                  <canvas id="chart_decks"></canvas>
+                </div>
+                <div class="data-table">
+                  <table id="table_winRate">
+                    <!--
+                    <thead>
+                      <tr>
+                        <th class="label-cell">Date</th>
+                        <th class="numeric-cell">Outcome</th>
+                        <th class="numeric-cell">Turns</th>
+                        <th class="numeric-cell">Versus</th>
+                        <th class="numeric-cell">Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="label-cell">21-JAN</td>
+                        <td class="numeric-cell">WIN</td>
+                        <td class="numeric-cell">63</td>
+                        <td class="numeric-cell">FRE+NOX</td>
+                        <td class="numeric-cell">24000</td>
+                      </tr>
+                      <tr>
+                        <td class="label-cell">20-JAN</td>
+                        <td class="numeric-cell">LOSS</td>
+                        <td class="numeric-cell">24</td>
+                        <td class="numeric-cell">SI+DEM</td>
+                        <td class="numeric-cell">36200</td>
+                      </tr>
+                    </tbody>
+                    -->
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
 
         <!-- Cards -->
         <!--
