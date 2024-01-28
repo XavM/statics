@@ -34,7 +34,6 @@ const appHTML = `
       <div class="page-content">
         <p />
 
-
         <!-- Tabs -->
         <a href="#tab-1" class="spec tab-link tab-link-active">
           <div class="spec card">
@@ -84,7 +83,8 @@ const appHTML = `
                 <canvas id="chart_games"></canvas>
               </div>
               <div class="data-table">
-                <table>
+                <table id="table_games">
+                  <!-- 
                   <thead>
                     <tr>
                       <th class="label-cell">Date</th>
@@ -110,6 +110,7 @@ const appHTML = `
                       <td class="numeric-cell">36200</td>
                     </tr>
                   </tbody>
+                  -->
                 </table>
               </div>
             </div>
@@ -120,7 +121,8 @@ const appHTML = `
                 <canvas id="chart_turns"></canvas>
               </div>
               <div class="data-table">
-                <table>
+                <table id="table_turns">
+                  <!--
                   <thead>
                     <tr>
                       <th class="label-cell">Faction</th>
@@ -145,6 +147,7 @@ const appHTML = `
                       <td class="numeric-cell">12%</td>
                     </tr>
                   </tbody>
+                  -->
                 </table>
               </div>
             </div>
@@ -155,7 +158,8 @@ const appHTML = `
                 <canvas id="chart_winRate"></canvas>
               </div>
               <div class="data-table">
-                <table>
+                <table id="table_winRate">
+                  <!--
                   <thead>
                     <tr>
                       <th class="label-cell">Date</th>
@@ -178,6 +182,7 @@ const appHTML = `
                       <td class="numeric-cell">SI+DEM</td>
                     </tr>
                   </tbody>
+                  -->
                 </table>
               </div>
             </div>
@@ -188,7 +193,8 @@ const appHTML = `
                 <canvas id="chart_decks"></canvas>
               </div>
               <div class="data-table">
-                <table>
+                <table id="table_winRate">
+                  <!--
                   <thead>
                     <tr>
                       <th class="label-cell">Date</th>
@@ -214,6 +220,7 @@ const appHTML = `
                       <td class="numeric-cell">36200</td>
                     </tr>
                   </tbody>
+                  -->
                 </table>
               </div>
             </div>
@@ -357,14 +364,15 @@ function drawChart(elName, datasets) {
 
 async function main() {
 
-  const sampleData = await (await fetch('https://xavm.github.io/statics/PMA/data/games.json')).json()
+  window.sampleData = await (await fetch('https://xavm.github.io/statics/PMA/data/games.json')).json()
+  //const sampleData = await (await fetch('http://www.villalala.fr:12345/sample.json')).json()
 
   // Sort chronologically asc
   sampleData.matches_data.sort((a, b) => {
     return new Date(a.game_start_time_utc).getTime() - new Date(b.game_start_time_utc).getTime()
   })
 
-  const data = Object.values(sampleData.matches_data.reduce((prev, i) => {
+  window.data = Object.values(sampleData.matches_data.reduce((prev, i) => {
       
     const day = new Date(i.game_start_time_utc).toISOString().slice(0,10)
 
@@ -388,18 +396,6 @@ async function main() {
   }, {total: {win: 0, loss: 0, decks: {}}} ))
 
 
-  /*
-  drawChart('chart_games',
-    [{ 
-       label: "games",
-       type: 'bar',
-       data: data.map(i => {
-        return {x: i.x, y: i.games}
-      })
-    }]
-  )
-  */
-
   drawChart('chart_games',
     [
       { 
@@ -421,7 +417,24 @@ async function main() {
     ]
   )
 
+  const turn_buckets = sampleData.matches_data.reduce((prev, i) => {
+      const bucket = i.total_turn_count - i.total_turn_count % 10;
+      prev[bucket] = prev[bucket] || {count: 0, win: 0, loss: 0, winRate: 0}
+      prev[bucket].count++
+      prev[bucket][i.outcome]++
+      prev[bucket].winRate = prev[bucket].win / (prev[bucket].win + prev[bucket].loss) * 100
+      return prev
+    }, {})
 
+  const turn_buckets_count = Object.keys(turn_buckets).reduce((prev, i) => {
+    prev.push({ x: i, y: turn_buckets[i].count }) 
+    return prev
+  }, [])
+
+  const turn_buckets_winRate = Object.keys(turn_buckets).reduce((prev, i) => {
+    prev.push({ x: i, y: turn_buckets[i].winRate }) 
+    return prev
+  }, [])
 
   drawChart('chart_turns',
     [
@@ -429,20 +442,17 @@ async function main() {
          label: "turns",
          type: 'bar',
          yAxisID: 'y1',
-         data: data.map(i => {
-          return {x: i.x, y: i.turns}
-         })
+         data: turn_buckets_count
       },
       { 
         label: "winRate",
         type: 'line',
         yAxisID: 'y2',
-        data: data.map(i => {
-          return {x: i.x, y: i.winRate}
-        })
+        data: turn_buckets_winRate
       }
     ]
   )
+
 
   drawChart('chart_winRate',
     [
@@ -465,57 +475,6 @@ async function main() {
     ]
   )
 
-  /*
-  drawChart('chart_decks',
-    [
-      { 
-        label: "winRate",
-        type: 'pie',
-        yAxisID: 'y1',
-        data: data[0].decks
-      }
-    ]
-  )
-  */
-
-  //drawChart('chart_decks', [{ data: [10, 20, 30] }] )
-
-  /*
-  drawChart('chart_decks',
-    [
-      { 
-        label: "winRate",
-        type: 'pie',
-        yAxisID: 'y1',
-        data:   [
-          {x: '1', y: 10},
-          {x: '2', y: 20},
-          {x: '3', y: 30}
-        ]
-      }
-    ]
-  )
-  */
-
-  /*
-  drawChart('chart_decks',
-    [{
-      label: 'My First Dataset',
-      data: [
-        {x: '1', y: 10},
-        {x: '2', y: 20},
-        {x: '3', y: 30}
-      ],
-      backgroundColor: [
-        'rgb(255, 99, 132)',
-        'rgb(54, 162, 235)',
-        'rgb(255, 205, 86)'
-      ],
-      hoverOffset: 4
-    }]
-  )
-  */
-
   const config = {
     type: 'pie',
     data: {
@@ -537,6 +496,106 @@ async function main() {
   }
 
   new Chart(document.getElementById('chart_decks'), config)
+
+  // Table Games
+  const table_games = sampleData.matches_data.map(i => {
+
+    const dateArr = new Date(i.game_start_time_utc).toString().split(' '),
+          date    = [dateArr[2], dateArr[1]].join('-')
+
+    return { "Date": date, "Outcome": i.outcome, "Turns": i.total_turn_count, "Factions": i.factions.join('+'), "Cost": '???' }
+  })
+
+  const html_games = `
+    <thead>
+      <tr>
+        ${
+          Object.keys(table_games[0]).map(i => {
+            return '<th class="label-cell">' + i + '</th>'
+          }).join('\n')
+        }
+      </tr>
+      <tbody>
+        ${
+          Object.values(table_games)
+            .sort((a, b) => {
+              return new Date(b.Date).getTime() - new Date(a.Date).getTime()
+            }) 
+            .map(i => {
+              return '<tr>' + Object.values(i).map(j => '<td class="label-cell">' +  j + '</td>').join('\n') + '</tr>'              
+            }).join('\n')
+        }
+      </tbody>          
+    </thead>
+  `
+
+  document.querySelector('#table_games').innerHTML = html_games
+
+  // Table turns
+  const html_turns = `
+    <thead>
+      <tr>
+        ${
+          Object.keys(table_games[0])
+            .slice(0, -1)
+            .map(i => {
+              return '<th class="label-cell">' + i + '</th>'
+            }).join('\n')
+        }
+      </tr>
+      <tbody>
+        ${
+          Object.values(table_games)            
+            .sort((a, b) => {
+              return b.Turns - a.Turns
+            }) 
+            .map(i => {
+              return '<tr>' + Object.values(i).slice(0, -1).map(j => '<td class="label-cell">' +  j + '</td>').join('\n') + '</tr>'              
+            }).join('\n')
+        }
+      </tbody>          
+    </thead>
+  `
+
+  document.querySelector('#table_turns').innerHTML = html_turns
+
+  // Table winRate 
+  window.table_winRate_temp = sampleData.matches_data.reduce((prev, i) => {
+    i.op_factions.forEach(faction => {
+      prev[faction] = prev[faction] || {Faction: faction, count: 0, win: 0, loss: 0, winRate: 0}
+      prev[faction].count++
+      prev[faction][i.outcome]++
+      prev[faction].winRate = Math.round(prev[faction].win / (prev[faction].win + prev[faction].loss) * 100)
+    })
+    return prev
+  }, {})
+
+  window.table_winRate = Object.values(window.table_winRate_temp)
+    .sort((a, b) => {
+      return b.winRate - a.winRate
+    })
+
+  const html_winRate = `
+    <thead>
+      <tr>
+        ${
+          Object.keys(table_winRate[0]).map(i => {
+            return '<th class="label-cell">' + i + '</th>'
+          }).join('\n')
+        }
+      </tr>
+      <tbody>
+        ${
+          table_winRate.map(i => {
+            return '<tr>' + Object.values(i).map(j => '<td class="label-cell">' +  j + '</td>').join('\n') + '</tr>'              
+          }).join('\n')
+        }
+      </tbody>          
+    </thead>
+  `
+
+  document.querySelector('#table_winRate').innerHTML = html_winRate
+
 }
 
 main()
@@ -546,20 +605,20 @@ main()
 
 # Games Played
 
-Le tableau donne betement  la liste de tous les match en date desc 
-
-# Win rate 
-
-Calculer pour chaque op_faction sur toute la durée de date range le nbr de match joué et le winrate associé 
+DONE : Le tableau donne betement  la liste de tous les match en date desc 
 
 # Turns Players 
 
-Faires de buckets de 10 en 10 ;
-Ex: match de 0 à 10 turns 
-    <- Combien de match en 0 à 10 
+DONE : Faires de buckets de 10 en 10 ;
+  Ex: match de 0 à 10 turns 
+      <- Combien de match en 0 à 10 
       <- Quel winrate associé 
 
-Le tableau donne betement  la liste de tous les match en turns desc 
+DONE : Le tableau donne betement  la liste de tous les match en turns desc 
+
+# Win rate 
+
+Tableau -> Calculer pour chaque op_faction sur toute la durée de date range le nbr de match joué et le winrate associé 
 
 # Ecran 1 : Deck used avec 1 seul deck 
 
