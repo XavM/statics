@@ -308,6 +308,9 @@ function drawChart(elName, datasets) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index'
+      },
       plugins: {
         legend: {
           //display: false
