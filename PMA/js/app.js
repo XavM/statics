@@ -600,7 +600,10 @@ async function main() {
       <tbody>
         ${
           table_winRate.map(i => {
-            return '<tr>' + Object.values(i).map(j => '<td class="label-cell">' +  j + '</td>').join('\n') + '</tr>'              
+            return '<tr>' + Object.values(i).map((j, idx) => { 
+              const html = (idx == 0) ? '<img src="img/' + j + '.png" alt="' + j + '" style="width: 30px;"/>' : j
+              return '<td class="label-cell">' + html + '</td>'
+            }).join('\n') + '</tr>'              
           }).join('\n')
         }
       </tbody>          
