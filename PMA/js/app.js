@@ -428,12 +428,12 @@ async function main() {
     }, {})
 
   const turn_buckets_count = Object.keys(turn_buckets).reduce((prev, i) => {
-    prev.push({ x: i, y: turn_buckets[i].count }) 
+    prev.push({ x: i + '-' + (i*1 + 9), y: turn_buckets[i].count }) 
     return prev
   }, [])
 
   const turn_buckets_winRate = Object.keys(turn_buckets).reduce((prev, i) => {
-    prev.push({ x: i, y: turn_buckets[i].winRate }) 
+    prev.push({ x: i + '-' + (i*1 + 9), y: turn_buckets[i].winRate }) 
     return prev
   }, [])
 
