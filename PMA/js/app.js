@@ -508,7 +508,7 @@ async function main() {
     const dateArr = new Date(i.game_start_time_utc).toString().split(' '),
           date    = [dateArr[2], dateArr[1]].join('-')
 
-    //return { "Date": date, "Out": i.outcome, "Turns": i.total_turn_count, "Factions": i.op_factions.map(i => i/*.slice(0,5)*/).join(' '), "Cost": i.shard_cost }
+    //return { "Date": date, "Out": i.outcome, "Turns": i.total_turn_count, "Factions": i.op_factions.map(i => i/*.slice(0,5)*/).join(' '), "Cost": i.op_shard_cost }
     return {
       "Date": date,
       "Out": i.outcome,
@@ -516,7 +516,7 @@ async function main() {
       "Factions": i.op_factions.map(i => {
          return `<img src="img/${i}.png" alt="${i}" style="width: 30px;"/>`
         }).join(' '),
-      "Cost": i.shard_cost.toLocaleString()
+      "Cost": i.op_shard_cost.toLocaleString()
     }
 
 
