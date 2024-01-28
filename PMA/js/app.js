@@ -519,7 +519,8 @@ async function main() {
         ${
           Object.values(table_games)
             .sort((a, b) => {
-              return new Date(b.Date).getTime() - new Date(a.Date).getTime()
+              //return new Date(b.Date).getTime() - new Date(a.Date).getTime()
+              return new Date(b.Date + ' ' + new Date().getFullYear()).getTime() - new Date(a.Date + ' ' + new Date().getFullYear()).getTime()
             }) 
             .map(i => {
               return '<tr>' + Object.values(i).map(j => '<td class="label-cell">' +  j + '</td>').join('\n') + '</tr>'              
