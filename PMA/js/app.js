@@ -364,7 +364,8 @@ function drawChart(elName, datasets) {
 
 async function main() {
 
-  window.sampleData = await (await fetch('https://xavm.github.io/statics/PMA/data/games.json')).json()
+  window.sampleData = await (await fetch('data/games.json')).json()
+  //window.sampleData = await (await fetch('https://xavm.github.io/statics/PMA/data/games.json')).json()
   //const sampleData = await (await fetch('http://www.villalala.fr:12345/sample.json')).json()
 
   // Sort chronologically asc
@@ -486,7 +487,7 @@ async function main() {
     options: {
       plugins: {
         legend: {
-          display: false
+          display: true
         }
       }
     },
@@ -503,7 +504,18 @@ async function main() {
     const dateArr = new Date(i.game_start_time_utc).toString().split(' '),
           date    = [dateArr[2], dateArr[1]].join('-')
 
-    return { "Date": date, "Outcome": i.outcome, "Turns": i.total_turn_count, "Factions": i.factions.join('+'), "Cost": '???' }
+    //return { "Date": date, "Out": i.outcome, "Turns": i.total_turn_count, "Factions": i.factions.map(i => i/*.slice(0,5)*/).join(' '), "Cost": i.shard_cost }
+    return {
+      "Date": date,
+      "Out": i.outcome,
+      "Turns": i.total_turn_count,
+      "Factions": i.factions.map(i => {
+         return `<img src="img/${i}.png" alt="${i}" style="width: 30px;"/>`
+        }).join(' '),
+      "Cost": i.shard_cost.toLocaleString()
+    }
+
+
   })
 
   const html_games = `
