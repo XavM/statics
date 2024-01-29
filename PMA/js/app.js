@@ -37,7 +37,7 @@ const appHTML = `
         <!-- Tabs -->
         <a href="#tab-1" class="spec tab-link tab-link-active">
           <div class="spec card">
-          <div class="card-header">18</div>
+          <div id="metric_games" class="card-header"></div>
             <div class="card-content card-content-padding">
               Games Played
             </div>
@@ -48,7 +48,7 @@ const appHTML = `
         </a>
         <a href="#tab-2" class="spec tab-link">
           <div class="spec card">
-            <div class="card-header">214</div>
+            <div id="metric_turns" class="card-header"></div>
               <div class="card-content card-content-padding">
                 Turns Played
               </div>
@@ -56,7 +56,7 @@ const appHTML = `
         </a>
         <a href="#tab-3" class="spec tab-link">
           <div class="spec card">
-            <div class="card-header">53%</div>
+            <div id="metric_winRate" class="card-header"></div>
               <div class="card-content card-content-padding">
                 Win Rate
               </div>
@@ -64,7 +64,7 @@ const appHTML = `
         </a>
         <a href="#tab-4" class="spec tab-link">
           <div class="spec card">
-            <div class="card-header">5</div>
+            <div id="metric_decks" class="card-header"></div>
               <div class="card-content card-content-padding">
                 Decks Used
               </div>
@@ -396,10 +396,17 @@ async function main() {
 
     prev.total.decks[i.deck_code] = prev.total.decks[i.deck_code] || 0
     prev.total.decks[i.deck_code]++
+
+    prev.total.games++
+    prev.total.turns += i.total_turn_count
     
     return prev;
-  }, {total: {win: 0, loss: 0, decks: {}}} ))
+  }, {total: {games: 0, turns: 0, win: 0, loss: 0, decks: {}}} ))
 
+  document.getElementById('metric_games').innerHTML = data[0].games
+  document.getElementById('metric_turns').innerHTML = data[0].turns
+  document.getElementById('metric_winRate').innerHTML = Math.round(data.slice(-1)[0].cum_winRate) + '%'
+  document.getElementById('metric_decks').innerHTML = Object.keys(data[0].decks).length
 
   drawChart('chart_games',
     [
