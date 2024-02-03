@@ -1,6 +1,435 @@
 {
     "matches_data": [
         {
+            "game_start_time_utc": "2024-02-02T14:36:16.503Z",
+            "total_turn_count": 20,
+            "outcome": "win",
+            "playorder": 0,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Demacia",
+                "Freljord"
+            ],
+            "op_champions": [
+                "Sejuani",
+                "Garen"
+            ],
+            "op_shard_cost": 25900
+        },
+        {
+            "game_start_time_utc": "2024-02-02T14:25:04.095Z",
+            "total_turn_count": 36,
+            "outcome": "loss",
+            "playorder": 0,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Demacia",
+                "Freljord"
+            ],
+            "op_champions": [
+                "Sejuani",
+                "Garen"
+            ],
+            "op_shard_cost": 25900
+        },
+        {
+            "game_start_time_utc": "2024-02-02T14:14:28.462Z",
+            "total_turn_count": 32,
+            "outcome": "win",
+            "playorder": 0,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Shurima",
+                null
+            ],
+            "op_champions": [
+                "Azir",
+                "Renekton"
+            ],
+            "op_shard_cost": 24300
+        },
+        {
+            "game_start_time_utc": "2024-02-02T11:18:58.283Z",
+            "total_turn_count": 40,
+            "outcome": "loss",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Freljord",
+                "Noxus"
+            ],
+            "op_champions": [
+                "LeBlanc",
+                "Ashe"
+            ],
+            "op_shard_cost": 27900
+        },
+        {
+            "game_start_time_utc": "2024-02-02T11:05:46.647Z",
+            "total_turn_count": 28,
+            "outcome": "loss",
+            "playorder": 0,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Demacia",
+                "Ionia"
+            ],
+            "op_champions": [
+                "Jarvan IV",
+                "Shen"
+            ],
+            "op_shard_cost": 26000
+        },
+        {
+            "game_start_time_utc": "2024-01-31T21:30:54.334Z",
+            "total_turn_count": 41,
+            "outcome": "loss",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Runeterra",
+                "MtTargon"
+            ],
+            "op_champions": [
+                "Elder Dragon",
+                "Aurelion Sol",
+                "Morgana"
+            ],
+            "op_shard_cost": 37800
+        },
+        {
+            "game_start_time_utc": "2024-01-31T21:25:44.444Z",
+            "total_turn_count": 19,
+            "outcome": "win",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Bilgewater",
+                "ShadowIsles"
+            ],
+            "op_champions": [
+                "Maokai",
+                "Nautilus"
+            ],
+            "op_shard_cost": 27500
+        },
+        {
+            "game_start_time_utc": "2024-01-31T21:13:23.453Z",
+            "total_turn_count": 33,
+            "outcome": "loss",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "ShadowIsles",
+                "Shurima"
+            ],
+            "op_champions": [
+                "Senna",
+                "Mordekaiser"
+            ],
+            "op_shard_cost": 27300
+        },
+        {
+            "game_start_time_utc": "2024-01-31T21:06:34.991Z",
+            "total_turn_count": 20,
+            "outcome": "win",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Runeterra",
+                "Freljord"
+            ],
+            "op_champions": [
+                "Elder Dragon",
+                "Volibear"
+            ],
+            "op_shard_cost": 32200
+        },
+        {
+            "game_start_time_utc": "2024-01-31T21:01:22.135Z",
+            "total_turn_count": 16,
+            "outcome": "win",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Noxus",
+                "ShadowIsles"
+            ],
+            "op_champions": [
+                "Kalista",
+                "Sion",
+                "Viego",
+                "Gwen",
+                "Mordekaiser"
+            ],
+            "op_shard_cost": 29500
+        },
+        {
+            "game_start_time_utc": "2024-01-31T20:55:04.694Z",
+            "total_turn_count": 20,
+            "outcome": "win",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Freljord",
+                "Piltover"
+            ],
+            "op_champions": [
+                "Caitlyn",
+                "Teemo"
+            ],
+            "op_shard_cost": 26800
+        },
+        {
+            "game_start_time_utc": "2024-01-31T20:48:36.653Z",
+            "total_turn_count": 21,
+            "outcome": "loss",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Ionia",
+                "ShadowIsles"
+            ],
+            "op_champions": [
+                "Zed",
+                "Gwen"
+            ],
+            "op_shard_cost": 25000
+        },
+        {
+            "game_start_time_utc": "2024-01-30T21:45:24.331Z",
+            "total_turn_count": 31,
+            "outcome": "loss",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Demacia",
+                "MtTargon"
+            ],
+            "op_champions": [
+                "Shyvana",
+                "Aurelion Sol"
+            ],
+            "op_shard_cost": 25600
+        },
+        {
+            "game_start_time_utc": "2024-01-30T21:38:22.146Z",
+            "total_turn_count": 25,
+            "outcome": "loss",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Bilgewater",
+                "Shurima"
+            ],
+            "op_champions": [
+                "Pyke",
+                "Rek'Sai"
+            ],
+            "op_shard_cost": 26400
+        },
+        {
+            "game_start_time_utc": "2024-01-30T21:30:34.189Z",
+            "total_turn_count": 26,
+            "outcome": "win",
+            "playorder": 0,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "BandleCity",
+                "Noxus"
+            ],
+            "op_champions": [
+                "Darius",
+                "Gnar"
+            ],
+            "op_shard_cost": 26000
+        },
+        {
+            "game_start_time_utc": "2024-01-30T21:22:53.272Z",
+            "total_turn_count": 19,
+            "outcome": "win",
+            "playorder": 1,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Runeterra",
+                "BandleCity"
+            ],
+            "op_champions": [
+                "Norra",
+                "Elder Dragon"
+            ],
+            "op_shard_cost": 28400
+        },
+        {
+            "game_start_time_utc": "2024-01-30T21:08:40.367Z",
+            "total_turn_count": 35,
+            "outcome": "loss",
+            "playorder": 0,
+            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
+            "factions": [
+                "Runeterra",
+                "Demacia"
+            ],
+            "champions": [
+                "Garen",
+                "Elder Dragon"
+            ],
+            "shard_cost": 21300,
+            "op_factions": [
+                "Runeterra",
+                "BandleCity"
+            ],
+            "op_champions": [
+                "Norra",
+                "Elder Dragon"
+            ],
+            "op_shard_cost": 28400
+        },
+        {
             "game_start_time_utc": "2024-01-29T21:31:27.941Z",
             "total_turn_count": 21,
             "outcome": "win",
@@ -881,768 +1310,6 @@
                 "Morgana"
             ],
             "op_shard_cost": 28200
-        },
-        {
-            "game_start_time_utc": "2024-01-24T21:44:41.092Z",
-            "total_turn_count": 19,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Runeterra",
-                "MtTargon"
-            ],
-            "op_champions": [
-                "Elder Dragon",
-                "Aurelion Sol"
-            ],
-            "op_shard_cost": 31800
-        },
-        {
-            "game_start_time_utc": "2024-01-24T21:32:56.381Z",
-            "total_turn_count": 33,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Galio",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 32600
-        },
-        {
-            "game_start_time_utc": "2024-01-24T21:17:55.398Z",
-            "total_turn_count": 32,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "BandleCity",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Senna",
-                "Veigar"
-            ],
-            "op_shard_cost": 27700
-        },
-        {
-            "game_start_time_utc": "2024-01-24T18:34:50.188Z",
-            "total_turn_count": 38,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Bilgewater",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Pyke",
-                "Rek'Sai"
-            ],
-            "op_shard_cost": 26100
-        },
-        {
-            "game_start_time_utc": "2024-01-24T12:28:53.784Z",
-            "total_turn_count": 38,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Shurima",
-                null
-            ],
-            "op_champions": [
-                "Renekton",
-                "Azir"
-            ],
-            "op_shard_cost": 22700
-        },
-        {
-            "game_start_time_utc": "2024-01-24T12:15:17.288Z",
-            "total_turn_count": 38,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 24000
-        },
-        {
-            "game_start_time_utc": "2024-01-24T07:20:44.464Z",
-            "total_turn_count": 34,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Shurima",
-                null
-            ],
-            "op_champions": [
-                "Azir",
-                "Renekton"
-            ],
-            "op_shard_cost": 24300
-        },
-        {
-            "game_start_time_utc": "2024-01-23T21:36:27.832Z",
-            "total_turn_count": 33,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Piltover",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Heimerdinger",
-                "Jayce"
-            ],
-            "op_shard_cost": 26900
-        },
-        {
-            "game_start_time_utc": "2024-01-23T21:30:58.101Z",
-            "total_turn_count": 18,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Galio",
-                "Morgana",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 32600
-        },
-        {
-            "game_start_time_utc": "2024-01-23T21:27:04.651Z",
-            "total_turn_count": 14,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "BandleCity",
-                "Piltover"
-            ],
-            "op_champions": [
-                "Teemo",
-                "Yuumi"
-            ],
-            "op_shard_cost": 33300
-        },
-        {
-            "game_start_time_utc": "2024-01-23T17:56:26.673Z",
-            "total_turn_count": 23,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Bilgewater",
-                "Piltover"
-            ],
-            "op_champions": [
-                "Nilah",
-                "Janna",
-                "Jack"
-            ],
-            "op_shard_cost": 37400
-        },
-        {
-            "game_start_time_utc": "2024-01-23T17:50:44.879Z",
-            "total_turn_count": 14,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Bard",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Bard",
-                "Mordekaiser",
-                "Kalista"
-            ],
-            "op_shard_cost": 24500
-        },
-        {
-            "game_start_time_utc": "2024-01-23T16:56:32.297Z",
-            "total_turn_count": 28,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Evelynn",
-                "Freljord"
-            ],
-            "op_champions": [
-                "Sejuani",
-                "Evelynn",
-                "Ashe"
-            ],
-            "op_shard_cost": 29600
-        },
-        {
-            "game_start_time_utc": "2024-01-23T12:12:01.144Z",
-            "total_turn_count": 32,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Evelynn",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Evelynn",
-                "Kai'Sa"
-            ],
-            "op_shard_cost": 27400
-        },
-        {
-            "game_start_time_utc": "2024-01-23T11:44:05.474Z",
-            "total_turn_count": 27,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Shyvana",
-                "Morgana",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 30200
-        },
-        {
-            "game_start_time_utc": "2024-01-23T11:41:12.318Z",
-            "total_turn_count": 8,
-            "outcome": "win",
-            "playorder": 0,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Runeterra",
-                "MtTargon"
-            ],
-            "op_champions": [
-                "Aurelion Sol",
-                "Kayle",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 33000
-        },
-        {
-            "game_start_time_utc": "2024-01-22T23:11:39.856Z",
-            "total_turn_count": 28,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CUDACBAAAQAQKAAMAEDQABIBBABQGAQGAAVTABYBAACAMDAUEISCOAABAEEAYDQ",
-            "factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "champions": [
-                "Garen",
-                "Elder Dragon"
-            ],
-            "shard_cost": 21300,
-            "op_factions": [
-                "Demacia",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Mordekaiser"
-            ],
-            "op_shard_cost": 26200
-        },
-        {
-            "game_start_time_utc": "2024-01-22T17:43:02.650Z",
-            "total_turn_count": 30,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "shard_cost": 29300,
-            "op_factions": [
-                "Bard",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Bard",
-                "Mordekaiser"
-            ],
-            "op_shard_cost": 25800
-        },
-        {
-            "game_start_time_utc": "2024-01-22T17:32:56.354Z",
-            "total_turn_count": 28,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "shard_cost": 29300,
-            "op_factions": [
-                "Runeterra",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Viego",
-                "Mordekaiser",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 24800
-        },
-        {
-            "game_start_time_utc": "2024-01-22T17:21:45.755Z",
-            "total_turn_count": 30,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "shard_cost": 29300,
-            "op_factions": [
-                "Shurima",
-                null
-            ],
-            "op_champions": [
-                "Azir",
-                "Renekton"
-            ],
-            "op_shard_cost": 24300
-        },
-        {
-            "game_start_time_utc": "2024-01-22T17:11:35.801Z",
-            "total_turn_count": 14,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "shard_cost": 29300,
-            "op_factions": [
-                "Aatrox",
-                "Kayn"
-            ],
-            "op_champions": [
-                "Aatrox",
-                "Kayn"
-            ],
-            "op_shard_cost": 30400
-        },
-        {
-            "game_start_time_utc": "2024-01-21T21:04:22.342Z",
-            "total_turn_count": 24,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "shard_cost": 29300,
-            "op_factions": [
-                "Freljord",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Taliyah",
-                "Lissandra",
-                "Volibear"
-            ],
-            "op_shard_cost": 30500
-        },
-        {
-            "game_start_time_utc": "2024-01-21T20:54:36.138Z",
-            "total_turn_count": 26,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "shard_cost": 29300,
-            "op_factions": [
-                "Bilgewater",
-                "ShadowIsles"
-            ],
-            "op_champions": [
-                "Maokai",
-                "Nautilus"
-            ],
-            "op_shard_cost": 34600
-        },
-        {
-            "game_start_time_utc": "2024-01-21T20:44:48.370Z",
-            "total_turn_count": 21,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CQEQCAIBCYAQCAYLAEBACBQBAIBQKAIFBKQQCAIFAEDACBYBCAAQQAYTAIEACEYYAIAQCAIEAIAQGDJGAQAQCAIFAEAQGGIBAIBQGAIEAEFA",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "Gnar",
-                "Darius"
-            ],
-            "shard_cost": 19900,
-            "op_factions": [
-                "Runeterra",
-                "Freljord"
-            ],
-            "op_champions": [
-                "Volibear",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 34600
-        },
-        {
-            "game_start_time_utc": "2024-01-21T15:07:25.034Z",
-            "total_turn_count": 28,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CQEQCAIBCYAQCAYLAEBACBQBAIBQKAIFBKQQCAIFAEDACBYBCAAQQAYTAIEACEYYAIAQCAIEAIAQGDJGAQAQCAIFAEAQGGIBAIBQGAIEAEFA",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "Gnar",
-                "Darius"
-            ],
-            "shard_cost": 19900,
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Galio",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 31500
-        },
-        {
-            "game_start_time_utc": "2024-01-21T07:39:44.547Z",
-            "total_turn_count": 63,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEBQEAIDD4QQEBADAQHQMAIBAQLB4JRJGABQCAIDGUAQIAYIAIAQCCZKAIAQCAIBAEBACCQ",
-            "factions": [
-                "Freljord",
-                "Noxus"
-            ],
-            "champions": [
-                "LeBlanc",
-                "Ashe"
-            ],
-            "shard_cost": 29300,
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Morgana",
-                "Garen",
-                "Galio",
-                "Elder Dragon"
-            ],
-            "op_shard_cost": 32600
-        },
-        {
-            "game_start_time_utc": "2024-01-20T18:48:25.200Z",
-            "total_turn_count": 40,
-            "outcome": "loss",
-            "playorder": 0,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "shard_cost": 27300,
-            "op_factions": [
-                "Runeterra",
-                "Demacia"
-            ],
-            "op_champions": [
-                "Elder Dragon",
-                "Shyvana"
-            ],
-            "op_shard_cost": 30200
-        },
-        {
-            "game_start_time_utc": "2024-01-20T18:44:58.104Z",
-            "total_turn_count": 4,
-            "outcome": "win",
-            "playorder": 1,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "shard_cost": 27300,
-            "op_factions": [
-                "ShadowIsles",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Senna",
-                "Nasus"
-            ],
-            "op_shard_cost": 28600
-        },
-        {
-            "game_start_time_utc": "2024-01-20T17:44:20.307Z",
-            "total_turn_count": 33,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "shard_cost": 27300,
-            "op_factions": [
-                "Bilgewater",
-                "Shurima"
-            ],
-            "op_champions": [
-                "Pyke",
-                "Rek'Sai"
-            ],
-            "op_shard_cost": 25300
-        },
-        {
-            "game_start_time_utc": "2024-01-20T14:36:28.049Z",
-            "total_turn_count": 36,
-            "outcome": "loss",
-            "playorder": 1,
-            "deck_code": "CEDACAIFCUAQGAQUAECAEDQBAYBASAQBAIDASBAGAUIBIJRJAMAQCBI6AEDAEDIDAYCQODQ6AA",
-            "factions": [
-                "Ionia",
-                "ShadowIsles"
-            ],
-            "champions": [
-                "Zed",
-                "Kalista"
-            ],
-            "shard_cost": 27300,
-            "op_factions": [
-                "Freljord",
-                "Jax"
-            ],
-            "op_champions": [
-                "Jax",
-                "Ornn"
-            ],
-            "op_shard_cost": 25500
         }
     ]
 }
