@@ -1,5 +1,9 @@
 const cache = {
-  "isCordovaApp": !!window.cordova
+  "isCordovaApp": !!window.cordova,
+  data: {
+    selectedDeck: "ALL",
+    selectedTime: 7
+  }
 }
 
 const $$ = Dom7;
@@ -32,6 +36,28 @@ const appHTML = `
 
       <!-- Scrollable page content -->
       <div class="page-content">
+        <p />
+
+        <select id="deckSelector" placeholder="Please choose..."
+          style="width: 95%; border: 1px solid black; padding: 5px; appearance: auto;  margin: 0 auto;"
+        >
+        </select>
+
+        <p />
+
+        <select id="timeSelector" placeholder="Please choose..."
+          style="width: 95%; border: 1px solid black; padding: 5px; appearance: auto;  margin: 0 auto;"
+        >
+          <option value=1 >Last 1 days</option>
+          <option value=2 >Last 2 days</option>
+          <option value=3 >Last 3 days</option>
+          <option value=4 >Last 4 days</option>
+          <option value=7 selected>Last 7 days</option>
+          <option value=15 >Last 15 days</option>
+          <option value=30 >Last 30 days</option>
+          <option value=Infinity >As far as you can</option>
+        </select>
+
         <p />
 
         <!-- Tabs -->
@@ -282,10 +308,11 @@ const appHTML = `
 
 $$('#app').html(appHTML)
 
+
 var app = new Framework7({
   el: '#app',
   name: 'My App',
-  theme: 'auto'
+  theme: 'auto', 
 });
 
 if (cache.isCordovaApp)
@@ -301,6 +328,8 @@ async function onDeviceReady() {
 function drawChart(elName, datasets) {
 
   const ctx = document.getElementById(elName);
+  
+  Chart.getChart(elName)?.destroy()
 
   new Chart(ctx, {
     data: {
@@ -373,35 +402,97 @@ async function main() {
   //const sampleData = await (await fetch('http://www.villalala.fr:12345/sample.json')).json()
 
   // Sort chronologically asc
-  sampleData.matches_data.sort((a, b) => {
+  sampleData.matches.sort((a, b) => {
     return new Date(a.game_start_time_utc).getTime() - new Date(b.game_start_time_utc).getTime()
   })
 
-  window.data = Object.values(sampleData.matches_data.reduce((prev, i) => {
+/*
+    // All known Decks (for player ?)
+    [...new Set(sampleData.decksummaries.map(i => i.deck_code))],
+    // All played Decks for player
+    [...new Set(sampleData.matches.map(i => i.deck_code))]
+*/
+
+  const decks = sampleData.matches.reduce((prev, i) => {
+    prev[i.deck_code] = prev[i.deck_code] || {count: 0, win: 0}
+    prev[i.deck_code].count++
+    if (i.outcome == "win")
+      prev[i.deck_code].win++
+    return prev
+  }, {})
+
+  const sortedDecks = Object.keys(decks).sort((a, b) => {
+    //return decks[b].win - decks[a].win
+    return decks[b].count - decks[a].count
+  })
+
+  const deckSelector = document.querySelector('#deckSelector')
+
+  deckSelector.innerHTML = sortedDecks.map((i, idx) => {
+    let val = (idx == 0) ? `<option value="ALL" selected>All Deks</option>` : ''
+    val += `<option value="${i}">${i}</option>`
+    return val
+  }).join('')
+
+  deckSelector.onchange = function (e) {
+    cache.data.selectedDeck = this.value
+    fillApp()
+  }
+
+  const timeSelector = document.querySelector('#timeSelector')
+  timeSelector.onchange = function (e) {
+    cache.data.selectedTime = this.value
+    fillApp()
+  }
+
+  fillApp()
+}
+
+function fillApp() {
+
+  window.data = Object.values(
+    sampleData.matches
+    .filter(i => {
+      if (cache.data.selectedDeck == "ALL")
+        return true
+      else 
+        return i.deck_code == cache.data.selectedDeck
+    })
+    .filter(i => {
+      const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
+      console.log(
+        i.game_start_time_utc,
+        diff,
+        cache.data.selectedTime * 1000 * 60 * 60 * 24
+      )
+      return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
+    })
+    .reduce((prev, i) => {
+        
+      const day = new Date(i.game_start_time_utc).toISOString().slice(0,10)
+
+      prev[day] = prev[day] || {x: day, games: 0, turns: 0, win: 0, loss: 0, winRate: 0, cum_winRate: 0}
+      // Nbr of games
+      prev[day].games++
+      // Nbr of turns
+      prev[day].turns += i.total_turn_count
+      // Nbr of win / loss
+      prev[day][i.outcome]++
+      // Daily winRate
+      prev[day].winRate = prev[day].win / (prev[day].win + prev[day].loss) * 100
+      // Cumulative winRate
+      prev.total[i.outcome]++
+      prev[day].cum_winRate = prev.total.win / (prev.total.win + prev.total.loss) * 100
+
+      prev.total.decks[i.deck_code] = prev.total.decks[i.deck_code] || 0
+      prev.total.decks[i.deck_code]++
+
+      prev.total.games++
+      prev.total.turns += i.total_turn_count
       
-    const day = new Date(i.game_start_time_utc).toISOString().slice(0,10)
-
-    prev[day] = prev[day] || {x: day, games: 0, turns: 0, win: 0, loss: 0, winRate: 0, cum_winRate: 0}
-    // Nbr of games
-    prev[day].games++
-    // Nbr of turns
-    prev[day].turns += i.total_turn_count
-    // Nbr of win / loss
-    prev[day][i.outcome]++
-    // Daily winRate
-    prev[day].winRate = prev[day].win / (prev[day].win + prev[day].loss) * 100
-    // Cumulative winRate
-    prev.total[i.outcome]++
-    prev[day].cum_winRate = prev.total.win / (prev.total.win + prev.total.loss) * 100
-
-    prev.total.decks[i.deck_code] = prev.total.decks[i.deck_code] || 0
-    prev.total.decks[i.deck_code]++
-
-    prev.total.games++
-    prev.total.turns += i.total_turn_count
-    
-    return prev;
-  }, {total: {games: 0, turns: 0, win: 0, loss: 0, decks: {}}} ))
+      return prev;
+    }, {total: {games: 0, turns: 0, win: 0, loss: 0, decks: {}}} )
+  )
 
   document.getElementById('metric_games').innerHTML = data[0].games
   document.getElementById('metric_turns').innerHTML = data[0].turns
@@ -429,7 +520,23 @@ async function main() {
     ]
   )
 
-  const turn_buckets = sampleData.matches_data.reduce((prev, i) => {
+  const turn_buckets = sampleData.matches
+    .filter(i => {
+      if (cache.data.selectedDeck == "ALL")
+        return true
+      else 
+        return i.deck_code == cache.data.selectedDeck
+    })
+    .filter(i => {
+      const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
+      console.log(
+        i.game_start_time_utc,
+        diff,
+        cache.data.selectedTime * 1000 * 60 * 60 * 24
+      )
+      return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
+    })  
+    .reduce((prev, i) => {
       const bucket = i.total_turn_count - i.total_turn_count % 10;
       prev[bucket] = prev[bucket] || {count: 0, win: 0, loss: 0, winRate: 0}
       prev[bucket].count++
@@ -464,7 +571,6 @@ async function main() {
       }
     ]
   )
-
 
   drawChart('chart_winRate',
     [
@@ -507,25 +613,41 @@ async function main() {
     }
   }
 
+  Chart.getChart('chart_decks')?.destroy()
+
   new Chart(document.getElementById('chart_decks'), config)
 
   // Table Games
-  const table_games = sampleData.matches_data.map(i => {
+  const table_games = sampleData.matches
+    .filter(i => {
+      if (cache.data.selectedDeck == "ALL")
+        return true
+      else 
+        return i.deck_code == cache.data.selectedDeck
+    })
+    .filter(i => {
+      const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
+      console.log(
+        i.game_start_time_utc,
+        diff,
+        cache.data.selectedTime * 1000 * 60 * 60 * 24
+      )
+      return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
+    })
+    .map(i => {
 
-    const dateArr = new Date(i.game_start_time_utc).toString().split(' '),
-          date    = [dateArr[2], dateArr[1]].join('-')
+      const dateArr = new Date(i.game_start_time_utc).toString().split(' '),
+            date    = [dateArr[2], dateArr[1]].join('-')
 
-    //return { "Date": date, "Out": i.outcome, "Turns": i.total_turn_count, "Factions": i.op_factions.map(i => i/*.slice(0,5)*/).join(' '), "Cost": i.op_shard_cost }
-    return {
-      "Date": date,
-      "Out": i.outcome,
-      "Turns": i.total_turn_count,
-      "Factions": i.op_factions.map(i => {
-         return `<img src="img/${i}.png" alt="${i}" style="width: 30px;"/>`
-        }).join(' '),
-      "Cost": i.op_shard_cost.toLocaleString()
-    }
-
+      return {
+        "Date": date,
+        "Out": i.outcome,
+        "Turns": i.total_turn_count,
+        "Factions": [i.op_faction1, i.op_faction2].map(i => {
+           return `<img src="img/${i}.png" alt="${i}" style="width: 30px;"/>`
+          }).join(' '),
+        "Cost": 0 // TODO : Missing value -> i.op_shard_cost.toLocaleString()
+      }
 
   })
 
@@ -584,15 +706,31 @@ async function main() {
   document.querySelector('#table_turns').innerHTML = html_turns
 
   // Table winRate 
-  window.table_winRate_temp = sampleData.matches_data.reduce((prev, i) => {
-    i.op_factions.forEach(faction => {
-      prev[faction] = prev[faction] || {Faction: faction, count: 0, win: 0, loss: 0, winRate: 0}
-      prev[faction].count++
-      prev[faction][i.outcome]++
-      prev[faction].winRate = Math.round(prev[faction].win / (prev[faction].win + prev[faction].loss) * 100)
+  window.table_winRate_temp = sampleData
+    .filter(i => {
+      if (cache.data.selectedDeck == "ALL")
+        return true
+      else 
+        return i.deck_code == cache.data.selectedDeck
     })
-    return prev
-  }, {})
+    .filter(i => {
+      const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
+      console.log(
+        i.game_start_time_utc,
+        diff,
+        cache.data.selectedTime * 1000 * 60 * 60 * 24
+      )
+      return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
+    })
+    .matches.reduce((prev, i) => {
+      [i.op_faction1, i.op_faction2].forEach(faction => {
+        prev[faction] = prev[faction] || {Faction: faction, count: 0, win: 0, loss: 0, winRate: 0}
+        prev[faction].count++
+        prev[faction][i.outcome]++
+        prev[faction].winRate = Math.round(prev[faction].win / (prev[faction].win + prev[faction].loss) * 100)
+      })
+      return prev
+    }, {})
 
   window.table_winRate = Object.values(window.table_winRate_temp)
     .sort((a, b) => {
