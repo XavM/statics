@@ -308,7 +308,6 @@ const appHTML = `
 
 $$('#app').html(appHTML)
 
-
 var app = new Framework7({
   el: '#app',
   name: 'My App',
@@ -395,29 +394,22 @@ function drawChart(elName, datasets) {
 })
 */
 
-async function main() {
-
-  window.sampleData = await (await fetch('data/games.json')).json()
-  //window.sampleData = await (await fetch('https://xavm.github.io/statics/PMA/data/games.json')).json()
-  //const sampleData = await (await fetch('http://www.villalala.fr:12345/sample.json')).json()
-
-  // Sort chronologically asc
-  sampleData.matches.sort((a, b) => {
-    return new Date(a.game_start_time_utc).getTime() - new Date(b.game_start_time_utc).getTime()
-  })
-
-/*
-    // All known Decks (for player ?)
-    [...new Set(sampleData.decksummaries.map(i => i.deck_code))],
-    // All played Decks for player
-    [...new Set(sampleData.matches.map(i => i.deck_code))]
-*/
+function fillUpDeckSelector() {
 
   const decks = sampleData.matches.reduce((prev, i) => {
-    prev[i.deck_code] = prev[i.deck_code] || {count: 0, win: 0}
-    prev[i.deck_code].count++
-    if (i.outcome == "win")
-      prev[i.deck_code].win++
+
+    const diff = Date.now() - new Date(i.game_start_time_utc).getTime(),
+          selectedTime = cache.data.selectedTime * 1000 * 60 * 60 * 24
+
+    if (diff < selectedTime) {
+
+      prev[i.deck_code] = prev[i.deck_code] || {count: 0, win: 0}
+      prev[i.deck_code].count++
+
+      if (i.outcome == "win")
+        prev[i.deck_code].win++
+    }
+
     return prev
   }, {})
 
@@ -438,6 +430,27 @@ async function main() {
     cache.data.selectedDeck = this.value
     fillApp()
   }
+}
+
+async function main() {
+
+  window.sampleData = await (await fetch('data/games.json')).json()
+  //window.sampleData = await (await fetch('https://xavm.github.io/statics/PMA/data/games.json')).json()
+  //const sampleData = await (await fetch('http://www.villalala.fr:12345/sample.json')).json()
+
+  // Sort chronologically asc
+  sampleData.matches.sort((a, b) => {
+    return new Date(a.game_start_time_utc).getTime() - new Date(b.game_start_time_utc).getTime()
+  })
+
+/*
+    // All known Decks (for player ?)
+    [...new Set(sampleData.decksummaries.map(i => i.deck_code))],
+    // All played Decks for player
+    [...new Set(sampleData.matches.map(i => i.deck_code))]
+*/
+
+  fillUpDeckSelector() 
 
   const timeSelector = document.querySelector('#timeSelector')
   timeSelector.onchange = function (e) {
@@ -450,6 +463,8 @@ async function main() {
 
 function fillApp() {
 
+  fillUpDeckSelector()
+
   window.data = Object.values(
     sampleData.matches
     .filter(i => {
@@ -460,11 +475,6 @@ function fillApp() {
     })
     .filter(i => {
       const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
-      console.log(
-        i.game_start_time_utc,
-        diff,
-        cache.data.selectedTime * 1000 * 60 * 60 * 24
-      )
       return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
     })
     .reduce((prev, i) => {
@@ -496,7 +506,7 @@ function fillApp() {
 
   document.getElementById('metric_games').innerHTML = data[0].games
   document.getElementById('metric_turns').innerHTML = data[0].turns
-  document.getElementById('metric_winRate').innerHTML = Math.round(data.slice(-1)[0].cum_winRate) + '%'
+  document.getElementById('metric_winRate').innerHTML = Math.round(data.slice(-1)[0].cum_winRate || 0) + '%'
   document.getElementById('metric_decks').innerHTML = Object.keys(data[0].decks).length
 
   drawChart('chart_games',
@@ -529,11 +539,6 @@ function fillApp() {
     })
     .filter(i => {
       const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
-      console.log(
-        i.game_start_time_utc,
-        diff,
-        cache.data.selectedTime * 1000 * 60 * 60 * 24
-      )
       return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
     })  
     .reduce((prev, i) => {
@@ -627,11 +632,6 @@ function fillApp() {
     })
     .filter(i => {
       const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
-      console.log(
-        i.game_start_time_utc,
-        diff,
-        cache.data.selectedTime * 1000 * 60 * 60 * 24
-      )
       return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
     })
     .map(i => {
@@ -655,7 +655,7 @@ function fillApp() {
     <thead>
       <tr>
         ${
-          Object.keys(table_games[0]).map(i => {
+          Object.keys(table_games[0] || []).map(i => {
             return '<th class="label-cell">' + i + '</th>'
           }).join('\n')
         }
@@ -663,11 +663,11 @@ function fillApp() {
       <tbody>
         ${
           Object.values(table_games)
-            .sort((a, b) => {
+            ?.sort((a, b) => {
               //return new Date(b.Date).getTime() - new Date(a.Date).getTime()
               return new Date(b.Date + ' ' + new Date().getFullYear()).getTime() - new Date(a.Date + ' ' + new Date().getFullYear()).getTime()
             }) 
-            .map(i => {
+            ?.map(i => {
               return '<tr>' + Object.values(i).map(j => '<td class="label-cell">' +  j + '</td>').join('\n') + '</tr>'              
             }).join('\n')
         }
@@ -682,7 +682,7 @@ function fillApp() {
     <thead>
       <tr>
         ${
-          Object.keys(table_games[0])
+          Object.keys(table_games[0] || [])
             .slice(0, -1)
             .map(i => {
               return '<th class="label-cell">' + i + '</th>'
@@ -706,7 +706,7 @@ function fillApp() {
   document.querySelector('#table_turns').innerHTML = html_turns
 
   // Table winRate 
-  window.table_winRate_temp = sampleData
+  window.table_winRate_temp = sampleData.matches
     .filter(i => {
       if (cache.data.selectedDeck == "ALL")
         return true
@@ -715,14 +715,9 @@ function fillApp() {
     })
     .filter(i => {
       const diff = Date.now() - new Date(i.game_start_time_utc).getTime()
-      console.log(
-        i.game_start_time_utc,
-        diff,
-        cache.data.selectedTime * 1000 * 60 * 60 * 24
-      )
       return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
     })
-    .matches.reduce((prev, i) => {
+    .reduce((prev, i) => {
       [i.op_faction1, i.op_faction2].forEach(faction => {
         prev[faction] = prev[faction] || {Faction: faction, count: 0, win: 0, loss: 0, winRate: 0}
         prev[faction].count++
@@ -741,7 +736,7 @@ function fillApp() {
     <thead>
       <tr>
         ${
-          Object.keys(table_winRate[0]).map(i => {
+          Object.keys(table_winRate[0] || []).map(i => {
             return '<th class="label-cell">' + i + '</th>'
           }).join('\n')
         }
