@@ -323,7 +323,6 @@ async function onDeviceReady() {
   //console.log('onDeviceReady')
 }  
 
-
 function drawChart(elName, datasets) {
 
   const ctx = document.getElementById(elName);
@@ -421,8 +420,8 @@ function fillUpDeckSelector() {
   const deckSelector = document.querySelector('#deckSelector')
 
   deckSelector.innerHTML = sortedDecks.map((i, idx) => {
-    let val = (idx == 0) ? `<option value="ALL" selected>All Deks</option>` : ''
-    val += `<option value="${i}">${i}</option>`
+    let val = (idx == 0) ? `<option value="ALL" ${ (cache.data.selectedDeck == i) && "selected" }>All Deks</option>` : ''
+    val += `<option value="${i}" ${ (cache.data.selectedDeck == i) && "selected" }>${i}</option>`
     return val
   }).join('')
 
