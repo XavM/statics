@@ -355,7 +355,7 @@ function drawChart(elName, datasets) {
         y1: {
           type: 'linear',
           display: 'auto',
-          position: 'left',
+          position: 'left'
         },
         y2: {
           type: 'linear',
@@ -477,7 +477,7 @@ function fillApp() {
       return diff < ( cache.data.selectedTime * 1000 * 60 * 60 * 24 )
     })
     .reduce((prev, i) => {
-        
+      
       const day = new Date(i.game_start_time_utc).toISOString().slice(0,10)
 
       prev[day] = prev[day] || {x: day, games: 0, turns: 0, win: 0, loss: 0, winRate: 0, cum_winRate: 0}
@@ -514,7 +514,7 @@ function fillApp() {
         label: "games",
         type: 'bar',
         yAxisID: 'y1',
-        data: data.map(i => {
+        data: data.filter(i => i.x).map(i => {
           return {x: i.x, y: i.games}
         })
       },
