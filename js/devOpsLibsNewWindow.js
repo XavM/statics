@@ -13,6 +13,6 @@ document.querySelectorAll('.lib-item-var-name').forEach(i => {
       return j.name == i.innerText
     }).map(k => k.id)[0]
     console.log(i.innerText, id);
-    window.open('https://dev.azure.com/ddslogistics2/Saas_Factory/_library?view=VariableGroupView&variableGroupId=19')
+    window.open('https://dev.azure.com/ddslogistics2/Saas_Factory/_library?view=VariableGroupView&variableGroupId=' + id)
   })
 })
