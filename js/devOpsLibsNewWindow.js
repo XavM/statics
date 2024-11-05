@@ -13,8 +13,10 @@
       const id = variableGroups.value.filter(j => {
         return j.name == i.innerText
       }).map(k => k.id)[0]
-      console.log(i.innerText, id);
+      //console.log(i.innerText, id);
       window.open('https://dev.azure.com/ddslogistics2/Saas_Factory/_library?view=VariableGroupView&variableGroupId=' + id)
     })
   })
+
+  alert('You are god to go !!')
 })()
