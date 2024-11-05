@@ -18,5 +18,5 @@
     })
   })
 
-  alert('You are god to go !!')
+  alert('You are good to go !!')
 })()
