@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Time Series Viewer (Highcharts Stock) — Multi-series</title>
+<title>Time Series Viewer (Highcharts Stock) — Datasets</title>
 
 <!-- Highcharts Stock (CDN) -->
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
@@ -16,9 +16,7 @@
   header { padding: var(--pad) calc(var(--pad)*2); background: #111; color: #fff; }
   main { padding: var(--pad) calc(var(--pad)*2); display: grid; gap: var(--gap); }
   .row { display: grid; grid-template-columns: 1fr; gap: var(--gap); }
-  @media (min-width: 980px) {
-    .row { grid-template-columns: 1.2fr 2fr; align-items: start; }
-  }
+  @media (min-width: 980px) { .row { grid-template-columns: 1.2fr 2fr; align-items: start; } }
   fieldset { border: 1px solid #ccc; padding: var(--pad); border-radius: 6px; }
   fieldset legend { padding: 0 6px; color: #555; }
   label { display: block; margin: 6px 0 4px; font-weight: 600; }
@@ -30,7 +28,6 @@
   .inline { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   #chart { height: 520px; min-height: 320px; border: 1px solid #ddd; border-radius: 6px; }
   .saved { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; }
-  .saved > * { margin: 2px 0; }
   .muted { color: #777; }
   .ok { color: #0a7; }
   .err { color: #c33; }
@@ -39,8 +36,8 @@
 </head>
 <body>
 <header>
-  <h1>Time Series Viewer — Highcharts Stock (Multi-series)</h1>
-  <div class="hint">Upload or paste JSON (single or multiple series), render, auto-save, and reload.</div>
+  <h1>Time Series Viewer — Highcharts Stock (Datasets)</h1>
+  <div class="hint">Paste/upload JSON (single or multiple series), render, <strong>auto‑save as a dataset</strong>, and reload.</div>
 </header>
 
 <main>
@@ -48,8 +45,11 @@
     <fieldset>
       <legend>Input</legend>
 
-      <label for="seriesName">Default series name (used only if input has no names)</label>
-      <input id="seriesName" type="text" placeholder="e.g., My Series (used when unnamed)" />
+      <label for="datasetName">Dataset name (used when saving)</label>
+      <input id="datasetName" type="text" placeholder="e.g., KPI 2023–2024" />
+
+      <label for="defaultSeriesName">Default series name (only if the input provides none)</label>
+      <input id="defaultSeriesName" type="text" placeholder="e.g., My Series" />
 
       <div class="inline">
         <div>
@@ -62,22 +62,22 @@
       <label for="jsonInput">JSON</label>
       <textarea id="jsonInput" placeholder='Examples:
 
-// 1) Multi-series (map)
+// 1) Multi-series (map) -> saved as one dataset
 {
   "Sales": [[1704067200000,100],[1706745600000,120]],
   "Cost":  [[1704067200000,80],[1706745600000,90]]
 }
 
-// 2) Multi-series (array)
+// 2) Multi-series (array) -> saved as one dataset
 [
   { "name":"Sales", "data":[[1704067200000,100],[1706745600000,120]] },
   { "name":"Cost",  "data":[[1704067200000,80],[1706745600000,90]] }
 ]
 
-// 3) Single series (pairs)
+// 3) Single series (pairs) -> dataset with one series
 [[1704067200000,100],[1706745600000,120]]
 
-// 4) Single series (objects)
+// 4) Single series (objects) -> dataset with one series
 [
   {"timestamp":"2024-01-01T00:00:00Z","value":100},
   {"timestamp":"2024-02-01T00:00:00Z","value":120}
@@ -108,8 +108,9 @@ Objs:  [ {"timestamp": ISO8601|epoch_ms, "value": number}, ... ]
       <legend>Chart</legend>
 
       <div class="inline" style="margin-bottom:8px">
-        <label for="seriesType">Series type for new series</label>
+        <label for="seriesType">Series type (auto-applies)</label>
         <select id="seriesType">
+          <option value="spline" selected>spline</option>
           <option value="line">line</option>
           <option value="spline">spline</option>
           <option value="area">area</option>
@@ -118,7 +119,6 @@ Objs:  [ {"timestamp": ISO8601|epoch_ms, "value": number}, ... ]
           <option value="arearange">arearange (needs [low,high])</option>
         </select>
 
-        <button id="btnApplyType" title="Apply to all series">Apply type to all series</button>
         <button id="btnResetZoom">Reset zoom</button>
         <span id="chartStatus" class="hint"></span>
       </div>
@@ -128,21 +128,32 @@ Objs:  [ {"timestamp": ISO8601|epoch_ms, "value": number}, ... ]
   </div>
 
   <fieldset>
-    <legend>Saved in this browser (localStorage)</legend>
+    <legend>Saved datasets (localStorage)</legend>
     <div class="actions">
-      <button id="btnExportAll">Export all (JSON)</button>
-      <button id="btnImportAll">Import all (JSON)</button>
-      <button id="btnLoadAllSaved">Load all saved</button>
+      <button id="btnExportAll">Export all datasets (JSON)</button>
+      <button id="btnImportAll">Import datasets (JSON)</button>
+      <button id="btnLoadAllSaved">Load all datasets</button>
       <button id="btnClearAll">Delete all</button>
       <input id="importAllInput" type="file" accept=".json" style="display:none" />
     </div>
-    <div id="savedList" class="hint">No saved series yet.</div>
+    <div id="savedList" class="hint">No saved datasets yet.</div>
   </fieldset>
 </main>
 
 <script>
-/* ---------------------- Storage helpers ---------------------- */
-const STORAGE_KEY = 'ts_series_map_v2'; // { name: {name, data:[[ts,value],...], type?, savedAt }, ... }
+/* ---------------------- Storage (DATASETS) ---------------------- */
+/**
+ * Storage format:
+ * STORAGE_KEY = 'ts_datasets_v1'
+ * {
+ *   "<datasetId>": {
+ *     id, name, savedAt,
+ *     series: [{ name, type, data:[[ts,val],...] }, ...]
+ *   },
+ *   ...
+ * }
+ */
+const STORAGE_KEY = 'ts_datasets_v1';
 
 function loadStore() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
@@ -151,15 +162,15 @@ function loadStore() {
 function saveStore(store) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
-function upsertSeries(name, data, type) {
+function upsertDataset(dataset) {
   const store = loadStore();
-  store[name] = { name, data, type: type || 'line', savedAt: Date.now() };
+  store[dataset.id] = dataset;
   saveStore(store);
   renderSavedList();
 }
-function deleteSeries(name) {
+function deleteDataset(id) {
   const store = loadStore();
-  delete store[name];
+  delete store[id];
   saveStore(store);
   renderSavedList();
 }
@@ -174,30 +185,26 @@ function toMillis(ts) {
   throw new Error('Unrecognized timestamp: ' + ts);
 }
 
-// Normalize data array into [[ts,val], ...]
 function normalizeDataArray(arr) {
   if (!Array.isArray(arr)) throw new Error('Series data must be an array');
   if (!arr.length) return [];
   if (Array.isArray(arr[0])) {
-    // [[t,v], ...]
     return arr.map(p => [toMillis(p[0]), Number(p[1])]);
   } else {
-    // [{timestamp,value}, ...]
     return arr.map(p => [toMillis(p.timestamp ?? p.time ?? p.t), Number(p.value ?? p.v)]);
   }
 }
 
 /**
- * parseInput(jsonText) -> [{ name, data, type? }, ...]
+ * parseInput(jsonText, defaultSeriesName) -> [{ name, data }]
  * Supports:
  * 1) Map:   { "A": [[ts,val],...], "B": [[ts,val],...] }
  * 2) Array: [ { name:"A", data:[[ts,val],...] }, ... ]
  * 3) Single: [[ts,val], ...]  or  [{timestamp,value}, ...]
  */
-function parseInput(jsonText, defaultName) {
+function parseInput(jsonText, defaultSeriesName) {
   const obj = JSON.parse(jsonText);
 
-  // Map of name -> data
   if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
     const out = [];
     for (const [name, data] of Object.entries(obj)) {
@@ -207,19 +214,16 @@ function parseInput(jsonText, defaultName) {
     return out;
   }
 
-  // Array
   if (Array.isArray(obj)) {
-    // Array of series objects?
     if (obj.length && typeof obj[0] === 'object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])) {
       return obj.map((s, i) => {
-        const name = s.name ?? `${defaultName || 'series'} ${i+1}`;
+        const name = s.name ?? `${defaultSeriesName || 'series'} ${i+1}`;
         const data = normalizeDataArray(s.data ?? s.values ?? s.series ?? []);
         return { name, data };
       });
     }
-    // Single series data array
     const data = normalizeDataArray(obj);
-    const name = defaultName || ('series ' + new Date().toISOString().replace('T',' ').replace('Z',''));
+    const name = defaultSeriesName || ('series ' + new Date().toISOString().replace('T',' ').replace('Z',''));
     return [{ name, data }];
   }
 
@@ -236,15 +240,15 @@ let chart = Highcharts.stockChart('chart', {
 });
 
 function addSeriesToChart(name, data, type) {
-  const s = chart.addSeries({ name, data, type: type || document.getElementById('seriesType').value });
-  return s;
+  return chart.addSeries({ name, data, type: type || currentSeriesType() });
 }
-function replaceChartWithMultiple(seriesList, typeForNew) {
+function replaceChartWithSeries(seriesList) {
   while (chart.series.length) chart.series[0].remove(false);
-  for (const s of seriesList) {
-    addSeriesToChart(s.name, s.data, s.type || typeForNew);
-  }
+  for (const s of seriesList) addSeriesToChart(s.name, s.data, s.type);
   chart.redraw();
+}
+function currentSeriesType() {
+  return document.getElementById('seriesType').value || 'spline';
 }
 
 /* ---------------------- UI wiring ---------------------- */
@@ -257,9 +261,12 @@ el('fileInput').addEventListener('change', async (e) => {
   el('jsonInput').value = text;
 });
 
-function currentDefaultName() {
-  const raw = el('seriesName').value.trim();
-  return raw || 'series';
+function defaults() {
+  return {
+    datasetName: (el('datasetName').value.trim() || `Dataset ${new Date().toLocaleString()}`),
+    defaultSeriesName: (el('defaultSeriesName').value.trim() || 'series'),
+    typeForNew: currentSeriesType()
+  };
 }
 
 function tryParseAndReport() {
@@ -267,8 +274,8 @@ function tryParseAndReport() {
   status.textContent = '';
   status.className = 'hint';
   try {
-    const parsed = parseInput(el('jsonInput').value, currentDefaultName());
-    // Summarize
+    const { defaultSeriesName } = defaults();
+    const parsed = parseInput(el('jsonInput').value, defaultSeriesName);
     let points = 0, tMin = Infinity, tMax = -Infinity;
     for (const s of parsed) {
       if (!s.data.length) continue;
@@ -289,26 +296,46 @@ function tryParseAndReport() {
   }
 }
 
+/* ---- Add / Replace (and save as ONE DATASET) ---- */
+function buildDatasetObject(datasetName, seriesList, typeForNew) {
+  // Attach type to each series (use their own if provided; otherwise the current selector)
+  const series = seriesList.map(s => ({
+    name: s.name,
+    type: s.type || typeForNew,
+    data: s.data
+  }));
+  return {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+    name: datasetName,
+    savedAt: Date.now(),
+    series
+  };
+}
+
 el('btnAdd').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
-    const type = el('seriesType').value;
-    for (const s of parsed) {
-      addSeriesToChart(s.name, s.data, s.type || type);
-      upsertSeries(s.name, s.data, s.type || type); // auto-save each
-    }
+    const { datasetName, typeForNew } = defaults();
+    // Render
+    for (const s of parsed) addSeriesToChart(s.name, s.data, s.type || typeForNew);
     chart.redraw();
-    el('chartStatus').textContent = `Added ${parsed.length} series.`;
+    // Save as ONE dataset
+    const ds = buildDatasetObject(datasetName, parsed, typeForNew);
+    upsertDataset(ds);
+    el('chartStatus').textContent = `Added ${parsed.length} series; saved dataset "${datasetName}".`;
   } catch {}
 });
 
 el('btnReplace').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
-    const type = el('seriesType').value;
-    replaceChartWithMultiple(parsed, type);
-    for (const s of parsed) upsertSeries(s.name, s.data, s.type || type);
-    el('chartStatus').textContent = `Replaced with ${parsed.length} series.`;
+    const { datasetName, typeForNew } = defaults();
+    const ds = buildDatasetObject(datasetName, parsed, typeForNew);
+    // Replace chart
+    replaceChartWithSeries(ds.series);
+    // Save dataset
+    upsertDataset(ds);
+    el('chartStatus').textContent = `Replaced with ${parsed.length} series; saved dataset "${datasetName}".`;
   } catch {}
 });
 
@@ -317,47 +344,49 @@ el('btnClearInput').addEventListener('click', () => {
   el('inputStatus').textContent = '';
 });
 
-el('btnApplyType').addEventListener('click', () => {
-  const type = el('seriesType').value;
+/* ---- Auto-apply series type on change ---- */
+el('seriesType').addEventListener('change', () => {
+  const type = currentSeriesType();
   chart.series.forEach(s => s.update({ type }, false));
   chart.redraw();
-  el('chartStatus').textContent = `Applied type "${type}" to ${chart.series.length} series.`;
+  el('chartStatus').textContent = `Auto-applied type "${type}" to ${chart.series.length} series.`;
 });
 
 el('btnResetZoom').addEventListener('click', () => {
   chart.xAxis[0].setExtremes(null, null);
 });
 
-/* ---------------------- Saved series list ---------------------- */
+/* ---------------------- Saved datasets list ---------------------- */
 function renderSavedList() {
   const container = el('savedList');
   const store = loadStore();
-  const names = Object.keys(store).sort((a,b)=>store[b].savedAt - store[a].savedAt);
-  if (!names.length) { container.innerHTML = 'No saved series yet.'; return; }
+  const ids = Object.keys(store).sort((a,b)=>store[b].savedAt - store[a].savedAt);
+  if (!ids.length) { container.innerHTML = 'No saved datasets yet.'; return; }
 
   const frag = document.createDocumentFragment();
-  names.forEach(name => {
+  ids.forEach(id => {
+    const ds = store[id];
     const row = document.createElement('div');
     row.className = 'saved';
 
     const info = document.createElement('div');
-    const s = store[name];
-    const count = (s.data?.length ?? 0);
-    const when = new Date(s.savedAt).toLocaleString();
-    info.innerHTML = `<strong>${name}</strong> <span class="muted">— ${count} points • ${when}</span>`;
+    const when = new Date(ds.savedAt).toLocaleString();
+    const seriesCount = ds.series?.length ?? 0;
+    info.innerHTML = `<strong>${ds.name}</strong> <span class="muted">— ${seriesCount} series • ${when}</span>`;
 
     const btnLoad = document.createElement('button');
     btnLoad.textContent = 'Load';
-    btnLoad.title = 'Add to current chart';
+    btnLoad.title = 'Add this dataset to the chart';
     btnLoad.addEventListener('click', () => {
-      addSeriesToChart(s.name, s.data, s.type || 'line');
+      for (const s of ds.series) addSeriesToChart(s.name, s.data, s.type || currentSeriesType());
       chart.redraw();
+      el('chartStatus').textContent = `Loaded dataset "${ds.name}" (${seriesCount} series).`;
     });
 
     const btnDel = document.createElement('button');
     btnDel.textContent = 'Delete';
     btnDel.addEventListener('click', () => {
-      if (confirm(`Delete saved series "${name}"?`)) deleteSeries(name);
+      if (confirm(`Delete dataset "${ds.name}"?`)) deleteDataset(id);
     });
 
     row.append(info, btnLoad, btnDel);
@@ -366,15 +395,14 @@ function renderSavedList() {
   container.innerHTML = '';
   container.appendChild(frag);
 }
-
 renderSavedList();
 
-/* ---------------------- Export / Import all ---------------------- */
+/* ---------------------- Export / Import all datasets ---------------------- */
 el('btnExportAll').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(loadStore(), null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'time_series_store.json';
+  a.download = 'time_series_datasets.json';
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -386,10 +414,10 @@ el('importAllInput').addEventListener('change', async (e) => {
   try {
     const text = await file.text();
     const obj = JSON.parse(text);
-    if (typeof obj !== 'object' || Array.isArray(obj)) throw new Error('File must contain an object map of series');
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('File must contain an object map of datasets');
     saveStore(obj);
     renderSavedList();
-    alert('Imported.');
+    alert('Imported datasets.');
   } catch (err) {
     alert('Import failed: ' + err.message);
   } finally {
@@ -399,33 +427,41 @@ el('importAllInput').addEventListener('change', async (e) => {
 
 el('btnLoadAllSaved').addEventListener('click', () => {
   const store = loadStore();
-  const names = Object.keys(store);
-  if (!names.length) return alert('No saved series.');
-  for (const n of names) {
-    const s = store[n];
-    addSeriesToChart(s.name, s.data, s.type || 'line');
+  const ids = Object.keys(store);
+  if (!ids.length) return alert('No saved datasets.');
+  for (const id of ids) {
+    const ds = store[id];
+    for (const s of ds.series) addSeriesToChart(s.name, s.data, s.type || currentSeriesType());
   }
   chart.redraw();
-  el('chartStatus').textContent = `Loaded ${names.length} saved series.`;
+  el('chartStatus').textContent = `Loaded ${ids.length} dataset(s).`;
 });
 
 el('btnClearAll').addEventListener('click', () => {
-  if (!confirm('Delete ALL saved series in this browser?')) return;
+  if (!confirm('Delete ALL saved datasets in this browser?')) return;
   localStorage.removeItem(STORAGE_KEY);
   renderSavedList();
 });
 
-/* ---------------------- Convenience: seed example if empty ---------------------- */
+/* ---------------------- Seed example dataset (if none) ---------------------- */
 (function seedExampleIfEmpty(){
   const store = loadStore();
   if (Object.keys(store).length) return;
   const start = Date.UTC(2024,0,1,0,0,0); // Jan 1, 2024
-  const mk = (name, mult) => {
-    const data = Array.from({length: 24}, (_,i)=>[start + i*30*24*3600e3, 100 + Math.round((Math.sin(i/2)+Math.random()-0.5)*20*mult)]);
-    upsertSeries(name, data, 'line');
+  const mk = (name, mult) => Array.from({length: 24}, (_,i)=>[
+    start + i*30*24*3600e3,
+    100 + Math.round((Math.sin(i/2)+Math.random()-0.5)*20*mult)
+  ]);
+  const ds = {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+    name: 'Sample Dataset',
+    savedAt: Date.now(),
+    series: [
+      { name: 'Sample A', type: 'spline', data: mk('A', 1) },
+      { name: 'Sample B', type: 'spline', data: mk('B', 1.2) }
+    ]
   };
-  mk('Sample A', 1);
-  mk('Sample B', 1.2);
+  upsertDataset(ds);
 })();
 </script>
 </body>
