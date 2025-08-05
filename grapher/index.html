@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Time Series Viewer — Per‑Series Types, Datasets & Dual Axes</title>
+<title>Time Series Viewer — Datasets, Dual Axes, Live Persist</title>
 
 <!-- Highcharts Stock (CDN) -->
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
@@ -33,13 +33,14 @@
   .series-row { display: grid; grid-template-columns: 1fr 170px auto; gap: 8px; align-items: center; }
   .series-row select { width: 100%; }
   .saved { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; }
+  .active-badge { font-size: .85em; padding: 2px 6px; border: 1px solid #0a7; color:#0a7; border-radius: 4px; margin-left: 6px;}
   code.block { display:block; white-space:pre-wrap; background:#f7f7f7; padding:8px; border-radius:6px; border:1px solid #eee;}
 </style>
 </head>
 <body>
 <header>
   <h1>Time Series Viewer — Highcharts Stock</h1>
-  <div class="hint">One shared tooltip. Per‑series type. Columns on left axis, others on right. Datasets saved in localStorage.</div>
+  <div class="hint">Shared tooltip. Columns on left axis, others on right. Per‑series types. Datasets auto‑saved to localStorage.</div>
 </header>
 
 <main>
@@ -109,7 +110,7 @@ Objs:  [ {"timestamp": ISO8601|epoch_ms, "value": number}, ... ]
       <h3>Per‑series type</h3>
       <div class="hint">
         <b>Axes rule:</b> <code>column</code> &amp; <code>column-stacked</code> ➜ left Y‑axis; others ➜ right Y‑axis.
-        Changing a type reassigns axis automatically.
+        Type changes are saved to <code>localStorage</code> instantly.
       </div>
       <div id="seriesControls" class="series-controls"></div>
     </fieldset>
@@ -131,19 +132,64 @@ Objs:  [ {"timestamp": ISO8601|epoch_ms, "value": number}, ... ]
 <script>
 /* ---------------------- Storage (DATASETS) ---------------------- */
 /**
- * STORAGE_KEY = 'ts_datasets_v3'
+ * STORAGE_KEY = 'ts_datasets_v4'
+ * ACTIVE_KEY  = 'ts_active_dataset_id'
  * {
  *   "<datasetId>": {
- *     id, name, savedAt,
+ *     id, name, savedAt, updatedAt,
  *     series: [{ name, type, data:[[ts,val],...] }, ...] // type can be 'column-stacked'
  *   }
  * }
  */
-const STORAGE_KEY = 'ts_datasets_v3';
+const STORAGE_KEY = 'ts_datasets_v4';
+const ACTIVE_KEY  = 'ts_active_dataset_id';
+
 function loadStore() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; } }
 function saveStore(store) { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
-function upsertDataset(dataset) { const s = loadStore(); s[dataset.id] = dataset; saveStore(s); renderSavedList(); }
-function deleteDataset(id) { const s = loadStore(); delete s[id]; saveStore(s); renderSavedList(); }
+function getActiveId() { return localStorage.getItem(ACTIVE_KEY) || null; }
+function setActiveId(id) { localStorage.setItem(ACTIVE_KEY, id); renderSavedList(); }
+
+function upsertDataset(dataset) {
+  const s = loadStore();
+  dataset.updatedAt = Date.now();
+  s[dataset.id] = dataset;
+  saveStore(s);
+  if (!getActiveId()) setActiveId(dataset.id);
+  renderSavedList();
+}
+function patchActiveDataset(mutatorFn) {
+  const s = loadStore();
+  const id = getActiveId();
+  if (!id || !s[id]) return; // nothing active
+  const ds = s[id];
+  mutatorFn(ds);
+  ds.updatedAt = Date.now();
+  s[id] = ds;
+  saveStore(s);
+  renderSavedList();
+}
+function deleteDataset(id) {
+  const s = loadStore();
+  delete s[id];
+  saveStore(s);
+  if (getActiveId() === id) localStorage.removeItem(ACTIVE_KEY);
+  renderSavedList();
+}
+
+/* Snapshot current chart -> dataset.series[] */
+function snapshotChartSeries() {
+  return chart.series.map(ser => ({
+    name: ser.name,
+    type: (ser.userOptions && ser.userOptions._uiType) ? ser.userOptions._uiType : ser.type,
+    data: ser.options.data || []
+  }));
+}
+/* Persist current chart into active dataset */
+function saveActiveFromChart() {
+  const id = getActiveId();
+  if (!id) return;
+  patchActiveDataset(ds => { ds.series = snapshotChartSeries(); });
+}
 
 /* ---------------------- Parsing ---------------------- */
 function toMillis(ts) {
@@ -158,7 +204,6 @@ function normalizeDataArray(arr) {
   if (Array.isArray(arr[0])) return arr.map(p => [toMillis(p[0]), Number(p[1])]);
   return arr.map(p => [toMillis(p.timestamp ?? p.time ?? p.t), Number(p.value ?? p.v)]);
 }
-/** parseInput -> [{ name, data }] for map/array/single */
 function parseInput(jsonText, defaultSeriesName) {
   const obj = JSON.parse(jsonText);
   if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
@@ -176,7 +221,7 @@ function parseInput(jsonText, defaultSeriesName) {
   throw new Error('Unsupported JSON format');
 }
 
-/* ---------------------- Axis routing & stacking helpers ---------------------- */
+/* ---------------------- Axis routing & stacking ---------------------- */
 function yAxisIndexForType(uiType) {
   return (uiType === 'column' || uiType === 'column-stacked') ? 0 : 1; // 0=left, 1=right
 }
@@ -199,20 +244,12 @@ let chart = Highcharts.stockChart('chart', {
   credits: { enabled: false },
   tooltip: { shared: true, split: false }, // single tooltip for all series
   yAxis: [
-    { // 0: LEFT — columns
-      title: { text: 'Columns' },
-      opposite: false,
-      alignTicks: true
-    },
-    { // 1: RIGHT — others
-      title: { text: 'Lines/Areas' },
-      opposite: true,
-      alignTicks: true
-    }
+    { title: { text: 'Columns' }, opposite: false, alignTicks: true }, // 0: LEFT
+    { title: { text: 'Lines/Areas' }, opposite: true, alignTicks: true } // 1: RIGHT
   ],
   plotOptions: {
     series: { turboThreshold: 0 },
-    column: { stacking: null } // toggled based on presence of `column-stacked`
+    column: { stacking: null }
   },
   series: []
 });
@@ -221,7 +258,6 @@ function addSeriesToChart(name, data, uiType) {
   const { actualType } = normalizeType(uiType);
   const ya = yAxisIndexForType(uiType || 'spline');
   const added = chart.addSeries({ name, data, type: actualType, yAxis: ya });
-  // remember UI type so we can reconstruct later & drive controls
   added.update({ _uiType: (uiType || 'spline') }, false);
   return added;
 }
@@ -275,13 +311,13 @@ function tryParseAndReport() {
 function buildDatasetObject(datasetName, seriesList) {
   const series = seriesList.map(s => ({
     name: s.name,
-    type: s.type || 'spline', // stored UI type (can be 'column-stacked')
+    type: s.type || 'spline',
     data: s.data
   }));
-  return { id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name: datasetName, savedAt: Date.now(), series };
+  return { id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name: datasetName, savedAt: Date.now(), updatedAt: Date.now(), series };
 }
 
-/* ---- Add / Replace (save as ONE DATASET) ---- */
+/* ---- Add / Replace (save as ONE DATASET and set ACTIVE) ---- */
 el('btnAdd').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
@@ -290,7 +326,10 @@ el('btnAdd').addEventListener('click', () => {
     for (const s of toRender) addSeriesToChart(s.name, s.data, s.type);
     applyGlobalStackingFromCurrentSeries();
     chart.redraw();
-    upsertDataset(buildDatasetObject(datasetName, toRender));
+
+    const ds = buildDatasetObject(datasetName, toRender);
+    upsertDataset(ds);
+    setActiveId(ds.id);                    // <-- set active
     el('chartStatus').textContent = `Added ${toRender.length} series; saved dataset "${datasetName}".`;
     refreshSeriesControls();
   } catch {}
@@ -302,14 +341,17 @@ el('btnReplace').addEventListener('click', () => {
     const { datasetName } = defaults();
     const toRender = parsed.map(s => ({ ...s, type: s.type || 'spline' }));
     replaceChartWithSeries(toRender);
-    upsertDataset(buildDatasetObject(datasetName, toRender));
+
+    const ds = buildDatasetObject(datasetName, toRender);
+    upsertDataset(ds);
+    setActiveId(ds.id);                    // <-- set active
     el('chartStatus').textContent = `Replaced with ${toRender.length} series; saved dataset "${datasetName}".`;
   } catch {}
 });
 
 el('btnClearInput').addEventListener('click', () => { el('jsonInput').value = ''; el('inputStatus').textContent = ''; });
 
-/* ---------------------- Per‑series controls ---------------------- */
+/* ---------------------- Per‑series controls (live persist) ---------------------- */
 const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
 
 function refreshSeriesControls() {
@@ -344,14 +386,21 @@ function refreshSeriesControls() {
       applyGlobalStackingFromCurrentSeries();
       chart.redraw();
       el('chartStatus').textContent = `Changed "${s.name}" to type "${chosen}" on ${yAxisIdx === 0 ? 'left' : 'right'} Y‑axis.`;
+
+      // ---- LIVE PERSIST: write back to active dataset
+      saveActiveFromChart();
     });
 
     const btnRemove = document.createElement('button');
     btnRemove.textContent = 'Remove';
     btnRemove.addEventListener('click', () => {
-      s.remove();
+      s.remove(false);
+      chart.redraw();
       refreshSeriesControls();
       applyGlobalStackingFromCurrentSeries();
+
+      // ---- LIVE PERSIST after removal
+      saveActiveFromChart();
     });
 
     row.append(nameEl, sel, btnRemove);
@@ -363,7 +412,8 @@ function refreshSeriesControls() {
 function renderSavedList() {
   const container = document.getElementById('savedList');
   const store = loadStore();
-  const ids = Object.keys(store).sort((a,b)=>store[b].savedAt - store[a].savedAt);
+  const active = getActiveId();
+  const ids = Object.keys(store).sort((a,b)=> (store[b].updatedAt ?? store[b].savedAt) - (store[a].updatedAt ?? store[a].savedAt));
   if (!ids.length) { container.innerHTML = 'No saved datasets yet.'; return; }
 
   const frag = document.createDocumentFragment();
@@ -373,19 +423,23 @@ function renderSavedList() {
     row.className = 'saved';
 
     const info = document.createElement('div');
-    const when = new Date(ds.savedAt).toLocaleString();
+    const when = new Date(ds.updatedAt ?? ds.savedAt).toLocaleString();
     const seriesCount = ds.series?.length ?? 0;
-    info.innerHTML = `<strong>${ds.name}</strong> <span class="muted">— ${seriesCount} series • ${when}</span>`;
+    const activeBadge = (id === active) ? '<span class="active-badge">active</span>' : '';
+    info.innerHTML = `<strong>${ds.name}</strong> ${activeBadge} <span class="muted">— ${seriesCount} series • ${when}</span>`;
 
     const btnLoad = document.createElement('button');
     btnLoad.textContent = 'Load';
-    btnLoad.title = 'Add this dataset to the chart';
+    btnLoad.title = 'Make this the active dataset and add to the chart';
     btnLoad.addEventListener('click', () => {
       ds.series.forEach(sdef => addSeriesToChart(sdef.name, sdef.data, sdef.type || 'spline'));
       applyGlobalStackingFromCurrentSeries();
       chart.redraw();
       refreshSeriesControls();
+      setActiveId(id);                // <-- make active
       el('chartStatus').textContent = `Loaded dataset "${ds.name}" (${seriesCount} series).`;
+      // Align storage with current chart immediately (in case Highcharts mutated order/options)
+      saveActiveFromChart();
     });
 
     const btnDel = document.createElement('button');
@@ -431,12 +485,16 @@ document.getElementById('btnLoadAllSaved').addEventListener('click', () => {
   applyGlobalStackingFromCurrentSeries();
   chart.redraw();
   refreshSeriesControls();
+  // set active to last loaded dataset for clarity
+  setActiveId(ids[ids.length - 1]);
+  saveActiveFromChart();
   document.getElementById('chartStatus').textContent = `Loaded ${ids.length} dataset(s).`;
 });
 
 document.getElementById('btnClearAll').addEventListener('click', () => {
   if (!confirm('Delete ALL saved datasets in this browser?')) return;
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(ACTIVE_KEY);
   renderSavedList();
 });
 </script>
