@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Time Series Viewer (Highcharts Stock)</title>
+<title>Time Series Viewer (Highcharts Stock) — Multi-series</title>
 
 <!-- Highcharts Stock (CDN) -->
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
@@ -23,7 +23,7 @@
   fieldset legend { padding: 0 6px; color: #555; }
   label { display: block; margin: 6px 0 4px; font-weight: 600; }
   input[type="text"], textarea, select { width: 100%; box-sizing: border-box; padding: 8px; font-family: inherit; }
-  textarea { min-height: 140px; }
+  textarea { min-height: 160px; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   button { padding: 8px 12px; cursor: pointer; }
   .hint { color: #666; font-size: 0.9em; }
@@ -34,12 +34,13 @@
   .muted { color: #777; }
   .ok { color: #0a7; }
   .err { color: #c33; }
+  code.block { display:block; white-space:pre-wrap; background:#f7f7f7; padding:8px; border-radius:6px; border:1px solid #eee;}
 </style>
 </head>
 <body>
 <header>
-  <h1>Time Series Viewer — Highcharts Stock</h1>
-  <div class="hint">Paste or upload JSON, render the chart, auto-save to localStorage, and reload anytime.</div>
+  <h1>Time Series Viewer — Highcharts Stock (Multi-series)</h1>
+  <div class="hint">Upload or paste JSON (single or multiple series), render, auto-save, and reload.</div>
 </header>
 
 <main>
@@ -47,8 +48,8 @@
     <fieldset>
       <legend>Input</legend>
 
-      <label for="seriesName">Series name</label>
-      <input id="seriesName" type="text" placeholder="e.g., CPU Load / Sales / My Series" />
+      <label for="seriesName">Default series name (used only if input has no names)</label>
+      <input id="seriesName" type="text" placeholder="e.g., My Series (used when unnamed)" />
 
       <div class="inline">
         <div>
@@ -59,13 +60,28 @@
       </div>
 
       <label for="jsonInput">JSON</label>
-      <textarea id="jsonInput" placeholder='Example:
+      <textarea id="jsonInput" placeholder='Examples:
+
+// 1) Multi-series (map)
+{
+  "Sales": [[1704067200000,100],[1706745600000,120]],
+  "Cost":  [[1704067200000,80],[1706745600000,90]]
+}
+
+// 2) Multi-series (array)
+[
+  { "name":"Sales", "data":[[1704067200000,100],[1706745600000,120]] },
+  { "name":"Cost",  "data":[[1704067200000,80],[1706745600000,90]] }
+]
+
+// 3) Single series (pairs)
+[[1704067200000,100],[1706745600000,120]]
+
+// 4) Single series (objects)
 [
   {"timestamp":"2024-01-01T00:00:00Z","value":100},
-  {"timestamp":"2024-01-01T01:00:00Z","value":120}
+  {"timestamp":"2024-02-01T00:00:00Z","value":120}
 ]
-Or:
-[[1704067200000,100],[1704070800000,120]]
 '></textarea>
 
       <div class="actions">
@@ -75,11 +91,16 @@ Or:
       </div>
 
       <div id="inputStatus" class="hint"></div>
-      <div class="hint">Accepted formats:
-        <ul>
-          <li><code>[{ "timestamp": ISO8601 | epoch_ms, "value": number }]</code></li>
-          <li><code>[[timestamp, value], ...]</code> (Highcharts format)</li>
-        </ul>
+      <div class="hint">
+        <details>
+          <summary>Accepted formats (click)</summary>
+          <code class="block">
+Map:   { "Name A": [[ts,val],...], "Name B": [[ts,val],...] }
+Array: [ { "name":"Name A", "data":[[ts,val],...] }, ... ]
+Pairs: [[ts,val], ...]
+Objs:  [ {"timestamp": ISO8601|epoch_ms, "value": number}, ... ]
+          </code>
+        </details>
       </div>
     </fieldset>
 
@@ -87,7 +108,7 @@ Or:
       <legend>Chart</legend>
 
       <div class="inline" style="margin-bottom:8px">
-        <label for="seriesType">Series type</label>
+        <label for="seriesType">Series type for new series</label>
         <select id="seriesType">
           <option value="line">line</option>
           <option value="spline">spline</option>
@@ -111,6 +132,7 @@ Or:
     <div class="actions">
       <button id="btnExportAll">Export all (JSON)</button>
       <button id="btnImportAll">Import all (JSON)</button>
+      <button id="btnLoadAllSaved">Load all saved</button>
       <button id="btnClearAll">Delete all</button>
       <input id="importAllInput" type="file" accept=".json" style="display:none" />
     </div>
@@ -120,7 +142,7 @@ Or:
 
 <script>
 /* ---------------------- Storage helpers ---------------------- */
-const STORAGE_KEY = 'ts_series_map_v1'; // { name: {name, data:[[ts,value],...], type?}, ... }
+const STORAGE_KEY = 'ts_series_map_v2'; // { name: {name, data:[[ts,value],...], type?, savedAt }, ... }
 
 function loadStore() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
@@ -152,15 +174,56 @@ function toMillis(ts) {
   throw new Error('Unrecognized timestamp: ' + ts);
 }
 
-function parseSeries(jsonText) {
-  const obj = JSON.parse(jsonText);
-  if (!Array.isArray(obj)) throw new Error('JSON root must be an array');
-  // Accept [[t,v], ...] OR [{timestamp,value}, ...]
-  if (Array.isArray(obj[0])) {
-    return obj.map(pair => [toMillis(pair[0]), Number(pair[1])]);
+// Normalize data array into [[ts,val], ...]
+function normalizeDataArray(arr) {
+  if (!Array.isArray(arr)) throw new Error('Series data must be an array');
+  if (!arr.length) return [];
+  if (Array.isArray(arr[0])) {
+    // [[t,v], ...]
+    return arr.map(p => [toMillis(p[0]), Number(p[1])]);
   } else {
-    return obj.map(p => [toMillis(p.timestamp ?? p.time ?? p.t), Number(p.value ?? p.v)]);
+    // [{timestamp,value}, ...]
+    return arr.map(p => [toMillis(p.timestamp ?? p.time ?? p.t), Number(p.value ?? p.v)]);
   }
+}
+
+/**
+ * parseInput(jsonText) -> [{ name, data, type? }, ...]
+ * Supports:
+ * 1) Map:   { "A": [[ts,val],...], "B": [[ts,val],...] }
+ * 2) Array: [ { name:"A", data:[[ts,val],...] }, ... ]
+ * 3) Single: [[ts,val], ...]  or  [{timestamp,value}, ...]
+ */
+function parseInput(jsonText, defaultName) {
+  const obj = JSON.parse(jsonText);
+
+  // Map of name -> data
+  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+    const out = [];
+    for (const [name, data] of Object.entries(obj)) {
+      out.push({ name, data: normalizeDataArray(data) });
+    }
+    if (!out.length) throw new Error('Empty object');
+    return out;
+  }
+
+  // Array
+  if (Array.isArray(obj)) {
+    // Array of series objects?
+    if (obj.length && typeof obj[0] === 'object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])) {
+      return obj.map((s, i) => {
+        const name = s.name ?? `${defaultName || 'series'} ${i+1}`;
+        const data = normalizeDataArray(s.data ?? s.values ?? s.series ?? []);
+        return { name, data };
+      });
+    }
+    // Single series data array
+    const data = normalizeDataArray(obj);
+    const name = defaultName || ('series ' + new Date().toISOString().replace('T',' ').replace('Z',''));
+    return [{ name, data }];
+  }
+
+  throw new Error('Unsupported JSON format');
 }
 
 /* ---------------------- Chart ---------------------- */
@@ -169,16 +232,18 @@ let chart = Highcharts.stockChart('chart', {
   title: { text: 'Time Series' },
   legend: { enabled: true },
   credits: { enabled: false },
-  series: [] // start empty
+  series: []
 });
 
 function addSeriesToChart(name, data, type) {
   const s = chart.addSeries({ name, data, type: type || document.getElementById('seriesType').value });
   return s;
 }
-function replaceChartWith(name, data, type) {
+function replaceChartWithMultiple(seriesList, typeForNew) {
   while (chart.series.length) chart.series[0].remove(false);
-  addSeriesToChart(name, data, type);
+  for (const s of seriesList) {
+    addSeriesToChart(s.name, s.data, s.type || typeForNew);
+  }
   chart.redraw();
 }
 
@@ -192,12 +257,9 @@ el('fileInput').addEventListener('change', async (e) => {
   el('jsonInput').value = text;
 });
 
-function currentName() {
+function currentDefaultName() {
   const raw = el('seriesName').value.trim();
-  if (raw) return raw;
-  // default name
-  const dt = new Date().toISOString().replace('T',' ').replace('Z','');
-  return 'series ' + dt;
+  return raw || 'series';
 }
 
 function tryParseAndReport() {
@@ -205,13 +267,21 @@ function tryParseAndReport() {
   status.textContent = '';
   status.className = 'hint';
   try {
-    const data = parseSeries(el('jsonInput').value);
-    const n = data.length;
-    const tMin = new Date(data[0][0]).toISOString();
-    const tMax = new Date(data[n-1][0]).toISOString();
-    status.textContent = `Parsed ${n} points [${tMin} … ${tMax}]`;
+    const parsed = parseInput(el('jsonInput').value, currentDefaultName());
+    // Summarize
+    let points = 0, tMin = Infinity, tMax = -Infinity;
+    for (const s of parsed) {
+      if (!s.data.length) continue;
+      points += s.data.length;
+      tMin = Math.min(tMin, s.data[0][0]);
+      tMax = Math.max(tMax, s.data[s.data.length-1][0]);
+    }
+    const span = (isFinite(tMin) && isFinite(tMax))
+      ? `[${new Date(tMin).toISOString()} … ${new Date(tMax).toISOString()}]`
+      : '';
+    status.textContent = `Parsed ${parsed.length} series, ${points} points ${span}`;
     status.classList.add('ok');
-    return data;
+    return parsed;
   } catch (err) {
     status.textContent = err.message;
     status.classList.add('err');
@@ -221,24 +291,24 @@ function tryParseAndReport() {
 
 el('btnAdd').addEventListener('click', () => {
   try {
-    const data = tryParseAndReport();
-    const name = currentName();
+    const parsed = tryParseAndReport();
     const type = el('seriesType').value;
-    addSeriesToChart(name, data, type);
-    upsertSeries(name, data, type); // auto-save
+    for (const s of parsed) {
+      addSeriesToChart(s.name, s.data, s.type || type);
+      upsertSeries(s.name, s.data, s.type || type); // auto-save each
+    }
     chart.redraw();
-    el('chartStatus').textContent = `Added "${name}" (${data.length} points).`;
+    el('chartStatus').textContent = `Added ${parsed.length} series.`;
   } catch {}
 });
 
 el('btnReplace').addEventListener('click', () => {
   try {
-    const data = tryParseAndReport();
-    const name = currentName();
+    const parsed = tryParseAndReport();
     const type = el('seriesType').value;
-    replaceChartWith(name, data, type);
-    upsertSeries(name, data, type); // auto-save
-    el('chartStatus').textContent = `Replaced with "${name}".`;
+    replaceChartWithMultiple(parsed, type);
+    for (const s of parsed) upsertSeries(s.name, s.data, s.type || type);
+    el('chartStatus').textContent = `Replaced with ${parsed.length} series.`;
   } catch {}
 });
 
@@ -327,19 +397,35 @@ el('importAllInput').addEventListener('change', async (e) => {
   }
 });
 
+el('btnLoadAllSaved').addEventListener('click', () => {
+  const store = loadStore();
+  const names = Object.keys(store);
+  if (!names.length) return alert('No saved series.');
+  for (const n of names) {
+    const s = store[n];
+    addSeriesToChart(s.name, s.data, s.type || 'line');
+  }
+  chart.redraw();
+  el('chartStatus').textContent = `Loaded ${names.length} saved series.`;
+});
+
 el('btnClearAll').addEventListener('click', () => {
   if (!confirm('Delete ALL saved series in this browser?')) return;
   localStorage.removeItem(STORAGE_KEY);
   renderSavedList();
 });
 
-/* ---------------------- Convenience: sample data ---------------------- */
+/* ---------------------- Convenience: seed example if empty ---------------------- */
 (function seedExampleIfEmpty(){
   const store = loadStore();
   if (Object.keys(store).length) return;
   const start = Date.UTC(2024,0,1,0,0,0); // Jan 1, 2024
-  const data = Array.from({length: 48}, (_,i)=>[start + i*3600e3, 100 + i*2]); // 48 hours
-  upsertSeries('Sample Series', data, 'line');
+  const mk = (name, mult) => {
+    const data = Array.from({length: 24}, (_,i)=>[start + i*30*24*3600e3, 100 + Math.round((Math.sin(i/2)+Math.random()-0.5)*20*mult)]);
+    upsertSeries(name, data, 'line');
+  };
+  mk('Sample A', 1);
+  mk('Sample B', 1.2);
 })();
 </script>
 </body>
