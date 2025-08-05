@@ -3,404 +3,237 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Time Series Viewer — Datasets, Dual Axes, Live Persist</title>
+<title>TS Viewer</title>
 
-<!-- Highcharts Stock (CDN) -->
+<!-- Highcharts Stock -->
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
-<script src="https://code.highcharts.com/stock/modules/data.js"></script>
-<script src="https://code.highcharts.com/modules/exporting.js"></script>
 
 <style>
-  :root { --pad: 10px; --gap: 12px; }
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; }
-  header { padding: var(--pad) calc(var(--pad)*2); background: #111; color: #fff; }
-  main { padding: var(--pad) calc(var(--pad)*2); display: grid; gap: var(--gap); }
-  .row { display: grid; grid-template-columns: 1fr; gap: var(--gap); }
-  @media (min-width: 980px) { .row { grid-template-columns: 1.1fr 2fr; align-items: start; } }
-  fieldset { border: 1px solid #ccc; padding: var(--pad); border-radius: 6px; }
-  fieldset legend { padding: 0 6px; color: #555; }
-  label { display: block; margin: 6px 0 4px; font-weight: 600; }
-  input[type="text"], textarea, select { width: 100%; box-sizing: border-box; padding: 8px; font-family: inherit; }
-  textarea { min-height: 160px; }
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  :root { --gap: 10px; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  /* Sticky chart band at top */
+  #chartWrap {
+    position: sticky; top: 0; z-index: 10;
+    background: #fff; /* avoids transparency artifacts while sticky */
+    border-bottom: 1px solid #eee;
+  }
+  #chart { width: 100%; height: 62vh; min-height: 320px; }
+  /* Controls under the chart */
+  main { padding: 12px; display: grid; gap: var(--gap); }
+  textarea, input[type="text"], select { width: 100%; padding: 8px; }
+  textarea { min-height: 140px; resize: vertical; }
+  .row { display: grid; gap: var(--gap); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   button { padding: 8px 12px; cursor: pointer; }
-  .hint { color: #666; font-size: 0.9em; }
-  .muted { color: #777; }
-  .ok { color: #0a7; }
-  .err { color: #c33; }
-  #chart { height: 520px; min-height: 320px; border: 1px solid #ddd; border-radius: 6px; }
   .series-controls { display: grid; gap: 8px; }
-  .series-row { display: grid; grid-template-columns: 1fr 170px auto; gap: 8px; align-items: center; }
-  .series-row select { width: 100%; }
-  .saved { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; }
-  .active-badge { font-size: .85em; padding: 2px 6px; border: 1px solid #0a7; color:#0a7; border-radius: 4px; margin-left: 6px;}
-  code.block { display:block; white-space:pre-wrap; background:#f7f7f7; padding:8px; border-radius:6px; border:1px solid #eee;}
+  .series-row { display: grid; grid-template-columns: 1fr 160px auto; gap: 8px; align-items: center; }
+  .muted { color: #666; }
+  details > summary { cursor: pointer; user-select: none; padding: 6px 0; }
 </style>
 </head>
 <body>
-<header>
-  <h1>Time Series Viewer — Highcharts Stock</h1>
-  <div class="hint">Shared tooltip. Columns on left axis, others on right. Per‑series types. Datasets auto‑saved to localStorage.</div>
-</header>
+
+<div id="chartWrap">
+  <div id="chart"></div>
+</div>
 
 <main>
-  <div class="row">
-    <fieldset>
-      <legend>Input</legend>
-
-      <label for="datasetName">Dataset name (used when saving)</label>
-      <input id="datasetName" type="text" placeholder="e.g., KPI 2023–2024" />
-
-      <label for="defaultSeriesName">Default series name (only if the input provides none)</label>
-      <input id="defaultSeriesName" type="text" placeholder="e.g., My Series" />
-
-      <div>
-        <label for="fileInput">Upload JSON file</label>
-        <input id="fileInput" type="file" accept=".json,.txt,application/json" />
-      </div>
-
-      <label for="jsonInput">JSON</label>
-      <textarea id="jsonInput" placeholder='Examples:
-
-// Multi-series (map) — saved as one dataset
+  <section class="row" aria-label="Input">
+    <input id="datasetName" type="text" placeholder="Dataset name" />
+    <input id="defaultSeriesName" type="text" placeholder="Default series name (if missing)" />
+    <input id="fileInput" type="file" accept=".json,.txt,application/json" />
+    <textarea id="jsonInput" placeholder='JSON here (map or array of series):
 {
-  "Sales": [[1704067200000,100],[1706745600000,120]],
-  "Cost":  [[1704067200000,80],[1706745600000,90]]
+  "http-2xx": [[ts,val],...],
+  "http-3xx": [[ts,val],...]
 }
-
-// Multi-series (array) — saved as one dataset
+or
 [
-  { "name":"Sales", "data":[[1704067200000,100],[1706745600000,120]] },
-  { "name":"Cost",  "data":[[1704067200000,80],[1706745600000,90]] }
-]
-
-// Single series — saved as a 1-series dataset
-[
-  {"timestamp":"2024-01-01T00:00:00Z","value":100},
-  {"timestamp":"2024-02-01T00:00:00Z","value":120}
-]
-'></textarea>
-
-      <div class="actions">
-        <button id="btnAdd">Add to chart</button>
-        <button id="btnReplace">Replace chart</button>
-        <button id="btnClearInput" title="Clear text area">Clear</button>
-      </div>
-
-      <div id="inputStatus" class="hint"></div>
-      <div class="hint">
-        <details>
-          <summary>Accepted formats (click)</summary>
-          <code class="block">
-Map:   { "Name A": [[ts,val],...], "Name B": [[ts,val],...] }
-Array: [ { "name":"Name A", "data":[[ts,val],...] }, ... ]
-Pairs: [[ts,val], ...]
-Objs:  [ {"timestamp": ISO8601|epoch_ms, "value": number}, ... ]
-          </code>
-        </details>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Chart</legend>
-      <div id="chart"></div>
-      <div id="chartStatus" class="hint" style="margin-top:8px;"></div>
-
-      <hr />
-      <h3>Per‑series type</h3>
-      <div class="hint">
-        <b>Axes rule:</b> <code>column</code> &amp; <code>column-stacked</code> ➜ left Y‑axis; others ➜ right Y‑axis.
-        Type changes are saved to <code>localStorage</code> instantly.
-      </div>
-      <div id="seriesControls" class="series-controls"></div>
-    </fieldset>
-  </div>
-
-  <fieldset>
-    <legend>Saved datasets (localStorage)</legend>
+  {"name":"http-2xx","data":[[ts,val],...]},
+  {"name":"http-3xx","data":[[ts,val],...]}
+]'></textarea>
     <div class="actions">
-      <button id="btnExportAll">Export all datasets (JSON)</button>
-      <button id="btnImportAll">Import datasets (JSON)</button>
-      <button id="btnLoadAllSaved">Load all datasets</button>
+      <button id="btnAdd">Add to chart</button>
+      <button id="btnReplace">Replace chart</button>
+      <button id="btnClearInput">Clear</button>
+    </div>
+    <div id="status" class="muted"></div>
+  </section>
+
+  <section aria-label="Per-series controls">
+    <h3 style="margin:6px 0;">Series</h3>
+    <div id="seriesControls" class="series-controls"></div>
+  </section>
+
+  <details>
+    <summary>Saved datasets</summary>
+    <div class="actions" style="margin:8px 0;">
+      <button id="btnExportAll">Export all</button>
+      <button id="btnImportAll">Import</button>
+      <button id="btnLoadAllSaved">Load all</button>
       <button id="btnClearAll">Delete all</button>
       <input id="importAllInput" type="file" accept=".json" style="display:none" />
     </div>
-    <div id="savedList" class="hint">No saved datasets yet.</div>
-  </fieldset>
+    <div id="savedList" class="muted">No saved datasets yet.</div>
+  </details>
 </main>
 
 <script>
-/* ---------------------- Storage (DATASETS) ---------------------- */
-/**
- * STORAGE_KEY = 'ts_datasets_v4'
- * ACTIVE_KEY  = 'ts_active_dataset_id'
- * {
- *   "<datasetId>": {
- *     id, name, savedAt, updatedAt,
- *     series: [{ name, type, data:[[ts,val],...] }, ...] // type can be 'column-stacked'
- *   }
- * }
- */
-const STORAGE_KEY = 'ts_datasets_v4';
+/* ================== Storage & Active dataset ================== */
+const STORAGE_KEY = 'ts_datasets_v5';
 const ACTIVE_KEY  = 'ts_active_dataset_id';
+function loadStore(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch { return {}; } }
+function saveStore(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function getActiveId(){ return localStorage.getItem(ACTIVE_KEY) || null; }
+function setActiveId(id){ localStorage.setItem(ACTIVE_KEY, id); renderSavedList(); }
+function upsertDataset(ds){ const s=loadStore(); ds.updatedAt=Date.now(); s[ds.id]=ds; saveStore(s); if(!getActiveId()) setActiveId(ds.id); renderSavedList(); }
+function deleteDataset(id){ const s=loadStore(); delete s[id]; saveStore(s); if(getActiveId()===id) localStorage.removeItem(ACTIVE_KEY); renderSavedList(); }
+function patchActiveDataset(mut){ const s=loadStore(); const id=getActiveId(); if(!id||!s[id]) return; const ds=s[id]; mut(ds); ds.updatedAt=Date.now(); s[id]=ds; saveStore(s); renderSavedList(); }
 
-function loadStore() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; } }
-function saveStore(store) { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
-function getActiveId() { return localStorage.getItem(ACTIVE_KEY) || null; }
-function setActiveId(id) { localStorage.setItem(ACTIVE_KEY, id); renderSavedList(); }
-
-function upsertDataset(dataset) {
-  const s = loadStore();
-  dataset.updatedAt = Date.now();
-  s[dataset.id] = dataset;
-  saveStore(s);
-  if (!getActiveId()) setActiveId(dataset.id);
-  renderSavedList();
+/* ================== Parsing helpers ================== */
+function toMillis(ts){ if(typeof ts==='number') return ts; const n=Number(ts); if(!Number.isNaN(n)&&n>1e10) return n; const d=Date.parse(ts); if(!Number.isNaN(d)) return d; throw new Error('Bad timestamp: '+ts); }
+function normalizeDataArray(arr){
+  if(!Array.isArray(arr)) throw new Error('Series data must be an array');
+  if(!arr.length) return [];
+  if(Array.isArray(arr[0])) return arr.map(p=>[toMillis(p[0]), Number(p[1])]);
+  return arr.map(p=>[toMillis(p.timestamp??p.time??p.t), Number(p.value??p.v)]);
 }
-function patchActiveDataset(mutatorFn) {
-  const s = loadStore();
-  const id = getActiveId();
-  if (!id || !s[id]) return; // nothing active
-  const ds = s[id];
-  mutatorFn(ds);
-  ds.updatedAt = Date.now();
-  s[id] = ds;
-  saveStore(s);
-  renderSavedList();
-}
-function deleteDataset(id) {
-  const s = loadStore();
-  delete s[id];
-  saveStore(s);
-  if (getActiveId() === id) localStorage.removeItem(ACTIVE_KEY);
-  renderSavedList();
-}
-
-/* Snapshot current chart -> dataset.series[] */
-function snapshotChartSeries() {
-  return chart.series.map(ser => ({
-    name: ser.name,
-    type: (ser.userOptions && ser.userOptions._uiType) ? ser.userOptions._uiType : ser.type,
-    data: ser.options.data || []
-  }));
-}
-/* Persist current chart into active dataset */
-function saveActiveFromChart() {
-  const id = getActiveId();
-  if (!id) return;
-  patchActiveDataset(ds => { ds.series = snapshotChartSeries(); });
-}
-
-/* ---------------------- Parsing ---------------------- */
-function toMillis(ts) {
-  if (typeof ts === 'number') return ts;
-  const n = Number(ts); if (!Number.isNaN(n) && n > 1e10) return n;
-  const d = Date.parse(ts); if (!Number.isNaN(d)) return d;
-  throw new Error('Unrecognized timestamp: ' + ts);
-}
-function normalizeDataArray(arr) {
-  if (!Array.isArray(arr)) throw new Error('Series data must be an array');
-  if (!arr.length) return [];
-  if (Array.isArray(arr[0])) return arr.map(p => [toMillis(p[0]), Number(p[1])]);
-  return arr.map(p => [toMillis(p.timestamp ?? p.time ?? p.t), Number(p.value ?? p.v)]);
-}
-function parseInput(jsonText, defaultSeriesName) {
-  const obj = JSON.parse(jsonText);
-  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-    const out = [];
-    for (const [name, data] of Object.entries(obj)) out.push({ name, data: normalizeDataArray(data) });
-    if (!out.length) throw new Error('Empty object');
-    return out;
+function parseInput(text, defaultName){
+  const obj = JSON.parse(text);
+  if(obj && typeof obj==='object' && !Array.isArray(obj)){
+    const out=[]; for(const [name,data] of Object.entries(obj)) out.push({ name, data: normalizeDataArray(data) }); return out;
   }
-  if (Array.isArray(obj)) {
-    if (obj.length && typeof obj[0] === 'object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])) {
-      return obj.map((s,i)=>({ name: s.name ?? `${defaultSeriesName||'series'} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
+  if(Array.isArray(obj)){
+    if(obj.length && typeof obj[0]==='object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])){
+      return obj.map((s,i)=>({ name: s.name ?? `${defaultName||'series'} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
     }
-    return [{ name: defaultSeriesName || ('series ' + new Date().toISOString().replace('T',' ').replace('Z','')), data: normalizeDataArray(obj) }];
+    return [{ name: defaultName || ('series '+new Date().toISOString()), data: normalizeDataArray(obj) }];
   }
-  throw new Error('Unsupported JSON format');
+  throw new Error('Unsupported JSON');
 }
 
-/* ---------------------- Axis routing & stacking ---------------------- */
-function yAxisIndexForType(uiType) {
-  return (uiType === 'column' || uiType === 'column-stacked') ? 0 : 1; // 0=left, 1=right
-}
-function normalizeType(t) {
-  if (t === 'column-stacked') return { actualType: 'column', stacked: true };
-  const safe = (t || 'spline');
-  return { actualType: safe, stacked: false };
-}
-function applyGlobalStackingFromCurrentSeries() {
-  const anyStacked = chart.series.some(s => s.userOptions && (s.userOptions._uiType === 'column-stacked'));
-  chart.update({ plotOptions: { column: { stacking: anyStacked ? 'normal' : null } } }, false);
-  chart.redraw();
-}
+/* ================== Axis routing & stacking ================== */
+function yAxisIndexForType(uiType){ return (uiType==='column'||uiType==='column-stacked') ? 0 : 1; }
+function normalizeType(t){ if(t==='column-stacked') return { actualType:'column', stacked:true }; return { actualType:(t||'spline'), stacked:false }; }
+function applyGlobalStacking(){ const any = chart.series.some(s=>s.userOptions && s.userOptions._uiType==='column-stacked'); chart.update({ plotOptions:{ column:{ stacking: any?'normal':null } } }, false); chart.redraw(); }
 
-/* ---------------------- Chart ---------------------- */
+/* ================== Chart ================== */
 let chart = Highcharts.stockChart('chart', {
   rangeSelector: { selected: 1 },
-  title: { text: 'Time Series' },
-  legend: { enabled: true },
+  title: { text: '' }, // no title (no distraction)
   credits: { enabled: false },
-  tooltip: { shared: true, split: false }, // single tooltip for all series
+  legend: { enabled: true },
+  tooltip: { shared: true, split: false },
   yAxis: [
-    { title: { text: 'Columns' }, opposite: false, alignTicks: true }, // 0: LEFT
-    { title: { text: 'Lines/Areas' }, opposite: true, alignTicks: true } // 1: RIGHT
+    { title:{ text:'' }, opposite:false, alignTicks:true }, // 0: LEFT for columns
+    { title:{ text:'' }, opposite:true,  alignTicks:true }  // 1: RIGHT for others
   ],
-  plotOptions: {
-    series: { turboThreshold: 0 },
-    column: { stacking: null }
-  },
+  plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
   series: []
 });
 
-function addSeriesToChart(name, data, uiType) {
+function addSeriesToChart(name, data, uiType){
   const { actualType } = normalizeType(uiType);
-  const ya = yAxisIndexForType(uiType || 'spline');
-  const added = chart.addSeries({ name, data, type: actualType, yAxis: ya });
-  added.update({ _uiType: (uiType || 'spline') }, false);
-  return added;
+  const yIdx = yAxisIndexForType(uiType||'spline');
+  const s = chart.addSeries({ name, data, type: actualType, yAxis: yIdx });
+  s.update({ _uiType: (uiType||'spline') }, false);
+  return s;
 }
-function replaceChartWithSeries(seriesList) {
-  while (chart.series.length) chart.series[0].remove(false);
-  for (const s of seriesList) addSeriesToChart(s.name, s.data, s.type);
-  applyGlobalStackingFromCurrentSeries();
+function replaceChartWithSeries(seriesList){
+  while(chart.series.length) chart.series[0].remove(false);
+  for(const s of seriesList) addSeriesToChart(s.name, s.data, s.type);
+  applyGlobalStacking();
   chart.redraw();
   refreshSeriesControls();
 }
 
-/* ---------------------- UI wiring ---------------------- */
-const el = id => document.getElementById(id);
-
-el('fileInput').addEventListener('change', async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const text = await file.text();
-  el('jsonInput').value = text;
-});
-
-function defaults() {
-  return {
-    datasetName: (el('datasetName').value.trim() || `Dataset ${new Date().toLocaleString()}`),
-    defaultSeriesName: (el('defaultSeriesName').value.trim() || 'series')
-  };
-}
-
-function tryParseAndReport() {
-  const status = el('inputStatus');
-  status.textContent = ''; status.className = 'hint';
-  try {
-    const { defaultSeriesName } = defaults();
-    const parsed = parseInput(el('jsonInput').value, defaultSeriesName);
-    let points = 0, tMin = Infinity, tMax = -Infinity;
-    for (const s of parsed) {
-      if (!s.data.length) continue;
-      points += s.data.length; tMin = Math.min(tMin, s.data[0][0]); tMax = Math.max(tMax, s.data[s.data.length-1][0]);
-    }
-    const span = (isFinite(tMin)&&isFinite(tMax)) ? `[${new Date(tMin).toISOString()} … ${new Date(tMax).toISOString()}]` : '';
-    status.textContent = `Parsed ${parsed.length} series, ${points} points ${span}`;
-    status.classList.add('ok');
-    return parsed;
-  } catch (err) {
-    status.textContent = err.message; status.classList.add('err');
-    throw err;
-  }
-}
-
-/* Build dataset object with per-series stored UI types */
-function buildDatasetObject(datasetName, seriesList) {
-  const series = seriesList.map(s => ({
-    name: s.name,
-    type: s.type || 'spline',
-    data: s.data
+/* Snapshot chart -> dataset.series */
+function snapshotChartSeries(){
+  return chart.series.map(ser => ({
+    name: ser.name,
+    type: ser.userOptions && ser.userOptions._uiType ? ser.userOptions._uiType : ser.type,
+    data: ser.options.data || []
   }));
-  return { id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name: datasetName, savedAt: Date.now(), updatedAt: Date.now(), series };
+}
+function saveActiveFromChart(){ const id=getActiveId(); if(!id) return; patchActiveDataset(ds => { ds.series = snapshotChartSeries(); }); }
+
+/* ================== UI ================== */
+const el = id => document.getElementById(id);
+const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
+
+el('fileInput').addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; el('jsonInput').value = await f.text(); });
+
+function defaults(){ return {
+  datasetName: (el('datasetName').value.trim() || `Dataset ${new Date().toLocaleString()}`),
+  defaultSeriesName: (el('defaultSeriesName').value.trim() || 'series')
+};}
+
+function tryParseAndReport(){
+  const status = el('status'); status.textContent = '';
+  const { defaultSeriesName } = defaults();
+  const parsed = parseInput(el('jsonInput').value, defaultSeriesName);
+  const n = parsed.reduce((a,s)=>a+(s.data?.length||0),0);
+  status.textContent = `Parsed ${parsed.length} series, ${n} points.`;
+  return parsed;
 }
 
-/* ---- Add / Replace (save as ONE DATASET and set ACTIVE) ---- */
+function buildDatasetObject(name, seriesList){
+  return { id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name, savedAt: Date.now(), updatedAt: Date.now(), series: seriesList.map(s=>({ name:s.name, type:s.type||'spline', data:s.data })) };
+}
+
 el('btnAdd').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
     const { datasetName } = defaults();
-    const toRender = parsed.map(s => ({ ...s, type: s.type || 'spline' }));
-    for (const s of toRender) addSeriesToChart(s.name, s.data, s.type);
-    applyGlobalStackingFromCurrentSeries();
-    chart.redraw();
-
-    const ds = buildDatasetObject(datasetName, toRender);
-    upsertDataset(ds);
-    setActiveId(ds.id);                    // <-- set active
-    el('chartStatus').textContent = `Added ${toRender.length} series; saved dataset "${datasetName}".`;
+    const list = parsed.map(s=>({ ...s, type: s.type || 'spline' }));
+    for(const s of list) addSeriesToChart(s.name, s.data, s.type);
+    applyGlobalStacking(); chart.redraw();
+    const ds = buildDatasetObject(datasetName, list);
+    upsertDataset(ds); setActiveId(ds.id); saveActiveFromChart();
     refreshSeriesControls();
-  } catch {}
+  } catch(e){ el('status').textContent = e.message; }
 });
 
 el('btnReplace').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
     const { datasetName } = defaults();
-    const toRender = parsed.map(s => ({ ...s, type: s.type || 'spline' }));
-    replaceChartWithSeries(toRender);
-
-    const ds = buildDatasetObject(datasetName, toRender);
-    upsertDataset(ds);
-    setActiveId(ds.id);                    // <-- set active
-    el('chartStatus').textContent = `Replaced with ${toRender.length} series; saved dataset "${datasetName}".`;
-  } catch {}
+    const list = parsed.map(s=>({ ...s, type: s.type || 'spline' }));
+    replaceChartWithSeries(list);
+    const ds = buildDatasetObject(datasetName, list);
+    upsertDataset(ds); setActiveId(ds.id); saveActiveFromChart();
+  } catch(e){ el('status').textContent = e.message; }
 });
 
-el('btnClearInput').addEventListener('click', () => { el('jsonInput').value = ''; el('inputStatus').textContent = ''; });
+el('btnClearInput').addEventListener('click', ()=>{ el('jsonInput').value=''; el('status').textContent=''; });
 
-/* ---------------------- Per‑series controls (live persist) ---------------------- */
-const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
+function refreshSeriesControls(){
+  const wrap = el('seriesControls'); wrap.innerHTML = '';
+  if(!chart.series.length){ wrap.innerHTML = '<div class="muted">No series on chart.</div>'; return; }
+  chart.series.forEach((s)=>{
+    const row = document.createElement('div'); row.className='series-row';
 
-function refreshSeriesControls() {
-  const wrap = el('seriesControls');
-  wrap.innerHTML = '';
-  if (!chart.series.length) { wrap.innerHTML = '<span class="muted">No series on chart.</span>'; return; }
-
-  chart.series.forEach((s) => {
-    const row = document.createElement('div');
-    row.className = 'series-row';
-
-    const nameEl = document.createElement('div');
-    nameEl.textContent = s.name;
+    const nameEl = document.createElement('div'); nameEl.textContent = s.name;
 
     const sel = document.createElement('select');
-    TYPE_OPTIONS.forEach(t => {
-      const opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
-      sel.appendChild(opt);
-    });
-
-    const uiType = s.userOptions && s.userOptions._uiType
-      ? s.userOptions._uiType
-      : (s.type === 'column' && chart.options.plotOptions?.column?.stacking) ? 'column-stacked' : s.type;
+    for(const t of TYPE_OPTIONS){ const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); }
+    const uiType = s.userOptions && s.userOptions._uiType ? s.userOptions._uiType
+                 : (s.type==='column' && chart.options.plotOptions?.column?.stacking) ? 'column-stacked' : s.type;
     sel.value = uiType;
 
-    sel.addEventListener('change', () => {
+    sel.addEventListener('change', ()=>{
       const chosen = sel.value;
       const { actualType } = normalizeType(chosen);
       const yAxisIdx = yAxisIndexForType(chosen);
       s.update({ type: actualType, yAxis: yAxisIdx, _uiType: chosen }, false);
-      applyGlobalStackingFromCurrentSeries();
-      chart.redraw();
-      el('chartStatus').textContent = `Changed "${s.name}" to type "${chosen}" on ${yAxisIdx === 0 ? 'left' : 'right'} Y‑axis.`;
-
-      // ---- LIVE PERSIST: write back to active dataset
-      saveActiveFromChart();
+      applyGlobalStacking(); chart.redraw();
+      saveActiveFromChart(); // live persist
     });
 
-    const btnRemove = document.createElement('button');
-    btnRemove.textContent = 'Remove';
-    btnRemove.addEventListener('click', () => {
-      s.remove(false);
-      chart.redraw();
-      refreshSeriesControls();
-      applyGlobalStackingFromCurrentSeries();
-
-      // ---- LIVE PERSIST after removal
-      saveActiveFromChart();
+    const btnRemove = document.createElement('button'); btnRemove.textContent='Remove';
+    btnRemove.addEventListener('click', ()=>{
+      s.remove(false); chart.redraw(); refreshSeriesControls(); applyGlobalStacking(); saveActiveFromChart();
     });
 
     row.append(nameEl, sel, btnRemove);
@@ -408,94 +241,51 @@ function refreshSeriesControls() {
   });
 }
 
-/* ---------------------- Saved datasets list ---------------------- */
-function renderSavedList() {
+/* ================== Saved datasets (collapsed) ================== */
+function renderSavedList(){
   const container = document.getElementById('savedList');
-  const store = loadStore();
-  const active = getActiveId();
-  const ids = Object.keys(store).sort((a,b)=> (store[b].updatedAt ?? store[b].savedAt) - (store[a].updatedAt ?? store[a].savedAt));
-  if (!ids.length) { container.innerHTML = 'No saved datasets yet.'; return; }
-
+  const s = loadStore(); const active = getActiveId();
+  const ids = Object.keys(s).sort((a,b)=>(s[b].updatedAt??s[b].savedAt)-(s[a].updatedAt??s[a].savedAt));
+  if(!ids.length){ container.textContent='No saved datasets yet.'; return; }
   const frag = document.createDocumentFragment();
-  ids.forEach(id => {
-    const ds = store[id];
-    const row = document.createElement('div');
-    row.className = 'saved';
-
-    const info = document.createElement('div');
-    const when = new Date(ds.updatedAt ?? ds.savedAt).toLocaleString();
-    const seriesCount = ds.series?.length ?? 0;
-    const activeBadge = (id === active) ? '<span class="active-badge">active</span>' : '';
-    info.innerHTML = `<strong>${ds.name}</strong> ${activeBadge} <span class="muted">— ${seriesCount} series • ${when}</span>`;
-
-    const btnLoad = document.createElement('button');
-    btnLoad.textContent = 'Load';
-    btnLoad.title = 'Make this the active dataset and add to the chart';
-    btnLoad.addEventListener('click', () => {
-      ds.series.forEach(sdef => addSeriesToChart(sdef.name, sdef.data, sdef.type || 'spline'));
-      applyGlobalStackingFromCurrentSeries();
-      chart.redraw();
-      refreshSeriesControls();
-      setActiveId(id);                // <-- make active
-      el('chartStatus').textContent = `Loaded dataset "${ds.name}" (${seriesCount} series).`;
-      // Align storage with current chart immediately (in case Highcharts mutated order/options)
-      saveActiveFromChart();
+  ids.forEach(id=>{
+    const ds=s[id];
+    const div=document.createElement('div');
+    div.innerHTML = `<strong>${ds.name}</strong> <span class="muted">(${ds.series?.length||0} series)</span>` + (id===active?' <span class="muted">• active</span>':'');
+    const btnLoad=document.createElement('button'); btnLoad.textContent='Load';
+    btnLoad.addEventListener('click', ()=>{
+      ds.series.forEach(sdef=>addSeriesToChart(sdef.name, sdef.data, sdef.type||'spline'));
+      applyGlobalStacking(); chart.redraw(); refreshSeriesControls(); setActiveId(id); saveActiveFromChart();
     });
-
-    const btnDel = document.createElement('button');
-    btnDel.textContent = 'Delete';
-    btnDel.addEventListener('click', () => { if (confirm(`Delete dataset "${ds.name}"?`)) deleteDataset(id); });
-
-    row.append(info, btnLoad, btnDel);
-    frag.appendChild(row);
+    const btnDel=document.createElement('button'); btnDel.textContent='Delete';
+    btnDel.addEventListener('click', ()=>{ if(confirm(`Delete "${ds.name}"?`)) deleteDataset(id); });
+    const row=document.createElement('div'); row.className='actions'; row.append(btnLoad, btnDel);
+    div.appendChild(row); frag.appendChild(div);
   });
-  container.innerHTML = '';
-  container.appendChild(frag);
+  container.innerHTML=''; container.appendChild(frag);
 }
 renderSavedList();
 
-/* ---------------------- Export / Import all datasets ---------------------- */
-document.getElementById('btnExportAll').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(loadStore(), null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'time_series_datasets.json'; a.click();
-  URL.revokeObjectURL(a.href);
+/* Export / Import / Bulk load / Clear */
+document.getElementById('btnExportAll').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(loadStore(), null, 2)], { type:'application/json' });
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series_datasets.json'; a.click(); URL.revokeObjectURL(a.href);
 });
-
-document.getElementById('btnImportAll').addEventListener('click', () => document.getElementById('importAllInput').click());
-document.getElementById('importAllInput').addEventListener('change', async (e) => {
-  const file = e.target.files?.[0]; if (!file) return;
-  try {
-    const text = await file.text();
-    const obj = JSON.parse(text);
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('File must contain an object map of datasets');
-    saveStore(obj); renderSavedList(); alert('Imported datasets.');
-  } catch (err) { alert('Import failed: ' + err.message); }
-  finally { e.target.value = ''; }
+document.getElementById('btnImportAll').addEventListener('click', ()=>document.getElementById('importAllInput').click());
+document.getElementById('importAllInput').addEventListener('change', async (e)=>{
+  const f=e.target.files?.[0]; if(!f) return;
+  try{ const text=await f.text(); const obj=JSON.parse(text); if(!obj||typeof obj!=='object'||Array.isArray(obj)) throw new Error('File must contain an object map of datasets'); saveStore(obj); renderSavedList(); alert('Imported.'); }
+  catch(err){ alert('Import failed: '+err.message); }
+  finally{ e.target.value=''; }
 });
-
-document.getElementById('btnLoadAllSaved').addEventListener('click', () => {
-  const store = loadStore();
-  const ids = Object.keys(store);
-  if (!ids.length) return alert('No saved datasets.');
-  ids.forEach(id => {
-    const ds = store[id];
-    ds.series.forEach(sdef => addSeriesToChart(sdef.name, sdef.data, sdef.type || 'spline'));
-  });
-  applyGlobalStackingFromCurrentSeries();
-  chart.redraw();
-  refreshSeriesControls();
-  // set active to last loaded dataset for clarity
-  setActiveId(ids[ids.length - 1]);
-  saveActiveFromChart();
-  document.getElementById('chartStatus').textContent = `Loaded ${ids.length} dataset(s).`;
+document.getElementById('btnLoadAllSaved').addEventListener('click', ()=>{
+  const s=loadStore(); const ids=Object.keys(s); if(!ids.length) return alert('No saved datasets.');
+  ids.forEach(id=>{ const ds=s[id]; ds.series.forEach(sd=>addSeriesToChart(sd.name, sd.data, sd.type||'spline')); });
+  applyGlobalStacking(); chart.redraw(); refreshSeriesControls(); setActiveId(ids[ids.length-1]); saveActiveFromChart();
 });
-
-document.getElementById('btnClearAll').addEventListener('click', () => {
-  if (!confirm('Delete ALL saved datasets in this browser?')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(ACTIVE_KEY);
-  renderSavedList();
+document.getElementById('btnClearAll').addEventListener('click', ()=>{
+  if(!confirm('Delete ALL saved datasets in this browser?')) return;
+  localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(ACTIVE_KEY); renderSavedList();
 });
 </script>
 </body>
