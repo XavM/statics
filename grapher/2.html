@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time Series Viewer</title>
+<style>
+  :root{
+    --bg:#0b0c0f; --panel:#12141a; --fg:#e5e7eb; --muted:#9aa3af; --border:#2a2f3a; --accent:#7c5cff;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f7f7fb; --panel:#ffffff; --fg:#0f172a; --muted:#4b5563; --border:#e5e7eb; --accent:#6d28d9; }
+  }
+  body{margin:0; background:var(--bg); color:var(--fg); font-family:sans-serif;}
+  #chart-container{position:sticky;top:0;background:var(--bg);z-index:10;}
+  #controls{padding:1rem; background:var(--panel); border-top:1px solid var(--border);}
+  textarea,input,select,button{
+    font:inherit; padding:0.5rem; margin:0.25rem 0;
+    border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--fg);
+  }
+  button{background:var(--accent); color:#fff; border:none; cursor:pointer;}
+  .series-row{display:flex;align-items:center;gap:0.5rem;margin:0.25rem 0;}
+  .series-row select{flex:1;}
+</style>
+</head>
+<body>
+
+<div id="chart-container">
+  <div id="chart" style="width:100%;height:70vh;"></div>
+</div>
+
+<div id="controls">
+  <h3>Données</h3>
+  <input type="file" id="fileInput" accept=".json"><br>
+  <textarea id="jsonInput" placeholder="Collez votre JSON ici" style="width:100%;height:100px;"></textarea><br>
+  <button id="btnReplace">Remplacer le graphique</button>
+  <button id="btnAdd">Ajouter au graphique</button>
+  <hr>
+  <h3>Séries</h3>
+  <div id="seriesControls"></div>
+</div>
+
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script>
+/* ======== Storage Manager ======== */
+const STORAGE_KEY = 'timeseries_dataset_v2';
+function saveData(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function loadData(){ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+
+/* ======== Chart Init ======== */
+let chart = Highcharts.stockChart('chart', {
+  chart:{ backgroundColor:'var(--bg)' },
+  rangeSelector:{ enabled:false },
+  legend:{ enabled:true },
+  tooltip:{ shared:true },
+  yAxis:[
+    { title:{ text:'Left Axis' }, opposite:false },
+    { title:{ text:'Right Axis' }, opposite:true }
+  ],
+  series:[]
+});
+
+/* ======== Helpers ======== */
+function parseInput(text){
+  let obj = JSON.parse(text);
+  if(Array.isArray(obj)){
+    if(obj.length && obj[0].name && obj[0].data) return obj;
+    if(obj.length && Array.isArray(obj[0])) return [{ name:'Series 1', data:obj }];
+  }
+  if(typeof obj === 'object'){
+    return Object.entries(obj).map(([k,v])=>({ name:k, data:v }));
+  }
+  throw new Error('Format JSON non supporté');
+}
+
+function addSeriesToChart(seriesArray){
+  seriesArray.forEach(s=>{
+    const type = guessType(s.name);
+    chart.addSeries({
+      name:s.name,
+      data:s.data,
+      type:type,
+      yAxis: isColumn(type) ? 0 : 1
+    });
+  });
+  updateSeriesControls();
+  persistChart();
+}
+
+function isColumn(type){ return type==='column' || type==='column-stacked'; }
+
+function guessType(name){
+  return 'spline'; // default
+}
+
+/* ======== UI Controls ======== */
+const seriesControlsDiv = document.getElementById('seriesControls');
+function updateSeriesControls(){
+  seriesControlsDiv.innerHTML = '';
+  chart.series.forEach((s, idx)=>{
+    if(!s.name) return;
+    let row = document.createElement('div');
+    row.className = 'series-row';
+    row.innerHTML = `<span>${s.name}</span>`;
+    let sel = document.createElement('select');
+    ['spline','line','area','areaspline','column','column-stacked'].forEach(t=>{
+      let opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      if(s.userOptions.type===t) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.onchange = ()=>{
+      let type = sel.value;
+      s.update({ type:type, yAxis:isColumn(type)?0:1, stacking: type==='column-stacked'?'normal':undefined }, false);
+      chart.redraw();
+      persistChart();
+    };
+    row.appendChild(sel);
+    seriesControlsDiv.appendChild(row);
+  });
+}
+
+function persistChart(){
+  const data = chart.series.map(s=>({
+    name: s.name,
+    type: s.userOptions.type,
+    data: s.options.data
+  }));
+  saveData(data);
+}
+
+/* ======== Load saved on start ======== */
+window.addEventListener('load', ()=>{
+  const saved = loadData();
+  if(saved.length){
+    saved.forEach(s=>{
+      chart.addSeries({
+        name:s.name,
+        type:s.type || 'spline',
+        data:s.data,
+        yAxis: isColumn(s.type) ? 0 : 1,
+        stacking: s.type==='column-stacked'?'normal':undefined
+      });
+    });
+    updateSeriesControls();
+  }
+});
+
+/* ======== Buttons ======== */
+document.getElementById('btnReplace').onclick = ()=>{
+  try{
+    let arr = parseInput(document.getElementById('jsonInput').value);
+    chart.series.slice().forEach(s=>s.remove(false));
+    addSeriesToChart(arr);
+    chart.redraw();
+  }catch(e){ alert(e); }
+};
+
+document.getElementById('btnAdd').onclick = ()=>{
+  try{
+    let arr = parseInput(document.getElementById('jsonInput').value);
+    addSeriesToChart(arr);
+    chart.redraw();
+  }catch(e){ alert(e); }
+};
+
+document.getElementById('fileInput').onchange = (e)=>{
+  let file = e.target.files[0];
+  if(!file) return;
+  let reader = new FileReader();
+  reader.onload = (ev)=>{
+    document.getElementById('jsonInput').value = ev.target.result;
+  };
+  reader.readAsText(file);
+};
+</script>
+</body>
+</html>
