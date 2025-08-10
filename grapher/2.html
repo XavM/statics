@@ -20,14 +20,19 @@
     --bg:#f7f7fb; --fg:#0f172a; --panel:#ffffff; --muted:#4b5563; --border:#e7e7ef; --accent:#6d28d9;
   }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
+
   /* Chart full width, sticky */
   #chartWrap{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border)}
   #chart{width:100%;height:65vh;min-height:320px}
-  /* Open-sheet FAB */
-  .fab{position:fixed;right:16px;bottom:16px;z-index:20}
-  .fab > a{background:var(--accent) !important;color:#fff !important}
-  /* Sheet content visuals */
-  .block-title{color:var(--muted)}
+
+  /* Bouton pour ouvrir la sheet (pas un FAB rond) */
+  .controls-opener{
+    position:fixed; right:16px; bottom:16px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:24px; padding:10px 14px; cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.25);
+  }
+
+  /* Contenu dans la sheet */
   .series-row{display:grid;grid-template-columns:1fr 160px 100px;gap:8px;align-items:center}
   .muted{color:var(--muted)}
   textarea, input[type="text"], select, button{background:transparent;border:1px solid var(--border);color:var(--fg);padding:8px;border-radius:8px}
@@ -42,107 +47,106 @@
     <div id="chart"></div>
   </div>
 
-  <!-- OPEN SHEET BUTTON (FAB) -->
-  <div class="fab fab-right-bottom">
-    <a href="#" class="sheet-open" data-sheet="#controls-sheet">
-      <i class="icon f7-icons if-not-md">slider_horizontal_3</i>
-      <i class="icon material-icons if-md">tune</i>
-    </a>
-  </div>
+  <!-- OPEN SHEET (link + data-sheet) -->
+  <button class="controls-opener sheet-open" data-sheet="#controls-sheet">Contrôles</button>
 
-  <!-- SHEET MODAL: controls -->
-  <div class="sheet-modal" id="controls-sheet"
+  <!-- SHEET MODAL (proper markup) -->
+  <div id="controls-sheet"
+       class="sheet-modal sheet-modal-push"
        style="height:auto"
        data-backdrop="true"
        data-swipe-to-close="true"
+       data-push="true"
        data-breakpoints='[0.2,0.5,0.9,1]'
-       data-backdrop-breakpoint="0.2">
+       data-backdrop-breakpoint="0.2"
+       data-push-breakpoint="0.5">
     <div class="sheet-modal-inner">
-      <!-- FIRST STEP (visible at partial open) -->
-      <div class="sheet-modal-swipe-step">
-        <div class="block">
-          <div class="row">
-            <div class="col"><div class="block-title">Contrôles</div></div>
-            <div class="col text-align-right">
-              <a class="button button-outline" id="btnTheme">Thème</a>
-              <a class="button button-fill color-red sheet-close">Fermer</a>
-            </div>
-          </div>
-          <div class="block-footer muted">Swipe vers le haut pour plus d’options • Breakpoints : 20% / 50% / 90% / 100%.</div>
-        </div>
-      </div>
+      <!-- scrollable content -->
+      <div class="page-content">
 
-      <!-- REST OF CONTENT (revealed at higher breakpoints) -->
-      <div class="block">
-        <div class="block-title">Importer / Coller des données</div>
-        <div class="list no-hairlines-md">
-          <ul>
-            <li class="item-content item-input">
-              <div class="item-inner">
-                <div class="item-title item-label">Fichier JSON</div>
-                <div class="item-input-wrap">
-                  <input type="file" id="fileInput" accept="application/json,.json,.txt">
-                </div>
+        <!-- swipe-step: zone visible au breakpoint le plus bas -->
+        <div class="sheet-modal-swipe-step">
+          <div class="block">
+            <div class="row">
+              <div class="col"><b>Contrôles</b></div>
+              <div class="col text-align-right">
+                <a class="button button-outline sheet-close">Fermer</a>
               </div>
-            </li>
-            <li class="item-content item-input">
-              <div class="item-inner">
-                <div class="item-title item-label">Nom par défaut d’une série (si absent)</div>
-                <div class="item-input-wrap">
-                  <input id="defaultSeriesName" type="text" placeholder="series">
+            </div>
+            <div class="block-footer muted">Swipe vers le haut pour agrandir • Breakpoints : 20% / 50% / 90% / 100%.</div>
+          </div>
+        </div>
+
+        <!-- reste du contenu (révélé aux breakpoints supérieurs) -->
+        <div class="block">
+          <div class="block-title">Importer / Coller des données</div>
+          <div class="list no-hairlines-md">
+            <ul>
+              <li class="item-content item-input">
+                <div class="item-inner">
+                  <div class="item-title item-label">Fichier JSON</div>
+                  <div class="item-input-wrap">
+                    <input type="file" id="fileInput" accept="application/json,.json,.txt">
+                  </div>
                 </div>
-              </div>
-            </li>
-            <li class="item-content item-input">
-              <div class="item-inner">
-                <div class="item-title item-label">JSON</div>
-                <div class="item-input-wrap">
-                  <textarea id="jsonInput" placeholder='Formats:
+              </li>
+              <li class="item-content item-input">
+                <div class="item-inner">
+                  <div class="item-title item-label">Nom par défaut d’une série (si absent)</div>
+                  <div class="item-input-wrap">
+                    <input id="defaultSeriesName" type="text" placeholder="series">
+                  </div>
+                </div>
+              </li>
+              <li class="item-content item-input">
+                <div class="item-inner">
+                  <div class="item-title item-label">JSON</div>
+                  <div class="item-input-wrap">
+                    <textarea id="jsonInput" placeholder='Formats:
 - Map: { "http-2xx":[[ts,val],...], "http-5xx":[...], ... }
 - Array: [ {"name":"http-2xx","data":[[ts,val],...]}, ... ]
 - Single: [[ts,val],...]  ou  [{"timestamp":"...","value":123}, ...]'></textarea>
+                  </div>
                 </div>
-              </div>
-            </li>
-          </ul>
-        </div>
-        <div class="row padding-horizontal">
-          <a class="button button-fill" id="btnReplace">Charger (Remplace)</a>
-          <a class="button" id="btnAdd">Ajouter</a>
-          <a class="button button-outline color-red" id="btnClear">Vider</a>
-        </div>
-        <div id="status" class="padding muted"></div>
+              </li>
+            </ul>
+          </div>
+          <div class="row padding-horizontal">
+            <a class="button button-fill" id="btnReplace">Charger (Remplace)</a>
+            <a class="button" id="btnAdd">Ajouter</a>
+            <a class="button button-outline color-red" id="btnClear">Vider</a>
+          </div>
+          <div id="status" class="padding muted"></div>
 
-        <div class="block-title">Séries (type par série)</div>
-        <div id="seriesControls" class="list simple-list"></div>
+          <div class="block-title">Séries (type par série)</div>
+          <div id="seriesControls" class="list simple-list"></div>
 
-        <div class="block-title">Données (localStorage)</div>
-        <div class="row padding-horizontal">
-          <a class="button" id="btnExport">Exporter</a>
-          <a class="button" id="btnImport">Importer</a>
-          <a class="button button-outline color-red" id="btnClearAll">Tout supprimer</a>
-          <input id="importAllInput" type="file" accept="application/json" style="display:none" />
+          <div class="block-title">Données (localStorage)</div>
+          <div class="row padding-horizontal">
+            <a class="button" id="btnExport">Exporter</a>
+            <a class="button" id="btnImport">Importer</a>
+            <a class="button button-outline color-red" id="btnClearAll">Tout supprimer</a>
+            <input id="importAllInput" type="file" accept="application/json" style="display:none" />
+          </div>
+          <div class="padding muted">Les séries sont persistées dans le navigateur.</div>
         </div>
-        <div class="padding muted">Les séries et le thème sont persistés dans le navigateur.</div>
+
       </div>
     </div>
   </div>
 </div>
 
 <script>
-/* ========== Framework7 App (sheet breakpoints) ========== */
-const app = new Framework7({
-  el: '#app',
-  theme: 'auto',
-  sheet: { closeByBackdropClick: true } // defaults
+/* ========== Framework7 App ========== */
+const app = new Framework7({ el: '#app', theme: 'auto',
+  sheet: { closeByBackdropClick: true }
 });
-// helper: open sheet to a breakpoint programmatically if needed
-function openSheetAt(bp){ const sh = app.sheet.get('#controls-sheet'); if(sh) sh.setBreakpoint(bp); }
+// (facultatif) ouvrir la sheet à un breakpoint donné :
+// app.sheet.get('#controls-sheet')?.setBreakpoint(0.5);
 
-/* ========== Highcharts config ========== */
+/* ========== Highcharts Stock config ========== */
 const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
-const DATA_KEY = 'ts_data_v2';
-const THEME_KEY = 'ts_theme';
+const DATA_KEY = 'ts_data_v3';
 const $ = (id)=>document.getElementById(id);
 
 const yAxisForType = (t)=> (t==='column'||t==='column-stacked') ? 0 : 1;
@@ -170,15 +174,14 @@ function parseJson(text, defaultName='series'){
   throw new Error('Format JSON non supporté');
 }
 
-/* Demo data (only if none persisted) */
+/* Demo 7d x 1min si aucune donnée */
 function generateDemoData(){
   const now = new Date(); now.setSeconds(0,0);
   const end = new Date(now.getTime() - 60*1000);
   const points = 7*24*60;
   const start = new Date(end.getTime() - (points-1)*60*1000);
   const hourMult=[0.25,0.20,0.18,0.18,0.20,0.30,0.45,0.60,0.80,0.95,1.00,1.05,1.10,1.10,1.05,1.00,0.95,0.90,0.85,0.80,0.70,0.55,0.40,0.30];
-  const s2=[],s3=[],s5=[],srt=[];
-  const spikes=new Set();
+  const s2=[],s3=[],s5=[],srt=[]; const spikes=new Set();
   for(let d=0; d<7; d++){ const off=d*1440; const n=2+Math.floor(Math.random()*3); for(let k=0;k<n;k++) spikes.add(off+Math.floor(Math.random()*1440)); }
   for(let i=0;i<points;i++){
     const t=new Date(start.getTime()+i*60*1000); const ts=t.getTime(); let mult=hourMult[t.getHours()]; if(t.getDay()===0||t.getDay()===6) mult*=0.75;
@@ -200,9 +203,8 @@ function generateDemoData(){
 let storedData=[];
 function loadData(){ try{ storedData = JSON.parse(localStorage.getItem(DATA_KEY) || '[]'); }catch{ storedData=[]; } }
 function saveData(){ localStorage.setItem(DATA_KEY, JSON.stringify(storedData)); }
-function setTheme(t){ document.body.setAttribute('data-theme', t==='light'?'light':'dark'); localStorage.setItem(THEME_KEY, t); }
 
-/* Chart init */
+/* Chart */
 let chart;
 const GROUP_UNITS = [['minute',[1,5,10,15,30]],['hour',[1,6,12]],['day',[1,7]]];
 function buildSeriesConfig(s){
@@ -229,19 +231,19 @@ function renderChart(){
   refreshSeriesControls();
 }
 
-/* UI: series controls */
+/* UI: séries */
 function refreshSeriesControls(){
   const box = $('seriesControls'); box.innerHTML='';
   if(!storedData.length){ box.innerHTML='<div class="muted padding">Aucune série.</div>'; return; }
   storedData.forEach((s, idx)=>{
-    const row = document.createElement('div'); row.className='series-row';
-    const name = document.createElement('div'); name.textContent=s.name;
+    const row=document.createElement('div'); row.className='series-row';
+    const name=document.createElement('div'); name.textContent=s.name;
 
-    const sel = document.createElement('select');
+    const sel=document.createElement('select');
     TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; if(s.type===t) o.selected=true; sel.appendChild(o); });
     sel.addEventListener('change', ()=>{ s.type = sel.value; saveData(); renderChart(); });
 
-    const btn = document.createElement('button'); btn.textContent='Supprimer';
+    const btn=document.createElement('button'); btn.textContent='Supprimer';
     btn.addEventListener('click', ()=>{ storedData.splice(idx,1); saveData(); renderChart(); });
 
     row.append(name, sel, btn); box.appendChild(row);
@@ -293,13 +295,6 @@ $('btnClearAll').addEventListener('click', ()=>{
   });
 });
 
-/* Theme toggle inside sheet header */
-$('btnTheme').addEventListener('click', ()=>{
-  const cur = localStorage.getItem(THEME_KEY) || 'dark';
-  const next = (cur==='dark') ? 'light' : 'dark';
-  setTheme(next);
-});
-
 /* Helpers */
 const guessType = (name)=>{
   if(/^http-\dxx$/i.test(name)) return 'column-stacked';
@@ -309,10 +304,8 @@ const guessType = (name)=>{
 
 /* Boot */
 (function init(){
-  // theme
-  const t = localStorage.getItem(THEME_KEY) || 'dark'; setTheme(t);
   // data
-  loadData();
+  try{ storedData = JSON.parse(localStorage.getItem(DATA_KEY)||'[]'); }catch{ storedData=[]; }
   if(!storedData.length){ storedData = generateDemoData(); saveData(); }
   renderChart();
 })();
