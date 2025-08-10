@@ -1,280 +1,180 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Grapher — Highcharts Stock + Framework7 Sheet</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Demo Framework7 — Sheet push view + breakpoints</title>
 
-<!-- Highcharts Stock (unique lib de chart) -->
-<script src="https://code.highcharts.com/stock/highstock.js"></script>
+  <!-- Framework7 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
 
-<!-- Framework7 (bundle) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css">
-<script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
-
-
+  <style>
+    /* Juste pour l’aspect démo */
+    .demo-text {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    /* Rendre la sheet confortable et auto (requis si on utilise aussi swipeToStep) */
+    .demo-sheet {
+      height: auto; /* conseillé par la doc pour les steps */
+    }
+    /* Poignée tactile visible (handle) */
+    .swipe-handler {
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: ns-resize;
+    }
+    .swipe-handler::before {
+      content: "";
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--f7-text-muted);
+      opacity: 0.6;
+    }
+    /* Contenu de la sheet : scroll propre quand elle est grande */
+    .sheet-content {
+      padding-bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
+    }
+  </style>
 </head>
 <body>
-<div id="app"><!-- F7 root -->
-
-  <!-- CHART -->
-  <div id="chartWrap"><div id="chart"></div></div>
-
-  <!-- SHEET MODAL (ouverte par défaut au plus petit breakpoint) -->
-  <div id="controls-sheet"
-       class="sheet-modal sheet-modal-push"
-       style="height:auto"
-       data-backdrop="true"
-       data-swipe-to-close="true"
-       data-push="true"
-       data-breakpoints='[0.2,0.5,0.9,1]'
-       data-backdrop-breakpoint="0.2"
-       data-push-breakpoint="0.5">
-    <div class="sheet-modal-inner">
-      <div class="page-content">
-
-        <!-- zone visible quand la sheet est au breakpoint mini -->
-        <div class="sheet-modal-swipe-step">
-          <div class="block">
-            <div class="row">
-              <div class="col"><b>Contrôles</b></div>
-              <div class="col text-align-right"><a href="#" class="link sheet-close">Fermer</a></div>
-            </div>
-            <div class="block-footer muted">Glisse vers le haut pour agrandir (breakpoints : 20% / 50% / 90% / 100%).</div>
+  <!-- App root -->
+  <div id="app">
+    <!-- Vue principale -->
+    <div class="view view-main view-init ios-edges" data-url="/">
+      <div class="page">
+        <div class="navbar">
+          <div class="navbar-bg"></div>
+          <div class="navbar-inner">
+            <div class="title">Démo Sheet (Framework7)</div>
           </div>
         </div>
 
-        <!-- contenu complet (dévoilé aux breakpoints supérieurs) -->
-        <div class="block">
-          <div class="block-title">Importer / Coller des données</div>
-          <div class="list no-hairlines-md">
+        <div class="page-content">
+          <div class="block block-strong demo-text">
+            <p><b>Page de démonstration</b></p>
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sit amet urna at arcu semper tristique.
+              Aliquam at efficitur nunc. Vivamus mattis, libero in posuere aliquet, augue urna tempor augue, vitae dictum
+              nisl est non arcu. Cras vitae gravida eros. Praesent fermentum convallis arcu, at sollicitudin orci dapibus sed.
+            </p>
+            <p>
+              Pellentesque at sapien urna. Vestibulum accumsan, nibh non eleifend tristique, turpis dolor imperdiet dolor,
+              non cursus erat neque nec quam. Donec suscipit dui et orci feugiat viverra. Suspendisse potenti. Maecenas
+              scelerisque sollicitudin magna, vel commodo neque posuere at.
+            </p>
+            <p>
+              (La sheet est en bas, ouverte sur son plus petit breakpoint. Glisse le handle vers le haut/bas.)
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sheet Modal -->
+    <div class="sheet-modal sheet-modal-push demo-sheet" id="sheet-demo">
+      <!-- poignée pour le swipe -->
+      <div class="swipe-handler"></div>
+
+      <!-- Contenu de la sheet -->
+      <div class="sheet-modal-inner">
+        <div class="block sheet-content">
+          <p class="text-color-gray">Infos (état compact)</p>
+          <p>
+            Ceci est une <b>sheet modal</b> avec <b>breakpoints multiples</b> + <b>push view</b>.
+            Tirez vers le haut pour l’agrandir (étapes intermédiaires), vers le bas pour la replier.
+          </p>
+
+          <div class="list inset">
             <ul>
-              <li class="item-content item-input">
-                <div class="item-inner">
-                  <div class="item-title item-label">Fichier JSON</div>
-                  <div class="item-input-wrap"><input type="file" id="fileInput" accept="application/json,.json,.txt"></div>
+              <li>
+                <div class="item-content">
+                  <div class="item-inner">
+                    <div class="item-title">Item A</div>
+                    <div class="item-after">Valeur</div>
+                  </div>
                 </div>
               </li>
-              <li class="item-content item-input">
-                <div class="item-inner">
-                  <div class="item-title item-label">Nom par défaut d’une série (si absent)</div>
-                  <div class="item-input-wrap"><input id="defaultSeriesName" type="text" placeholder="series"></div>
-                </div>
-              </li>
-              <li class="item-content item-input">
-                <div class="item-inner">
-                  <div class="item-title item-label">JSON</div>
-                  <div class="item-input-wrap">
-                    <textarea id="jsonInput" placeholder='Formats:
-- Map: { "http-2xx":[[ts,val],...], "http-5xx":[...], ... }
-- Array: [ {"name":"http-2xx","data":[[ts,val],...]}, ... ]
-- Single: [[ts,val],...]  ou  [{"timestamp":"...","value":123}, ...]'></textarea>
+              <li>
+                <div class="item-content">
+                  <div class="item-inner">
+                    <div class="item-title">Item B</div>
+                    <div class="item-after">Valeur</div>
                   </div>
                 </div>
               </li>
             </ul>
           </div>
 
-          <div class="row padding-horizontal">
-            <a class="button button-fill" id="btnReplace">Charger (Remplace)</a>
-            <a class="button" id="btnAdd">Ajouter</a>
-            <a class="button button-outline color-red" id="btnClear">Vider</a>
-          </div>
-          <div id="status" class="padding muted"></div>
+          <p class="text-color-gray">Contenu additionnel (visible aux breakpoints plus hauts)</p>
+          <p>
+            Curabitur nec risus sit amet justo tristique sagittis. Integer vitae arcu non massa finibus faucibus.
+            Sed scelerisque, justo sit amet posuere elementum, augue nunc laoreet eros, sed pulvinar tortor lectus vel justo.
+          </p>
 
-          <div class="block-title">Séries (type par série)</div>
-          <div id="seriesControls" class="list simple-list"></div>
-
-          <div class="block-title">Données (localStorage)</div>
-          <div class="row padding-horizontal">
-            <a class="button" id="btnExport">Exporter</a>
-            <a class="button" id="btnImport">Importer</a>
-            <a class="button button-outline color-red" id="btnClearAll">Tout supprimer</a>
-            <input id="importAllInput" type="file" accept="application/json" style="display:none" />
-          </div>
-          <div class="padding muted">Les séries sont persistées dans le navigateur.</div>
+          <p>
+            Morbi non neque nec lorem tincidunt convallis. Quisque ut commodo nulla. Maecenas nec sem id eros volutpat
+            efficitur. Vivamus pulvinar luctus elit nec faucibus.
+          </p>
         </div>
-
       </div>
     </div>
   </div>
-</div>
 
-<script>
-/* ========= Framework7 ========= */
-const app = new Framework7({ el:'#app', theme:'auto', sheet:{ closeByBackdropClick:true } });
-const sheet = app.sheet.create({ el:'#controls-sheet' });
-// Ouvrir la sheet tout de suite au breakpoint MIN (0.2)
-sheet.open(false);            // sans animation pour éviter le “plein écran” visuel initial
-sheet.setBreakpoint(0.2);     // démarre à 20% de hauteur
-// Ensuite, quand tu montes > 0.5, l'effet push view s'active (data-push-breakpoint="0.5")
+  <!-- Framework7 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
 
-/* ========= Highcharts Stock ========= */
-const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
-const DATA_KEY = 'ts_data_v5';
-const $ = id => document.getElementById(id);
+  <script>
+    // Initialisation Framework7
+    const app = new Framework7({
+      el: '#app',
+      name: 'DemoSheet',
+      theme: 'auto',
+      // Par défaut, on évite les fermetures accidentelles
+      sheet: {
+        closeByBackdropClick: false,
+        closeByOutsideClick: false,
+      },
+    });
 
-const yAxisForType = t => (t==='column' || t==='column-stacked') ? 0 : 1;  // Y gauche pour colonnes, droite pour le reste
-const normalizeType = t => (t==='column-stacked') ? {actual:'column', stacked:true} : {actual:(t||'spline'), stacked:false};
-const anyStacked = list => list.some(s => s.type==='column-stacked');
+    // Crée l’instance de la sheet avec multi-breakpoints + push view
+    const breakpoints = [0.18, 0.45, 0.85]; // 18% (compact/toujours visible), 45% (mi-hauteur), 85% (quasi plein écran)
 
-const toMillis = ts => (typeof ts==='number') ? ts : (Number(ts)>1e10 ? Number(ts) : Date.parse(ts));
-function normalizeDataArray(arr){
-  if(!Array.isArray(arr)) throw new Error('Une série doit être un tableau');
-  if(!arr.length) return [];
-  if(Array.isArray(arr[0])) return arr.map(p=>[toMillis(p[0]), Number(p[1])]);
-  return arr.map(p=>[toMillis(p.timestamp ?? p.time ?? p.t), Number(p.value ?? p.v)]);
-}
-function parseJson(text, defaultName='series'){
-  const obj = JSON.parse(text);
-  if(obj && typeof obj==='object' && !Array.isArray(obj)){
-    return Object.entries(obj).map(([name,data])=>({ name, data: normalizeDataArray(data) }));
-  }
-  if(Array.isArray(obj)){
-    if(obj.length && typeof obj[0]==='object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])){
-      return obj.map((s,i)=>({ name: s.name ?? `${defaultName} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
-    }
-    return [{ name: defaultName, data: normalizeDataArray(obj) }];
-  }
-  throw new Error('Format JSON non supporté');
-}
+    const sheet = app.sheet.create({
+      el: '#sheet-demo',
+      // Toujours visible, pas de fermeture complète au swipe
+      swipeToClose: false,
+      closeByBackdropClick: false,
+      backdrop: false,
 
-/* Démo 7 jours x 1 min si aucune donnée */
-function generateDemoData(){
-  const now = new Date(); now.setSeconds(0,0);
-  const end = new Date(now.getTime() - 60*1000);
-  const points = 7*24*60;
-  const start = new Date(end.getTime() - (points-1)*60*1000);
-  const hourMult=[0.25,0.20,0.18,0.18,0.20,0.30,0.45,0.60,0.80,0.95,1.00,1.05,1.10,1.10,1.05,1.00,0.95,0.90,0.85,0.80,0.70,0.55,0.40,0.30];
-  const s2=[],s3=[],s5=[],srt=[]; const spikes=new Set();
-  for(let d=0; d<7; d++){ const off=d*1440; const n=2+Math.floor(Math.random()*3); for(let k=0;k<n;k++) spikes.add(off+Math.floor(Math.random()*1440)); }
-  for(let i=0;i<points;i++){
-    const t=new Date(start.getTime()+i*60*1000); const ts=t.getTime(); let mult=hourMult[t.getHours()]; if(t.getDay()===0||t.getDay()===6) mult*=0.75;
-    const v2=Math.max(0,Math.round(120*mult + (Math.random()*0.2-0.1)*120*mult));
-    const v3=Math.max(0,Math.round(v2*(0.02+Math.random()*0.04)));
-    let v5=Math.random()<0.85?0:1; if(spikes.has(i)) v5+=5+Math.floor(Math.random()*16);
-    const vrt=Math.max(50,Math.round(120+80*mult+(spikes.has(i)?(40+Math.random()*80):0)+(Math.random()*24-12)));
-    s2.push([ts,v2]); s3.push([ts,v3]); s5.push([ts,v5]); srt.push([ts,vrt]);
-  }
-  return [
-    { name:'http-2xx', type:'column-stacked', data:s2 },
-    { name:'http-3xx', type:'column-stacked', data:s3 },
-    { name:'http-5xx', type:'column-stacked', data:s5 },
-    { name:'response_time_ms', type:'spline', data:srt }
-  ];
-}
+      // Multi-breakpoints (utilisé à la place de swipeToStep)
+      breakpoints,
+      // Pousser la vue derrière à partir du 2e palier
+      push: true,
+      pushBreakpoint: 0.45,
+      // (Optionnel) Afficher un backdrop seulement à partir d’un certain palier
+      backdropBreakpoint: 0.45,
 
-/* Persist */
-let storedData=[];
-function loadData(){ try{ storedData = JSON.parse(localStorage.getItem(DATA_KEY) || '[]'); }catch{ storedData=[]; } }
-function saveData(){ localStorage.setItem(DATA_KEY, JSON.stringify(storedData)); }
+      // Limiter le swipe à la poignée
+      swipeHandler: '.swipe-handler',
+    });
 
-/* Chart */
-let chart;
-const GROUP_UNITS = [['minute',[1,5,10,15,30]],['hour',[1,6,12]],['day',[1,7]]];
-function seriesConfig(s){
-  const {actual} = normalizeType(s.type);
-  const approx = /^http-\dxx$/i.test(s.name) ? 'sum' : 'average';
-  return { name:s.name, type:actual, yAxis:yAxisForType(s.type), data:s.data,
-           dataGrouping:{enabled:true, units:GROUP_UNITS, approximation:approx} };
-}
-function renderChart(){
-  const stacked = anyStacked(storedData) ? 'normal' : null;
-  chart = Highcharts.stockChart('chart',{
-    chart:{ backgroundColor:'transparent' },
-    title:{ text:'' }, credits:{enabled:false},
-    rangeSelector:{ selected:1, inputEnabled:false },
-    tooltip:{ shared:true, split:false },
-    xAxis:{ type:'datetime' },
-    yAxis:[ { title:{text:'Colonnes'} }, { title:{text:'Lignes/Aires'}, opposite:true } ],
-    plotOptions:{
-      series:{ turboThreshold:0, animation:false },
-      column:{ stacking:stacked, borderWidth:0, pointPadding:0.05, groupPadding:0.08 }
-    },
-    series: storedData.map(seriesConfig)
-  });
-  refreshSeriesControls();
-}
+    // Ouvrir automatiquement la sheet au plus petit breakpoint (toujours visible)
+    app.on('init', () => {
+      sheet.open(false); // sans animation pour éviter un “flash”
+      // Positionner explicitement sur le plus petit palier (sécurité)
+      sheet.setBreakpoint(breakpoints[0]);
+    });
 
-/* UI: séries */
-function refreshSeriesControls(){
-  const box = document.getElementById('seriesControls'); box.innerHTML='';
-  if(!storedData.length){ box.innerHTML='<div class="muted padding">Aucune série.</div>'; return; }
-  storedData.forEach((s, idx)=>{
-    const row=document.createElement('div'); row.className='series-row';
-    const name=document.createElement('div'); name.textContent=s.name;
-
-    const sel=document.createElement('select');
-    TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; if(s.type===t) o.selected=true; sel.appendChild(o); });
-    sel.addEventListener('change', ()=>{ s.type = sel.value; saveData(); renderChart(); });
-
-    const btn=document.createElement('button'); btn.textContent='Supprimer';
-    btn.addEventListener('click', ()=>{ storedData.splice(idx,1); saveData(); renderChart(); });
-
-    row.append(name, sel, btn); box.appendChild(row);
-  });
-}
-
-/* Actions */
-document.getElementById('btnReplace').addEventListener('click', ()=>{
-  try{
-    const def = document.getElementById('defaultSeriesName').value.trim() || 'series';
-    const parsed = parseJson(document.getElementById('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
-    storedData = parsed; saveData(); renderChart();
-    document.getElementById('status').textContent = `Remplacé: ${parsed.length} série(s).`;
-  }catch(e){ document.getElementById('status').textContent = e.message; }
-});
-document.getElementById('btnAdd').addEventListener('click', ()=>{
-  try{
-    const def = document.getElementById('defaultSeriesName').value.trim() || 'series';
-    const parsed = parseJson(document.getElementById('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
-    storedData.push(...parsed); saveData(); renderChart();
-    document.getElementById('status').textContent = `Ajouté: ${parsed.length} série(s).`;
-  }catch(e){ document.getElementById('status').textContent = e.message; }
-});
-document.getElementById('btnClear').addEventListener('click', ()=>{ document.getElementById('jsonInput').value=''; document.getElementById('status').textContent=''; });
-
-document.getElementById('fileInput').addEventListener('change', async (e)=>{
-  const f=e.target.files?.[0]; if(!f) return;
-  try{ const text=await f.text(); document.getElementById('jsonInput').value=text; document.getElementById('status').textContent='Fichier chargé dans la zone JSON.'; }
-  catch{ document.getElementById('status').textContent='Lecture de fichier impossible.'; }
-});
-
-/* Export / Import / Reset */
-document.getElementById('btnExport').addEventListener('click', ()=>{
-  const blob=new Blob([JSON.stringify(storedData,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series.json'; a.click(); URL.revokeObjectURL(a.href);
-});
-document.getElementById('btnImport').addEventListener('click', ()=>document.getElementById('importAllInput').click());
-document.getElementById('importAllInput').addEventListener('change', async (e)=>{
-  const f=e.target.files?.[0]; if(!f) return;
-  try{
-    const def = document.getElementById('defaultSeriesName').value.trim() || 'series';
-    const text = await f.text();
-    const parsed = parseJson(text, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
-    storedData = parsed; saveData(); renderChart();
-  }catch(err){ app.dialog.alert('Import échoué: '+err.message); }
-  finally{ e.target.value=''; }
-});
-document.getElementById('btnClearAll').addEventListener('click', ()=>{
-  app.dialog.confirm('Supprimer TOUTES les données ?','Confirmer', ()=>{
-    localStorage.removeItem(DATA_KEY); storedData=[]; renderChart();
-  });
-});
-
-/* Helpers */
-const guessType = (name)=>{
-  if(/^http-\dxx$/i.test(name)) return 'column-stacked';
-  if(/(time|latency|ms)/i.test(name)) return 'spline';
-  return 'spline';
-};
-
-/* Boot */
-(function init(){
-  loadData();
-  if(!storedData.length){ storedData = generateDemoData(); saveData(); }
-  renderChart();
-})();
-</script>
+    // Si tu veux forcer la sheet à ne jamais se fermer (au cas d'un back ESC, etc.)
+    sheet.on('close', () => {
+      // La refermer immédiatement au palier le plus bas
+      sheet.open(false);
+      sheet.setBreakpoint(breakpoints[0]);
+    });
+  </script>
 </body>
 </html>
