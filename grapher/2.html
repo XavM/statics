@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Grapher — Highcharts Stock + Framework7 Sheet</title>
 
-<!-- Highcharts Stock -->
+<!-- Highcharts Stock (unique lib de chart) -->
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
 
 <!-- Framework7 (bundle) -->
@@ -16,41 +16,25 @@
   :root{
     --bg:#0b0c0f; --fg:#e5e7eb; --panel:#12141a; --muted:#9aa3af; --border:#1f2430; --accent:#7c5cff;
   }
-  [data-theme="light"]{
-    --bg:#f7f7fb; --fg:#0f172a; --panel:#ffffff; --muted:#4b5563; --border:#e7e7ef; --accent:#6d28d9;
-  }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
 
-  /* Chart full width, sticky */
+  /* Graph full-width sticky */
   #chartWrap{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border)}
   #chart{width:100%;height:65vh;min-height:320px}
 
-  /* Bouton discret pour ouvrir la sheet */
-  .controls-opener{
-    position:fixed; right:16px; bottom:16px; z-index:20;
-    background:var(--accent); color:#fff; border:none; border-radius:10px; padding:10px 14px; cursor:pointer;
-    box-shadow:0 6px 20px rgba(0,0,0,.25);
-  }
-
-  /* Form look */
   .muted{color:var(--muted)}
-  textarea, input[type="text"], select, button{
-    background:transparent;border:1px solid var(--border);color:var(--fg);padding:8px;border-radius:8px
-  }
+  textarea,input[type="text"],select,button{background:transparent;border:1px solid var(--border);color:var(--fg);padding:8px;border-radius:8px}
   textarea{min-height:120px;resize:vertical}
   .series-row{display:grid;grid-template-columns:1fr 160px 100px;gap:8px;align-items:center}
 </style>
 </head>
-<body data-theme="dark">
+<body>
 <div id="app"><!-- F7 root -->
 
   <!-- CHART -->
   <div id="chartWrap"><div id="chart"></div></div>
 
-  <!-- OUVERTURE SHEET via JS (pas de .fab ni .sheet-open auto) -->
-  <button id="openControls" class="controls-opener">Contrôles</button>
-
-  <!-- SHEET MODAL, conforme à la doc -->
+  <!-- SHEET MODAL (ouverte par défaut au plus petit breakpoint) -->
   <div id="controls-sheet"
        class="sheet-modal sheet-modal-push"
        style="height:auto"
@@ -60,18 +44,21 @@
        data-breakpoints='[0.2,0.5,0.9,1]'
        data-backdrop-breakpoint="0.2"
        data-push-breakpoint="0.5">
-    <!-- Sheet Inner -->
     <div class="sheet-modal-inner">
-      <!-- Contenu scrollable : OBLIGATOIRE -->
       <div class="page-content">
-        <!-- Toolbar optionnelle en haut de sheet -->
-        <div class="toolbar">
-          <div class="toolbar-inner">
-            <div class="left"><span class="muted">Contrôles</span></div>
-            <div class="right"><a href="#" class="link sheet-close">Fermer</a></div>
+
+        <!-- zone visible quand la sheet est au breakpoint mini -->
+        <div class="sheet-modal-swipe-step">
+          <div class="block">
+            <div class="row">
+              <div class="col"><b>Contrôles</b></div>
+              <div class="col text-align-right"><a href="#" class="link sheet-close">Fermer</a></div>
+            </div>
+            <div class="block-footer muted">Glisse vers le haut pour agrandir (breakpoints : 20% / 50% / 90% / 100%).</div>
           </div>
         </div>
 
+        <!-- contenu complet (dévoilé aux breakpoints supérieurs) -->
         <div class="block">
           <div class="block-title">Importer / Coller des données</div>
           <div class="list no-hairlines-md">
@@ -101,6 +88,7 @@
               </li>
             </ul>
           </div>
+
           <div class="row padding-horizontal">
             <a class="button button-fill" id="btnReplace">Charger (Remplace)</a>
             <a class="button" id="btnAdd">Ajouter</a>
@@ -118,35 +106,33 @@
             <a class="button button-outline color-red" id="btnClearAll">Tout supprimer</a>
             <input id="importAllInput" type="file" accept="application/json" style="display:none" />
           </div>
-          <div class="padding muted">Persisté dans votre navigateur.</div>
+          <div class="padding muted">Les séries sont persistées dans le navigateur.</div>
         </div>
+
       </div>
     </div>
   </div>
 </div>
 
 <script>
-/* ====== Framework7, création explicite de la sheet ====== */
-// Doc: structure .sheet-modal / .sheet-modal-inner + page-content ; params swipeToClose / breakpoints / push.  [oai_citation:1‡Framework7](https://framework7.io/docs/sheet-modal)
-const app = new Framework7({ el: '#app', theme: 'auto', sheet:{ closeByBackdropClick:true } });
-const sheet = app.sheet.create({ el: '#controls-sheet' });
+/* ========= Framework7 ========= */
+const app = new Framework7({ el:'#app', theme:'auto', sheet:{ closeByBackdropClick:true } });
+const sheet = app.sheet.create({ el:'#controls-sheet' });
+// Ouvrir la sheet tout de suite au breakpoint MIN (0.2)
+sheet.open(false);            // sans animation pour éviter le “plein écran” visuel initial
+sheet.setBreakpoint(0.2);     // démarre à 20% de hauteur
+// Ensuite, quand tu montes > 0.5, l'effet push view s'active (data-push-breakpoint="0.5")
 
-// Ouverture contrôlée: on ouvre puis on place directement au breakpoint 0.5
-document.getElementById('openControls').addEventListener('click', () => {
-  sheet.open();
-  sheet.setBreakpoint(0.5); // API officielle pour viser un breakpoint précis.  [oai_citation:2‡Framework7](https://framework7.io/docs/sheet-modal)
-});
-
-/* ====== Highcharts Stock ====== */
+/* ========= Highcharts Stock ========= */
 const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
-const DATA_KEY = 'ts_data_v4';
-const $ = (id)=>document.getElementById(id);
+const DATA_KEY = 'ts_data_v5';
+const $ = id => document.getElementById(id);
 
-const yAxisForType = (t)=> (t==='column'||t==='column-stacked') ? 0 : 1; // TA RÈGLE
-const normalizeType = (t)=> (t==='column-stacked') ? {actual:'column', stacked:true} : {actual:(t||'spline'), stacked:false};
-const anyStacked = (list)=> list.some(s => s.type==='column-stacked');
+const yAxisForType = t => (t==='column' || t==='column-stacked') ? 0 : 1;  // Y gauche pour colonnes, droite pour le reste
+const normalizeType = t => (t==='column-stacked') ? {actual:'column', stacked:true} : {actual:(t||'spline'), stacked:false};
+const anyStacked = list => list.some(s => s.type==='column-stacked');
 
-const toMillis = (ts) => (typeof ts==='number') ? ts : (Number(ts)>1e10 ? Number(ts) : Date.parse(ts));
+const toMillis = ts => (typeof ts==='number') ? ts : (Number(ts)>1e10 ? Number(ts) : Date.parse(ts));
 function normalizeDataArray(arr){
   if(!Array.isArray(arr)) throw new Error('Une série doit être un tableau');
   if(!arr.length) return [];
@@ -167,7 +153,7 @@ function parseJson(text, defaultName='series'){
   throw new Error('Format JSON non supporté');
 }
 
-/* Démo 7j x 1min si aucune donnée */
+/* Démo 7 jours x 1 min si aucune donnée */
 function generateDemoData(){
   const now = new Date(); now.setSeconds(0,0);
   const end = new Date(now.getTime() - 60*1000);
@@ -200,7 +186,7 @@ function saveData(){ localStorage.setItem(DATA_KEY, JSON.stringify(storedData));
 /* Chart */
 let chart;
 const GROUP_UNITS = [['minute',[1,5,10,15,30]],['hour',[1,6,12]],['day',[1,7]]];
-function buildSeriesConfig(s){
+function seriesConfig(s){
   const {actual} = normalizeType(s.type);
   const approx = /^http-\dxx$/i.test(s.name) ? 'sum' : 'average';
   return { name:s.name, type:actual, yAxis:yAxisForType(s.type), data:s.data,
@@ -219,7 +205,7 @@ function renderChart(){
       series:{ turboThreshold:0, animation:false },
       column:{ stacking:stacked, borderWidth:0, pointPadding:0.05, groupPadding:0.08 }
     },
-    series: storedData.map(buildSeriesConfig)
+    series: storedData.map(seriesConfig)
   });
   refreshSeriesControls();
 }
@@ -233,9 +219,7 @@ function refreshSeriesControls(){
     const name=document.createElement('div'); name.textContent=s.name;
 
     const sel=document.createElement('select');
-    ['spline','line','area','areaspline','column','column-stacked'].forEach(t=>{
-      const o=document.createElement('option'); o.value=t; o.textContent=t; if(s.type===t) o.selected=true; sel.appendChild(o);
-    });
+    TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; if(s.type===t) o.selected=true; sel.appendChild(o); });
     sel.addEventListener('change', ()=>{ s.type = sel.value; saveData(); renderChart(); });
 
     const btn=document.createElement('button'); btn.textContent='Supprimer';
@@ -263,6 +247,7 @@ document.getElementById('btnAdd').addEventListener('click', ()=>{
   }catch(e){ document.getElementById('status').textContent = e.message; }
 });
 document.getElementById('btnClear').addEventListener('click', ()=>{ document.getElementById('jsonInput').value=''; document.getElementById('status').textContent=''; });
+
 document.getElementById('fileInput').addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f) return;
   try{ const text=await f.text(); document.getElementById('jsonInput').value=text; document.getElementById('status').textContent='Fichier chargé dans la zone JSON.'; }
