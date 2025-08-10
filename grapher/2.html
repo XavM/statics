@@ -3,16 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>F7 — Sheet push + full-sheet drag</title>
+  <title>Grapher — Chart en page / Contrôles en sheet</title>
+
+  <!-- Framework7 + Highcharts -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+
   <style>
-    /* requis pour swipe-to-step */
-    #sheet { height: auto; }
-    /* évite un compact à 0px */
-    #sheet .sheet-modal-swipe-step { min-height: 84px; }
-    /* handle visible (mais pas obligatoire pour drag) */
-    .swipe-handler { height: 20px; display:flex; align-items:center; justify-content:center; }
-    .swipe-handler::before { content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6; }
+    /* Page = graph plein écran */
+    #chart-container {
+      width: 100%;
+      height: calc(100vh - var(--f7-navbar-height) - env(safe-area-inset-bottom, 0));
+    }
+
+    /* Sheet en 2 étapes + push view ; handle juste indicatif */
+    #controls-sheet { height: auto; }
+    #controls-sheet .sheet-modal-swipe-step { min-height: 84px; }
+    .sheet-handle { height: 20px; display:flex; align-items:center; justify-content:center; }
+    .sheet-handle::before { content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6; }
+
+    /* Mise en forme rapide des contrôles */
+    .ctrls .list input, .ctrls .list select, .ctrls .list textarea { width: 100%; }
+    .ctrls .button-row { display: flex; gap: 8px; }
+    .ctrls .button-row .button { flex: 1; }
   </style>
 </head>
 <body>
@@ -22,74 +36,181 @@
       <div class="navbar">
         <div class="navbar-bg"></div>
         <div class="navbar-inner">
-          <div class="title">Sheet — push & full drag</div>
-          <div class="right"><a href="#" class="link" id="open-link">Ouvrir</a></div>
+          <div class="title">Grapher</div>
+          <div class="right"><a href="#" class="link" id="openControls">Contrôles</a></div>
         </div>
       </div>
+
       <div class="page-content">
-        <div class="block">
-          <p><a href="#" class="button button-fill" id="open-btn">Ouvrir la sheet</a></p>
-          <p>Swipe n’importe où sur la sheet pour <b>déplier/replier</b>. L’effet <b>push view</b> est activé.</p>
-        </div>
+        <!-- ICI: LE GRAPH UNIQUEMENT -->
+        <div id="chart-container"></div>
       </div>
     </div>
   </div>
 
-  <!-- NOTE: classe sheet-modal-push pour l'effet push -->
-  <div class="sheet-modal sheet-modal-push" id="sheet">
-    <div class="swipe-handler"></div>
+  <!-- SHEET = CONTRÔLES -->
+  <div class="sheet-modal sheet-modal-push" id="controls-sheet">
+    <div class="sheet-handle"></div>
     <div class="sheet-modal-inner">
-      <!-- zone visible à l’état compact -->
+      <!-- Étape compacte visible en bas -->
       <div class="sheet-modal-swipe-step">
         <div class="block no-margin">
-          <p class="no-margin text-color-gray">Compact — swipe/tap pour agrandir ⤴︎</p>
+          <p class="no-margin text-color-gray">Contrôles — swipe/tap pour agrandir ⤴︎</p>
         </div>
       </div>
-      <!-- contenu plein écran -->
-      <div class="block">
-        <p>Plein écran — swipe/tap pour replier ⤵︎</p>
-        <p>Lorem ipsum dolor sit amet…</p>
+
+      <!-- Contenu contrôles -->
+      <div class="block crtls">
+        <!-- AUTO-MOVE: si ta page a déjà des contrôles (form/#controls/.controls),
+             ils seront déplacés ici au démarrage. Sinon, tu peux coller les tiens ci-dessous. -->
+
+        <!-- PLACE TES CONTROLES ICI (si auto-move ne trouve rien) -->
+        <div id="fallback-controls" class="list inset">
+          <ul>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">Type de série</div>
+                <div class="item-input-wrap">
+                  <select id="seriesType">
+                    <option value="spline" selected>spline</option>
+                    <option value="line">line</option>
+                    <option value="area">area</option>
+                    <option value="column">column</option>
+                    <option value="bar">bar</option>
+                    <option value="scatter">scatter</option>
+                  </select>
+                </div>
+              </div>
+            </li>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">Série (CSV nums, ex: 1,3,2,4)</div>
+                <div class="item-input-wrap">
+                  <input id="seriesData" type="text" value="1,3,2,4,6,3,5,7" />
+                </div>
+              </div>
+            </li>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">Titre</div>
+                <div class="item-input-wrap">
+                  <input id="chartTitle" type="text" value="Ma série" />
+                </div>
+              </div>
+            </li>
+          </ul>
+          <div class="block button-row">
+            <a href="#" class="button button-fill" id="applyBtn">Appliquer</a>
+            <a href="#" class="button" id="resetBtn">Réinitialiser</a>
+          </div>
+        </div>
+        <!-- /PLACE TES CONTROLES ICI -->
       </div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
 <script>
+  // App F7 + sheet (push + 2 steps, drag sur toute la sheet)
   const app = new Framework7({
     el: '#app',
     on: {
       init: function () {
-        // Création de la sheet
         const sheet = this.sheet.create({
-          el: '#sheet',
-          swipeToStep: true,     // 2 étapes (compact ↔ plein écran)
-          swipeToClose: false,   // jamais fermer complètement
-          // IMPORTANT: pas de swipeHandler => drag sur TOUTE la sheet
-          push: true,            // effet push view (avec la classe sheet-modal-push)
+          el: '#controls-sheet',
+          swipeToStep: true,
+          swipeToClose: false,
+          push: true,
           backdrop: true
+          // pas de swipeHandler => drag sur toute la sheet
         });
 
-        // Ouverte par défaut en compact (visible)
+        // Ouvrir par défaut en compact (visible)
         sheet.open(false);
         sheet.stepClose(false);
 
-        // Ouvrir via lien/bouton
-        const open = (e)=>{ e && e.preventDefault(); sheet.open(); };
-        document.getElementById('open-link').addEventListener('click', open);
-        document.getElementById('open-btn').addEventListener('click', open);
-
-        // Tap-to-toggle (pratique en plus du swipe)
-        const sheetEl = document.getElementById('sheet');
-        sheetEl.addEventListener('click', (e) => {
-          // ignore le clic sur liens/boutons
-          if (e.target.closest('a,button')) return;
-          if (sheet.stepOpened) sheet.stepClose(); else sheet.stepOpen();
+        // Toggle via le bouton navbar
+        document.getElementById('openControls').addEventListener('click', (e) => {
+          e.preventDefault();
+          sheet.open();
         });
 
-        // Sécurité: recalibre après layout
-        requestAnimationFrame(()=>sheet.setSwipeStep());
-        window.addEventListener('resize', ()=>sheet.setSwipeStep(), { passive: true });
+        // === AUTO-MOVE DES CONTRÔLES EXISTANTS ===
+        const target = document.querySelector('#controls-sheet .crtls');
+        const candidates = [
+          document.getElementById('controls'),
+          ...document.querySelectorAll('.controls'),
+          ...document.querySelectorAll('form')
+        ].filter(Boolean);
+
+        // Ne déplace JAMAIS le formulaire Highcharts export (si présent)
+        const isExportForm = (el) => el.tagName === 'FORM' && el.getAttribute('action')?.includes('export');
+
+        let moved = false;
+        candidates.forEach(el => {
+          if (isExportForm(el)) return;
+          // Évite de déplacer le container du chart s’il a été mal nommé
+          if (el.id === 'chart-container' || el.id === 'container') return;
+          // Déplace l’élément dans la sheet
+          target.appendChild(el);
+          moved = true;
+        });
+
+        if (moved) {
+          const fb = document.getElementById('fallback-controls');
+          fb?.parentNode?.removeChild(fb);
+        }
+
+        // === HIGHCHARTS DEMO (remplace par ton init si tu as déjà le tien) ===
+        const chartEl = document.getElementById('chart-container');
+        const initialSeries = (document.getElementById('seriesData')?.value || '1,3,2,4').split(',').map(v => +v.trim()).filter(v => !Number.isNaN(v));
+        const initialType = document.getElementById('seriesType')?.value || 'spline';
+        const initialTitle = document.getElementById('chartTitle')?.value || 'Ma série';
+
+        let chart = Highcharts.chart(chartEl, {
+          chart: { type: initialType, animation: false },
+          title: { text: initialTitle },
+          credits: { enabled: false },
+          legend: { enabled: false },
+          xAxis: { tickLength: 0 },
+          yAxis: { title: { text: null } },
+          tooltip: { shared: true },
+          series: [{ name: 'S1', data: initialSeries }]
+        });
+
+        // Appliquer (démos de base ; garde si tes contrôles n’existent pas)
+        const apply = () => {
+          const type = document.getElementById('seriesType')?.value || 'spline';
+          const title = document.getElementById('chartTitle')?.value || '';
+          const nums = (document.getElementById('seriesData')?.value || '')
+            .split(',')
+            .map(v => +v.trim())
+            .filter(v => !Number.isNaN(v));
+
+          chart.update({ chart: { type }, title: { text: title } }, false, true);
+          if (nums.length) chart.series[0].setData(nums, false);
+          chart.redraw();
+        };
+        document.getElementById('applyBtn')?.addEventListener('click', (e) => { e.preventDefault(); apply(); });
+        document.getElementById('resetBtn')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.getElementById('seriesType').value = 'spline';
+          document.getElementById('seriesData').value = '1,3,2,4,6,3,5,7';
+          document.getElementById('chartTitle').value = 'Ma série';
+          apply();
+        });
+
+        // Tap-to-toggle compact/plein écran
+        document.getElementById('controls-sheet').addEventListener('click', (e) => {
+          if (e.target.closest('a,button,select,input,textarea,label')) return;
+          chart?.reflow(); // bon réflexe après redimensionnement
+          sheet.stepOpened ? sheet.stepClose() : sheet.stepOpen();
+        });
+
+        // Reflow chart quand la sheet change de taille
+        sheet.on('stepOpen', () => chart?.reflow());
+        sheet.on('stepClose', () => chart?.reflow());
+        window.addEventListener('resize', () => chart?.reflow(), { passive: true });
       }
     }
   });
