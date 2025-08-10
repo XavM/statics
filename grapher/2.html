@@ -25,32 +25,32 @@
   #chartWrap{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border)}
   #chart{width:100%;height:65vh;min-height:320px}
 
-  /* Bouton pour ouvrir la sheet (pas un FAB rond) */
+  /* Bouton discret pour ouvrir la sheet */
   .controls-opener{
     position:fixed; right:16px; bottom:16px; z-index:20;
-    background:var(--accent); color:#fff; border:none; border-radius:24px; padding:10px 14px; cursor:pointer;
+    background:var(--accent); color:#fff; border:none; border-radius:10px; padding:10px 14px; cursor:pointer;
     box-shadow:0 6px 20px rgba(0,0,0,.25);
   }
 
-  /* Contenu dans la sheet */
-  .series-row{display:grid;grid-template-columns:1fr 160px 100px;gap:8px;align-items:center}
+  /* Form look */
   .muted{color:var(--muted)}
-  textarea, input[type="text"], select, button{background:transparent;border:1px solid var(--border);color:var(--fg);padding:8px;border-radius:8px}
+  textarea, input[type="text"], select, button{
+    background:transparent;border:1px solid var(--border);color:var(--fg);padding:8px;border-radius:8px
+  }
   textarea{min-height:120px;resize:vertical}
+  .series-row{display:grid;grid-template-columns:1fr 160px 100px;gap:8px;align-items:center}
 </style>
 </head>
 <body data-theme="dark">
 <div id="app"><!-- F7 root -->
 
   <!-- CHART -->
-  <div id="chartWrap">
-    <div id="chart"></div>
-  </div>
+  <div id="chartWrap"><div id="chart"></div></div>
 
-  <!-- OPEN SHEET (link + data-sheet) -->
-  <button class="controls-opener sheet-open" data-sheet="#controls-sheet">Contrôles</button>
+  <!-- OUVERTURE SHEET via JS (pas de .fab ni .sheet-open auto) -->
+  <button id="openControls" class="controls-opener">Contrôles</button>
 
-  <!-- SHEET MODAL (proper markup) -->
+  <!-- SHEET MODAL, conforme à la doc -->
   <div id="controls-sheet"
        class="sheet-modal sheet-modal-push"
        style="height:auto"
@@ -60,24 +60,18 @@
        data-breakpoints='[0.2,0.5,0.9,1]'
        data-backdrop-breakpoint="0.2"
        data-push-breakpoint="0.5">
+    <!-- Sheet Inner -->
     <div class="sheet-modal-inner">
-      <!-- scrollable content -->
+      <!-- Contenu scrollable : OBLIGATOIRE -->
       <div class="page-content">
-
-        <!-- swipe-step: zone visible au breakpoint le plus bas -->
-        <div class="sheet-modal-swipe-step">
-          <div class="block">
-            <div class="row">
-              <div class="col"><b>Contrôles</b></div>
-              <div class="col text-align-right">
-                <a class="button button-outline sheet-close">Fermer</a>
-              </div>
-            </div>
-            <div class="block-footer muted">Swipe vers le haut pour agrandir • Breakpoints : 20% / 50% / 90% / 100%.</div>
+        <!-- Toolbar optionnelle en haut de sheet -->
+        <div class="toolbar">
+          <div class="toolbar-inner">
+            <div class="left"><span class="muted">Contrôles</span></div>
+            <div class="right"><a href="#" class="link sheet-close">Fermer</a></div>
           </div>
         </div>
 
-        <!-- reste du contenu (révélé aux breakpoints supérieurs) -->
         <div class="block">
           <div class="block-title">Importer / Coller des données</div>
           <div class="list no-hairlines-md">
@@ -85,17 +79,13 @@
               <li class="item-content item-input">
                 <div class="item-inner">
                   <div class="item-title item-label">Fichier JSON</div>
-                  <div class="item-input-wrap">
-                    <input type="file" id="fileInput" accept="application/json,.json,.txt">
-                  </div>
+                  <div class="item-input-wrap"><input type="file" id="fileInput" accept="application/json,.json,.txt"></div>
                 </div>
               </li>
               <li class="item-content item-input">
                 <div class="item-inner">
                   <div class="item-title item-label">Nom par défaut d’une série (si absent)</div>
-                  <div class="item-input-wrap">
-                    <input id="defaultSeriesName" type="text" placeholder="series">
-                  </div>
+                  <div class="item-input-wrap"><input id="defaultSeriesName" type="text" placeholder="series"></div>
                 </div>
               </li>
               <li class="item-content item-input">
@@ -128,28 +118,31 @@
             <a class="button button-outline color-red" id="btnClearAll">Tout supprimer</a>
             <input id="importAllInput" type="file" accept="application/json" style="display:none" />
           </div>
-          <div class="padding muted">Les séries sont persistées dans le navigateur.</div>
+          <div class="padding muted">Persisté dans votre navigateur.</div>
         </div>
-
       </div>
     </div>
   </div>
 </div>
 
 <script>
-/* ========== Framework7 App ========== */
-const app = new Framework7({ el: '#app', theme: 'auto',
-  sheet: { closeByBackdropClick: true }
-});
-// (facultatif) ouvrir la sheet à un breakpoint donné :
-// app.sheet.get('#controls-sheet')?.setBreakpoint(0.5);
+/* ====== Framework7, création explicite de la sheet ====== */
+// Doc: structure .sheet-modal / .sheet-modal-inner + page-content ; params swipeToClose / breakpoints / push.  [oai_citation:1‡Framework7](https://framework7.io/docs/sheet-modal)
+const app = new Framework7({ el: '#app', theme: 'auto', sheet:{ closeByBackdropClick:true } });
+const sheet = app.sheet.create({ el: '#controls-sheet' });
 
-/* ========== Highcharts Stock config ========== */
+// Ouverture contrôlée: on ouvre puis on place directement au breakpoint 0.5
+document.getElementById('openControls').addEventListener('click', () => {
+  sheet.open();
+  sheet.setBreakpoint(0.5); // API officielle pour viser un breakpoint précis.  [oai_citation:2‡Framework7](https://framework7.io/docs/sheet-modal)
+});
+
+/* ====== Highcharts Stock ====== */
 const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
-const DATA_KEY = 'ts_data_v3';
+const DATA_KEY = 'ts_data_v4';
 const $ = (id)=>document.getElementById(id);
 
-const yAxisForType = (t)=> (t==='column'||t==='column-stacked') ? 0 : 1;
+const yAxisForType = (t)=> (t==='column'||t==='column-stacked') ? 0 : 1; // TA RÈGLE
 const normalizeType = (t)=> (t==='column-stacked') ? {actual:'column', stacked:true} : {actual:(t||'spline'), stacked:false};
 const anyStacked = (list)=> list.some(s => s.type==='column-stacked');
 
@@ -174,7 +167,7 @@ function parseJson(text, defaultName='series'){
   throw new Error('Format JSON non supporté');
 }
 
-/* Demo 7d x 1min si aucune donnée */
+/* Démo 7j x 1min si aucune donnée */
 function generateDemoData(){
   const now = new Date(); now.setSeconds(0,0);
   const end = new Date(now.getTime() - 60*1000);
@@ -233,14 +226,16 @@ function renderChart(){
 
 /* UI: séries */
 function refreshSeriesControls(){
-  const box = $('seriesControls'); box.innerHTML='';
+  const box = document.getElementById('seriesControls'); box.innerHTML='';
   if(!storedData.length){ box.innerHTML='<div class="muted padding">Aucune série.</div>'; return; }
   storedData.forEach((s, idx)=>{
     const row=document.createElement('div'); row.className='series-row';
     const name=document.createElement('div'); name.textContent=s.name;
 
     const sel=document.createElement('select');
-    TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; if(s.type===t) o.selected=true; sel.appendChild(o); });
+    ['spline','line','area','areaspline','column','column-stacked'].forEach(t=>{
+      const o=document.createElement('option'); o.value=t; o.textContent=t; if(s.type===t) o.selected=true; sel.appendChild(o);
+    });
     sel.addEventListener('change', ()=>{ s.type = sel.value; saveData(); renderChart(); });
 
     const btn=document.createElement('button'); btn.textContent='Supprimer';
@@ -251,45 +246,46 @@ function refreshSeriesControls(){
 }
 
 /* Actions */
-$('btnReplace').addEventListener('click', ()=>{
+document.getElementById('btnReplace').addEventListener('click', ()=>{
   try{
-    const def = $('defaultSeriesName').value.trim() || 'series';
-    const parsed = parseJson($('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
-    storedData = parsed; saveData(); renderChart(); $('status').textContent = `Remplacé: ${parsed.length} série(s).`;
-  }catch(e){ $('status').textContent = e.message; }
+    const def = document.getElementById('defaultSeriesName').value.trim() || 'series';
+    const parsed = parseJson(document.getElementById('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
+    storedData = parsed; saveData(); renderChart();
+    document.getElementById('status').textContent = `Remplacé: ${parsed.length} série(s).`;
+  }catch(e){ document.getElementById('status').textContent = e.message; }
 });
-$('btnAdd').addEventListener('click', ()=>{
+document.getElementById('btnAdd').addEventListener('click', ()=>{
   try{
-    const def = $('defaultSeriesName').value.trim() || 'series';
-    const parsed = parseJson($('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
-    storedData.push(...parsed); saveData(); renderChart(); $('status').textContent = `Ajouté: ${parsed.length} série(s).`;
-  }catch(e){ $('status').textContent = e.message; }
+    const def = document.getElementById('defaultSeriesName').value.trim() || 'series';
+    const parsed = parseJson(document.getElementById('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
+    storedData.push(...parsed); saveData(); renderChart();
+    document.getElementById('status').textContent = `Ajouté: ${parsed.length} série(s).`;
+  }catch(e){ document.getElementById('status').textContent = e.message; }
 });
-$('btnClear').addEventListener('click', ()=>{ $('jsonInput').value=''; $('status').textContent=''; });
-
-$('fileInput').addEventListener('change', async (e)=>{
+document.getElementById('btnClear').addEventListener('click', ()=>{ document.getElementById('jsonInput').value=''; document.getElementById('status').textContent=''; });
+document.getElementById('fileInput').addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f) return;
-  try{ const text=await f.text(); $('jsonInput').value = text; $('status').textContent='Fichier chargé dans la zone JSON.'; }
-  catch{ $('status').textContent='Lecture de fichier impossible.'; }
+  try{ const text=await f.text(); document.getElementById('jsonInput').value=text; document.getElementById('status').textContent='Fichier chargé dans la zone JSON.'; }
+  catch{ document.getElementById('status').textContent='Lecture de fichier impossible.'; }
 });
 
 /* Export / Import / Reset */
-$('btnExport').addEventListener('click', ()=>{
+document.getElementById('btnExport').addEventListener('click', ()=>{
   const blob=new Blob([JSON.stringify(storedData,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series.json'; a.click(); URL.revokeObjectURL(a.href);
 });
-$('btnImport').addEventListener('click', ()=>$('importAllInput').click());
-$('importAllInput').addEventListener('change', async (e)=>{
+document.getElementById('btnImport').addEventListener('click', ()=>document.getElementById('importAllInput').click());
+document.getElementById('importAllInput').addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f) return;
   try{
-    const def = $('defaultSeriesName').value.trim() || 'series';
+    const def = document.getElementById('defaultSeriesName').value.trim() || 'series';
     const text = await f.text();
     const parsed = parseJson(text, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
     storedData = parsed; saveData(); renderChart();
   }catch(err){ app.dialog.alert('Import échoué: '+err.message); }
   finally{ e.target.value=''; }
 });
-$('btnClearAll').addEventListener('click', ()=>{
+document.getElementById('btnClearAll').addEventListener('click', ()=>{
   app.dialog.confirm('Supprimer TOUTES les données ?','Confirmer', ()=>{
     localStorage.removeItem(DATA_KEY); storedData=[]; renderChart();
   });
@@ -304,8 +300,7 @@ const guessType = (name)=>{
 
 /* Boot */
 (function init(){
-  // data
-  try{ storedData = JSON.parse(localStorage.getItem(DATA_KEY)||'[]'); }catch{ storedData=[]; }
+  loadData();
   if(!storedData.length){ storedData = generateDemoData(); saveData(); }
   renderChart();
 })();
