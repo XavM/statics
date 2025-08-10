@@ -3,21 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>F7 Demo — Sheet push + 2 étapes</title>
+  <title>F7 — Sheet push + 2 étapes (compact ↔ plein écran)</title>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
+
   <style>
-    .demo-text { max-width: 960px; margin: 0 auto; }
-    /* Requis par swipe-to-step pour que le step prenne la taille du contenu */
-    .demo-sheet { height: auto; }
-    .swipe-handler {
-      height: 20px; display: flex; align-items: center; justify-content: center; cursor: ns-resize;
+    .demo-text{max-width:960px;margin:0 auto;}
+    /* Requis/recommandé avec swipe-to-step */
+    #sheet-demo{height:auto;}
+    /* Empêche le step compact de mesurer 0px sur certains contextes */
+    #sheet-demo .sheet-modal-swipe-step{min-height:100px;}
+
+    /* Poignée (handle) visible et confortable au toucher */
+    .swipe-handler{
+      height:22px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;
     }
-    .swipe-handler::before {
-      content: ""; width: 36px; height: 4px; border-radius: 2px;
-      background: var(--f7-text-muted); opacity: .6;
+    .swipe-handler::before{
+      content:"";width:36px;height:4px;border-radius:2px;background:var(--f7-text-muted);opacity:.6;
     }
-    .sheet-content { padding-bottom: calc(env(safe-area-inset-bottom, 0) + 12px); }
-    .sheet-compact-block { margin-top: 8px; }
+    /* Scroll propre + safe-area bas */
+    .sheet-content{padding-bottom:calc(env(safe-area-inset-bottom,0)+12px);}
   </style>
 </head>
 <body>
@@ -26,27 +31,25 @@
       <div class="page">
         <div class="navbar">
           <div class="navbar-bg"></div>
-          <div class="navbar-inner">
-            <div class="title">Démo Sheet — 2 étapes</div>
-          </div>
+          <div class="navbar-inner"><div class="title">Démo Sheet — 2 steps</div></div>
         </div>
         <div class="page-content">
           <div class="block block-strong demo-text">
-            <p><b>Page de démonstration</b></p>
-            <p>La sheet en bas est <b>toujours visible</b> (état compact). Tire le handle vers le haut pour le <b>plein écran</b> (push view), vers le bas pour replier.</p>
+            <p><b>Page de démo</b> — la sheet est <b>toujours visible</b> en bas.</p>
+            <p>Glisse le handle vers le haut pour le <b>plein écran</b> (push view), et vers le bas pour revenir au **compact**.</p>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit…</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- SHEET MODAL -->
-    <div class="sheet-modal sheet-modal-push demo-sheet" id="sheet-demo">
+    <!-- SHEET -->
+    <div class="sheet-modal sheet-modal-push" id="sheet-demo">
       <div class="swipe-handler"></div>
       <div class="sheet-modal-inner">
-        <!-- Zone VISIBLE à l’état compact -->
+        <!-- Zone visible à l’état compact -->
         <div class="sheet-modal-swipe-step">
-          <div class="block sheet-compact-block">
+          <div class="block no-margin">
             <p class="text-color-gray no-margin">État compact — toujours visible. Glisse pour agrandir ⤴︎</p>
             <div class="list inset">
               <ul>
@@ -74,6 +77,7 @@
           <p class="text-color-gray">Contenu plein écran</p>
           <p>Pellentesque at sapien urna. Vestibulum accumsan nibh non eleifend tristique…</p>
           <p>Curabitur nec risus justo. Integer vitae arcu non massa finibus faucibus…</p>
+          <p>Morbi non neque nec lorem tincidunt convallis. Quisque ut commodo nulla…</p>
         </div>
       </div>
     </div>
@@ -81,37 +85,48 @@
 
   <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
   <script>
-    // IMPORTANT: on ouvre la sheet dans on.init pour ne pas rater l'événement
     const app = new Framework7({
-      el: '#app',
-      name: 'DemoSheet2Steps',
-      theme: 'auto',
-      sheet: {
-        closeByBackdropClick: false,
-        closeByOutsideClick: false,
+      el:'#app',
+      name:'DemoSheet2Steps',
+      theme:'auto',
+      sheet:{
+        closeByBackdropClick:false,
+        closeByOutsideClick:false,
       },
-      on: {
-        init() {
+      on:{
+        init(){
+          // 1) Création sheet
           const sheet = app.sheet.create({
-            el: '#sheet-demo',
-            swipeToStep: true,             // 2 états (compact / plein écran)
-            swipeToClose: false,           // jamais de fermeture complète
-            swipeHandler: '.swipe-handler',
-            push: true,                    // push view quand plein écran
-            backdrop: true,                // backdrop en plein écran
+            el:'#sheet-demo',
+            swipeToStep:true,            // 2 états (compact/plein écran)
+            swipeToClose:false,          // interdit la fermeture complète
+            swipeHandler:'.swipe-handler',
+            push:true,                   // push view quand plein écran (effet plus marqué avec safe-area iOS/PWA)
+            backdrop:true,               // backdrop en plein écran
           });
 
-          // Ouvre la sheet et force l’état compact pour qu’elle soit visible par défaut
-          sheet.open(false);     // sans animation (évite le flash)
+          // 2) Debug console (je veux que tu VOIS ce qui se passe)
+          sheet.on('open', ()=>console.info('[sheet] open'));
+          sheet.on('opened', ()=>console.info('[sheet] opened'));
+          sheet.on('closed', ()=>console.info('[sheet] closed'));
+          sheet.on('stepOpen', ()=>console.info('[sheet] stepOpen (plein écran)'));
+          sheet.on('stepClose', ()=>console.info('[sheet] stepClose (compact)'));
+
+          // 3) Ouverture + forcer l’état compact (visible)
+          sheet.open(false);     // sans animation pour éviter le flash
           sheet.stepClose(false);
 
-          // Interdit toute fermeture complète (ESC/backdrop/programmatique)
-          sheet.on('close', () => {
+          // 4) Empêche toute fermeture (ESC/backdrop)
+          sheet.on('close', ()=>{
             sheet.open(false);
             sheet.stepClose(false);
           });
-        },
-      },
+
+          // 5) Sécurité: si le DOM ou CSS change et casse la hauteur, on recalibre
+          requestAnimationFrame(()=>sheet.setSwipeStep());
+          window.addEventListener('resize', ()=>sheet.setSwipeStep(), {passive:true});
+        }
+      }
     });
   </script>
 </body>
