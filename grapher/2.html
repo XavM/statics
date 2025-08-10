@@ -3,28 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>F7 Demo — Sheet push + swipe-to-step (2 états)</title>
-
+  <title>F7 Demo — Sheet push + 2 étapes</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
-
   <style>
     .demo-text { max-width: 960px; margin: 0 auto; }
-    /* Hauteur auto conseillée par la doc en swipe-to-step */
+    /* Requis par swipe-to-step pour que le step prenne la taille du contenu */
     .demo-sheet { height: auto; }
-    /* Poignée (handle) de swipe dédiée */
     .swipe-handler {
-      height: 20px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: ns-resize;
+      height: 20px; display: flex; align-items: center; justify-content: center; cursor: ns-resize;
     }
     .swipe-handler::before {
       content: ""; width: 36px; height: 4px; border-radius: 2px;
       background: var(--f7-text-muted); opacity: .6;
     }
-    /* L’espace bas pour iPhone notch etc. */
     .sheet-content { padding-bottom: calc(env(safe-area-inset-bottom, 0) + 12px); }
-
-    /* Optionnel: limite la hauteur du contenu compact (visible à l’état replié) */
     .sheet-compact-block { margin-top: 8px; }
   </style>
 </head>
@@ -41,46 +33,34 @@
         <div class="page-content">
           <div class="block block-strong demo-text">
             <p><b>Page de démonstration</b></p>
-            <p>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sit amet urna at arcu semper tristique.
-              Aliquam at efficitur nunc. Vivamus mattis libero in posuere aliquet. Cras vitae gravida eros.
-            </p>
-            <p>
-              La <i>sheet modal</i> est <b>toujours visible en bas</b> au plus petit état. Tire le handle vers le haut pour le plein écran (push view),
-              vers le bas pour revenir à l’état compact.
-            </p>
+            <p>La sheet en bas est <b>toujours visible</b> (état compact). Tire le handle vers le haut pour le <b>plein écran</b> (push view), vers le bas pour replier.</p>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit…</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- SHEET MODAL (push view + 2 états swipe-to-step) -->
+    <!-- SHEET MODAL -->
     <div class="sheet-modal sheet-modal-push demo-sheet" id="sheet-demo">
-      <!-- poignée dédiée au swipe -->
       <div class="swipe-handler"></div>
-
       <div class="sheet-modal-inner">
-        <!-- *** IMPORTANT ***: partie compacte visible quand repliée -->
+        <!-- Zone VISIBLE à l’état compact -->
         <div class="sheet-modal-swipe-step">
           <div class="block sheet-compact-block">
-            <p class="text-color-gray no-margin">
-              État compact — toujours visible. Glisse pour agrandir ⤴︎
-            </p>
+            <p class="text-color-gray no-margin">État compact — toujours visible. Glisse pour agrandir ⤴︎</p>
             <div class="list inset">
               <ul>
                 <li>
                   <div class="item-content">
                     <div class="item-inner">
-                      <div class="item-title">Résumé A</div>
-                      <div class="item-after">OK</div>
+                      <div class="item-title">Résumé A</div><div class="item-after">OK</div>
                     </div>
                   </div>
                 </li>
                 <li>
                   <div class="item-content">
                     <div class="item-inner">
-                      <div class="item-title">Résumé B</div>
-                      <div class="item-after">42</div>
+                      <div class="item-title">Résumé B</div><div class="item-after">42</div>
                     </div>
                   </div>
                 </li>
@@ -89,19 +69,11 @@
           </div>
         </div>
 
-        <!-- Contenu additionnel révélé en plein écran -->
+        <!-- Contenu révélé en plein écran -->
         <div class="block sheet-content">
           <p class="text-color-gray">Contenu plein écran</p>
-          <p>
-            Pellentesque at sapien urna. Vestibulum accumsan nibh non eleifend tristique.
-            Donec suscipit dui et orci feugiat viverra. Maecenas scelerisque sollicitudin magna.
-          </p>
-          <p>
-            Curabitur nec risus justo. Integer vitae arcu non massa finibus faucibus. Sed scelerisque posuere elementum.
-          </p>
-          <p>
-            Morbi non neque nec lorem tincidunt convallis. Quisque ut commodo nulla.
-          </p>
+          <p>Pellentesque at sapien urna. Vestibulum accumsan nibh non eleifend tristique…</p>
+          <p>Curabitur nec risus justo. Integer vitae arcu non massa finibus faucibus…</p>
         </div>
       </div>
     </div>
@@ -109,44 +81,38 @@
 
   <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
   <script>
+    // IMPORTANT: on ouvre la sheet dans on.init pour ne pas rater l'événement
     const app = new Framework7({
       el: '#app',
       name: 'DemoSheet2Steps',
       theme: 'auto',
       sheet: {
-        // évite les fermetures involontaires
         closeByBackdropClick: false,
         closeByOutsideClick: false,
       },
-    });
+      on: {
+        init() {
+          const sheet = app.sheet.create({
+            el: '#sheet-demo',
+            swipeToStep: true,             // 2 états (compact / plein écran)
+            swipeToClose: false,           // jamais de fermeture complète
+            swipeHandler: '.swipe-handler',
+            push: true,                    // push view quand plein écran
+            backdrop: true,                // backdrop en plein écran
+          });
 
-    // Crée la sheet en 2 étapes (compact/plein écran)
-    const sheet = app.sheet.create({
-      el: '#sheet-demo',
-      swipeToStep: true,             // 2 états contrôlés au swipe
-      swipeToClose: false,           // on n'autorise pas la fermeture complète
-      swipeHandler: '.swipe-handler',// on limite le swipe au handle
-      push: true,                    // push view quand on ouvre en grand (iOS/safe-area)
-      backdrop: true,                // backdrop quand plein écran (automatique avec stepOpen)
-    });
+          // Ouvre la sheet et force l’état compact pour qu’elle soit visible par défaut
+          sheet.open(false);     // sans animation (évite le flash)
+          sheet.stepClose(false);
 
-    // Ouvrir automatiquement AU CHARGEMENT en état compact (toujours visible)
-    app.on('init', () => {
-      // Ouvre la sheet (sinon elle n'apparaît pas)
-      sheet.open(false);    // sans animation pour éviter le flash
-      // Force l'état compact (replié)
-      sheet.stepClose(false);
+          // Interdit toute fermeture complète (ESC/backdrop/programmatique)
+          sheet.on('close', () => {
+            sheet.open(false);
+            sheet.stepClose(false);
+          });
+        },
+      },
     });
-
-    // Empêche toute fermeture complète (ESC, code, etc.)
-    sheet.on('close', () => {
-      // Ré-ouvrir illico en état compact pour rester "toujours visible"
-      sheet.open(false);
-      sheet.stepClose(false);
-    });
-
-    // Optionnel: si le contenu évolue dynamiquement, il faut recalculer le step
-    // sheet.setSwipeStep();
   </script>
 </body>
 </html>
