@@ -3,14 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Framework7 — Sheet minimale (fix TDZ)</title>
+  <title>F7 — Sheet push + full-sheet drag</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
   <style>
-    #sheet { height: auto; }                 /* requis pour swipe-to-step */
-    #sheet .sheet-modal-swipe-step { min-height: 80px; } /* évite un compact à 0px */
-    .swipe-handler { height: 20px; display: flex; align-items: center; justify-content: center; cursor: ns-resize; }
-    .swipe-handler::before { content: ""; width: 36px; height: 4px; border-radius: 2px; background: #999; opacity: .6; }
-    #debug { position: fixed; right: 8px; bottom: 8px; background: rgba(0,0,0,.7); color:#fff; padding:6px 8px; border-radius:6px; font: 12px ui-monospace,Menlo,Consolas,monospace; }
+    /* requis pour swipe-to-step */
+    #sheet { height: auto; }
+    /* évite un compact à 0px */
+    #sheet .sheet-modal-swipe-step { min-height: 84px; }
+    /* handle visible (mais pas obligatoire pour drag) */
+    .swipe-handler { height: 20px; display:flex; align-items:center; justify-content:center; }
+    .swipe-handler::before { content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6; }
   </style>
 </head>
 <body>
@@ -20,89 +22,74 @@
       <div class="navbar">
         <div class="navbar-bg"></div>
         <div class="navbar-inner">
-          <div class="title">Sheet minimale</div>
+          <div class="title">Sheet — push & full drag</div>
           <div class="right"><a href="#" class="link" id="open-link">Ouvrir</a></div>
         </div>
       </div>
       <div class="page-content">
         <div class="block">
-          <p>Démo minimale. Clique pour ouvrir la sheet :</p>
           <p><a href="#" class="button button-fill" id="open-btn">Ouvrir la sheet</a></p>
-          <p>Lorem ipsum dolor sit amet…</p>
+          <p>Swipe n’importe où sur la sheet pour <b>déplier/replier</b>. L’effet <b>push view</b> est activé.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Sheet -->
-  <div class="sheet-modal" id="sheet">
+  <!-- NOTE: classe sheet-modal-push pour l'effet push -->
+  <div class="sheet-modal sheet-modal-push" id="sheet">
     <div class="swipe-handler"></div>
     <div class="sheet-modal-inner">
       <!-- zone visible à l’état compact -->
       <div class="sheet-modal-swipe-step">
         <div class="block no-margin">
-          <p class="no-margin text-color-gray">Compact — glisse vers le haut pour agrandir ⤴︎</p>
+          <p class="no-margin text-color-gray">Compact — swipe/tap pour agrandir ⤴︎</p>
         </div>
       </div>
       <!-- contenu plein écran -->
       <div class="block">
-        <p>Contenu plein écran. Glisse vers le bas pour revenir au compact.</p>
+        <p>Plein écran — swipe/tap pour replier ⤵︎</p>
+        <p>Lorem ipsum dolor sit amet…</p>
       </div>
     </div>
   </div>
 </div>
 
-<div id="debug" style="display:none"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
 <script>
-  // Montre les erreurs JS à l’écran
-  window.onerror = function (msg) {
-    const d = document.getElementById('debug');
-    d.style.display = 'block';
-    d.textContent = 'JS error: ' + msg;
-  };
-
-  if (!window.Framework7) {
-    alert('Framework7 ne s’est pas chargé (CDN bloqué ?)');
-  }
-
   const app = new Framework7({
     el: '#app',
     on: {
-      // IMPORTANT: function() { ... } pour avoir this === app
       init: function () {
-        const d = document.getElementById('debug');
-        d.style.display = 'block';
-        d.textContent = 'F7 init OK';
-
-        // Crée la sheet ICI (pas de .sheet-init)
+        // Création de la sheet
         const sheet = this.sheet.create({
           el: '#sheet',
-          swipeToStep: true,          // 2 étapes compact ↔ plein écran
-          swipeToClose: false,        // ne jamais fermer complètement
-          swipeHandler: '.swipe-handler',
-          // push: true,               // décommente si tu veux l’effet push view
+          swipeToStep: true,     // 2 étapes (compact ↔ plein écran)
+          swipeToClose: false,   // jamais fermer complètement
+          // IMPORTANT: pas de swipeHandler => drag sur TOUTE la sheet
+          push: true,            // effet push view (avec la classe sheet-modal-push)
           backdrop: true
         });
 
-        // Ouverture programmée par défaut en compact (visible)
+        // Ouverte par défaut en compact (visible)
         sheet.open(false);
         sheet.stepClose(false);
 
-        // Boutons d’ouverture (lien + bouton)
-        const open = (e) => { e && e.preventDefault(); sheet.open(); };
+        // Ouvrir via lien/bouton
+        const open = (e)=>{ e && e.preventDefault(); sheet.open(); };
         document.getElementById('open-link').addEventListener('click', open);
         document.getElementById('open-btn').addEventListener('click', open);
 
-        // Logs d’état
-        sheet.on('opened', () => d.textContent = 'Sheet ouverte');
-        sheet.on('stepClose', () => d.textContent = 'Sheet compact');
-        sheet.on('stepOpen', () => d.textContent = 'Sheet plein écran');
+        // Tap-to-toggle (pratique en plus du swipe)
+        const sheetEl = document.getElementById('sheet');
+        sheetEl.addEventListener('click', (e) => {
+          // ignore le clic sur liens/boutons
+          if (e.target.closest('a,button')) return;
+          if (sheet.stepOpened) sheet.stepClose(); else sheet.stepOpen();
+        });
 
-        // Sécurité: recalibre le step après layout
-        requestAnimationFrame(() => sheet.setSwipeStep());
-        window.addEventListener('resize', () => sheet.setSwipeStep(), { passive: true });
+        // Sécurité: recalibre après layout
+        requestAnimationFrame(()=>sheet.setSwipeStep());
+        window.addEventListener('resize', ()=>sheet.setSwipeStep(), { passive: true });
       }
     }
   });
