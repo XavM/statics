@@ -3,178 +3,150 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Demo Framework7 — Sheet push view + breakpoints</title>
+  <title>F7 Demo — Sheet push + swipe-to-step (2 états)</title>
 
-  <!-- Framework7 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
 
   <style>
-    /* Juste pour l’aspect démo */
-    .demo-text {
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    /* Rendre la sheet confortable et auto (requis si on utilise aussi swipeToStep) */
-    .demo-sheet {
-      height: auto; /* conseillé par la doc pour les steps */
-    }
-    /* Poignée tactile visible (handle) */
+    .demo-text { max-width: 960px; margin: 0 auto; }
+    /* Hauteur auto conseillée par la doc en swipe-to-step */
+    .demo-sheet { height: auto; }
+    /* Poignée (handle) de swipe dédiée */
     .swipe-handler {
       height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       cursor: ns-resize;
     }
     .swipe-handler::before {
-      content: "";
-      width: 36px;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--f7-text-muted);
-      opacity: 0.6;
+      content: ""; width: 36px; height: 4px; border-radius: 2px;
+      background: var(--f7-text-muted); opacity: .6;
     }
-    /* Contenu de la sheet : scroll propre quand elle est grande */
-    .sheet-content {
-      padding-bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
-    }
+    /* L’espace bas pour iPhone notch etc. */
+    .sheet-content { padding-bottom: calc(env(safe-area-inset-bottom, 0) + 12px); }
+
+    /* Optionnel: limite la hauteur du contenu compact (visible à l’état replié) */
+    .sheet-compact-block { margin-top: 8px; }
   </style>
 </head>
 <body>
-  <!-- App root -->
   <div id="app">
-    <!-- Vue principale -->
     <div class="view view-main view-init ios-edges" data-url="/">
       <div class="page">
         <div class="navbar">
           <div class="navbar-bg"></div>
           <div class="navbar-inner">
-            <div class="title">Démo Sheet (Framework7)</div>
+            <div class="title">Démo Sheet — 2 étapes</div>
           </div>
         </div>
-
         <div class="page-content">
           <div class="block block-strong demo-text">
             <p><b>Page de démonstration</b></p>
             <p>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sit amet urna at arcu semper tristique.
-              Aliquam at efficitur nunc. Vivamus mattis, libero in posuere aliquet, augue urna tempor augue, vitae dictum
-              nisl est non arcu. Cras vitae gravida eros. Praesent fermentum convallis arcu, at sollicitudin orci dapibus sed.
+              Aliquam at efficitur nunc. Vivamus mattis libero in posuere aliquet. Cras vitae gravida eros.
             </p>
             <p>
-              Pellentesque at sapien urna. Vestibulum accumsan, nibh non eleifend tristique, turpis dolor imperdiet dolor,
-              non cursus erat neque nec quam. Donec suscipit dui et orci feugiat viverra. Suspendisse potenti. Maecenas
-              scelerisque sollicitudin magna, vel commodo neque posuere at.
-            </p>
-            <p>
-              (La sheet est en bas, ouverte sur son plus petit breakpoint. Glisse le handle vers le haut/bas.)
+              La <i>sheet modal</i> est <b>toujours visible en bas</b> au plus petit état. Tire le handle vers le haut pour le plein écran (push view),
+              vers le bas pour revenir à l’état compact.
             </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Sheet Modal -->
+    <!-- SHEET MODAL (push view + 2 états swipe-to-step) -->
     <div class="sheet-modal sheet-modal-push demo-sheet" id="sheet-demo">
-      <!-- poignée pour le swipe -->
+      <!-- poignée dédiée au swipe -->
       <div class="swipe-handler"></div>
 
-      <!-- Contenu de la sheet -->
       <div class="sheet-modal-inner">
-        <div class="block sheet-content">
-          <p class="text-color-gray">Infos (état compact)</p>
-          <p>
-            Ceci est une <b>sheet modal</b> avec <b>breakpoints multiples</b> + <b>push view</b>.
-            Tirez vers le haut pour l’agrandir (étapes intermédiaires), vers le bas pour la replier.
-          </p>
-
-          <div class="list inset">
-            <ul>
-              <li>
-                <div class="item-content">
-                  <div class="item-inner">
-                    <div class="item-title">Item A</div>
-                    <div class="item-after">Valeur</div>
+        <!-- *** IMPORTANT ***: partie compacte visible quand repliée -->
+        <div class="sheet-modal-swipe-step">
+          <div class="block sheet-compact-block">
+            <p class="text-color-gray no-margin">
+              État compact — toujours visible. Glisse pour agrandir ⤴︎
+            </p>
+            <div class="list inset">
+              <ul>
+                <li>
+                  <div class="item-content">
+                    <div class="item-inner">
+                      <div class="item-title">Résumé A</div>
+                      <div class="item-after">OK</div>
+                    </div>
                   </div>
-                </div>
-              </li>
-              <li>
-                <div class="item-content">
-                  <div class="item-inner">
-                    <div class="item-title">Item B</div>
-                    <div class="item-after">Valeur</div>
+                </li>
+                <li>
+                  <div class="item-content">
+                    <div class="item-inner">
+                      <div class="item-title">Résumé B</div>
+                      <div class="item-after">42</div>
+                    </div>
                   </div>
-                </div>
-              </li>
-            </ul>
+                </li>
+              </ul>
+            </div>
           </div>
+        </div>
 
-          <p class="text-color-gray">Contenu additionnel (visible aux breakpoints plus hauts)</p>
+        <!-- Contenu additionnel révélé en plein écran -->
+        <div class="block sheet-content">
+          <p class="text-color-gray">Contenu plein écran</p>
           <p>
-            Curabitur nec risus sit amet justo tristique sagittis. Integer vitae arcu non massa finibus faucibus.
-            Sed scelerisque, justo sit amet posuere elementum, augue nunc laoreet eros, sed pulvinar tortor lectus vel justo.
+            Pellentesque at sapien urna. Vestibulum accumsan nibh non eleifend tristique.
+            Donec suscipit dui et orci feugiat viverra. Maecenas scelerisque sollicitudin magna.
           </p>
-
           <p>
-            Morbi non neque nec lorem tincidunt convallis. Quisque ut commodo nulla. Maecenas nec sem id eros volutpat
-            efficitur. Vivamus pulvinar luctus elit nec faucibus.
+            Curabitur nec risus justo. Integer vitae arcu non massa finibus faucibus. Sed scelerisque posuere elementum.
+          </p>
+          <p>
+            Morbi non neque nec lorem tincidunt convallis. Quisque ut commodo nulla.
           </p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Framework7 JS -->
   <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
-
   <script>
-    // Initialisation Framework7
     const app = new Framework7({
       el: '#app',
-      name: 'DemoSheet',
+      name: 'DemoSheet2Steps',
       theme: 'auto',
-      // Par défaut, on évite les fermetures accidentelles
       sheet: {
+        // évite les fermetures involontaires
         closeByBackdropClick: false,
         closeByOutsideClick: false,
       },
     });
 
-    // Crée l’instance de la sheet avec multi-breakpoints + push view
-    const breakpoints = [0.18, 0.45, 0.85]; // 18% (compact/toujours visible), 45% (mi-hauteur), 85% (quasi plein écran)
-
+    // Crée la sheet en 2 étapes (compact/plein écran)
     const sheet = app.sheet.create({
       el: '#sheet-demo',
-      // Toujours visible, pas de fermeture complète au swipe
-      swipeToClose: false,
-      closeByBackdropClick: false,
-      backdrop: false,
-
-      // Multi-breakpoints (utilisé à la place de swipeToStep)
-      breakpoints,
-      // Pousser la vue derrière à partir du 2e palier
-      push: true,
-      pushBreakpoint: 0.45,
-      // (Optionnel) Afficher un backdrop seulement à partir d’un certain palier
-      backdropBreakpoint: 0.45,
-
-      // Limiter le swipe à la poignée
-      swipeHandler: '.swipe-handler',
+      swipeToStep: true,             // 2 états contrôlés au swipe
+      swipeToClose: false,           // on n'autorise pas la fermeture complète
+      swipeHandler: '.swipe-handler',// on limite le swipe au handle
+      push: true,                    // push view quand on ouvre en grand (iOS/safe-area)
+      backdrop: true,                // backdrop quand plein écran (automatique avec stepOpen)
     });
 
-    // Ouvrir automatiquement la sheet au plus petit breakpoint (toujours visible)
+    // Ouvrir automatiquement AU CHARGEMENT en état compact (toujours visible)
     app.on('init', () => {
-      sheet.open(false); // sans animation pour éviter un “flash”
-      // Positionner explicitement sur le plus petit palier (sécurité)
-      sheet.setBreakpoint(breakpoints[0]);
+      // Ouvre la sheet (sinon elle n'apparaît pas)
+      sheet.open(false);    // sans animation pour éviter le flash
+      // Force l'état compact (replié)
+      sheet.stepClose(false);
     });
 
-    // Si tu veux forcer la sheet à ne jamais se fermer (au cas d'un back ESC, etc.)
+    // Empêche toute fermeture complète (ESC, code, etc.)
     sheet.on('close', () => {
-      // La refermer immédiatement au palier le plus bas
+      // Ré-ouvrir illico en état compact pour rester "toujours visible"
       sheet.open(false);
-      sheet.setBreakpoint(breakpoints[0]);
+      sheet.stepClose(false);
     });
+
+    // Optionnel: si le contenu évolue dynamiquement, il faut recalculer le step
+    // sheet.setSwipeStep();
   </script>
 </body>
 </html>
