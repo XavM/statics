@@ -1,209 +1,94 @@
 <!DOCTYPE html>
-<html lang="fr" class="no-f7">
+<html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>F7 Sheet — 2 étapes (fallback inclus)</title>
-
-  <!-- F7 CSS (CDN #1) -->
-  <link id="f7css" rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css"
-        onerror="/* CSS CDN #1 down */(function(){var l=document.createElement('link');l.rel='stylesheet';l.href='https://unpkg.com/framework7@8.3.4/framework7-bundle.min.css';document.head.appendChild(l);}())">
-
+  <title>F7 — Demo sheet minimale</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
   <style>
-    /* ---------- Fallback visible SI F7 ne charge pas (classe .no-f7 sur <html>) ---------- */
-    .no-f7 #fallback-banner{
-      position: fixed; left: 0; right: 0; bottom: 100px; z-index: 99999;
-      font: 12px/1.3 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;
-      background: #ffe8e8; color: #b00000; padding: 6px 10px; text-align: center;
-      border-top: 1px solid #f0bcbc; border-bottom: 1px solid #f0bcbc;
-    }
-    .no-f7 #fallback-sheet{
-      position: fixed; left: 0; right: 0; bottom: 0; z-index: 99998;
-      background: #fff; border-top-left-radius: 12px; border-top-right-radius: 12px;
-      box-shadow: 0 -8px 24px rgba(0,0,0,.15);
-      /* “compact” visible par défaut */
-      max-height: 40vh; overflow: auto;
-    }
-    .no-f7 #fallback-sheet .handler{
-      height: 22px; display: flex; align-items: center; justify-content: center; cursor: ns-resize;
-    }
-    .no-f7 #fallback-sheet .handler::before{
-      content:""; width: 36px; height: 4px; border-radius: 2px; background: #999; opacity:.6;
-    }
-    .no-f7 .page-content{ padding-bottom: 42vh; } /* place pour la sheet fallback */
-
-    /* ---------- Styles communs démo ---------- */
-    .demo-text{max-width:960px;margin:0 auto;}
-    #sheet-demo{height:auto;} /* requis avec swipe-to-step */
-    #sheet-demo .sheet-modal-swipe-step{min-height:110px;} /* empêche le compact à 0px */
+    /* requis pour swipe-to-step: la sheet mesure sur son contenu */
+    #my-sheet{ height:auto; }
+    /* pour que l'état compact soit toujours visible quand ouvert en "stepClose" */
+    #my-sheet .sheet-modal-swipe-step{ min-height: 80px; }
+    /* petite poignée visible (handle) */
     .swipe-handler{
-      height:22px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;
+      height:20px; display:flex; align-items:center; justify-content:center; cursor:ns-resize;
     }
     .swipe-handler::before{
-      content:"";width:36px;height:4px;border-radius:2px;background:var(--f7-text-muted,#888);opacity:.6;
-    }
-    .sheet-content{padding-bottom:calc(env(safe-area-inset-bottom,0) + 12px);}
-    #debug{
-      position: fixed; right: 8px; bottom: 8px; z-index: 200000;
-      background: rgba(0,0,0,.6); color:#fff; font: 11px/1.3 ui-monospace,Menlo,Consolas,monospace;
-      padding: 6px 8px; border-radius: 6px;
+      content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6;
     }
   </style>
 </head>
 <body>
-  <!-- Bandeau d’alerte quand F7 ne charge pas -->
-  <div id="fallback-banner" style="display:none">Framework7 ne s’est pas chargé. Fallback CSS activé (la “sheet” en bas est une simulation). Vérifie ton réseau/CDN.</div>
-
   <div id="app">
-    <div class="view view-main view-init ios-edges" data-url="/">
+    <div class="view view-main view-init" data-url="/">
       <div class="page">
         <div class="navbar">
           <div class="navbar-bg"></div>
-          <div class="navbar-inner"><div class="title">Démo Sheet — 2 étapes</div></div>
-        </div>
-        <div class="page-content">
-          <div class="block block-strong demo-text">
-            <p><b>Page de démo</b> — la sheet doit être <b>visible en bas</b> (état compact). Tire le handle pour passer <b>plein écran</b>.</p>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sit amet urna at arcu semper tristique.</p>
-            <p>Si tu vois un bandeau rouge, c’est que F7 ne s’est pas chargé (CDN bloqué). La sheet visible est un fallback CSS.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SHEET F7 -->
-    <div class="sheet-modal sheet-modal-push" id="sheet-demo">
-      <div class="swipe-handler"></div>
-      <div class="sheet-modal-inner">
-        <div class="sheet-modal-swipe-step">
-          <div class="block no-margin">
-            <p class="text-color-gray no-margin">État compact — toujours visible. Glisse pour agrandir ⤴︎</p>
-            <div class="list inset">
-              <ul>
-                <li>
-                  <div class="item-content"><div class="item-inner"><div class="item-title">Résumé A</div><div class="item-after">OK</div></div></div>
-                </li>
-                <li>
-                  <div class="item-content"><div class="item-inner"><div class="item-title">Résumé B</div><div class="item-after">42</div></div></div>
-                </li>
-              </ul>
+          <div class="navbar-inner">
+            <div class="title">Sheet minimal</div>
+            <div class="right">
+              <a href="#" class="link" id="openSheetLink">Ouvrir</a>
             </div>
           </div>
         </div>
+        <div class="page-content">
+          <div class="block">
+            <p>Démo minimaliste. Clique pour ouvrir la sheet :</p>
+            <p><a href="#" class="button button-fill" id="openSheetBtn">Ouvrir la sheet</a></p>
+            <p>Lorem ipsum dolor sit amet…</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        <div class="block sheet-content">
-          <p class="text-color-gray">Contenu plein écran</p>
-          <p>Pellentesque at sapien urna. Vestibulum accumsan nibh non eleifend tristique. Donec suscipit dui et orci feugiat viverra.</p>
-          <p>Curabitur nec risus justo. Integer vitae arcu non massa finibus faucibus. Sed scelerisque posuere elementum.</p>
-          <p>Morbi non neque nec lorem tincidunt convallis. Quisque ut commodo nulla.</p>
+    <!-- SHEET MODAL MINIMALE -->
+    <div class="sheet-modal" id="my-sheet">
+      <!-- poignée pour le swipe -->
+      <div class="swipe-handler"></div>
+
+      <div class="sheet-modal-inner">
+        <!-- partie visible en "compact" (step fermé) -->
+        <div class="sheet-modal-swipe-step">
+          <div class="block no-margin">
+            <p class="no-margin text-color-gray">Étape compacte — glisse vers le haut pour agrandir ⤴︎</p>
+          </div>
+        </div>
+
+        <!-- contenu additionnel (visible en step ouvert / plein écran) -->
+        <div class="block">
+          <p>Contenu plein écran. Glisse vers le bas pour revenir au compact.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Fallback “fake sheet” SI F7 absent -->
-  <div id="fallback-sheet" style="display:none">
-    <div class="handler"></div>
-    <div class="block">
-      <p class="text-color-gray no-margin">Fallback compact (F7 non chargé). Vérifie le chargement du script F7.</p>
-      <div class="list inset">
-        <ul>
-          <li><div class="item-content"><div class="item-inner"><div class="item-title">Résumé A</div><div class="item-after">OK</div></div></div></li>
-          <li><div class="item-content"><div class="item-inner"><div class="item-title">Résumé B</div><div class="item-after">42</div></div></div></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- F7 JS (CDN #1) -->
   <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
-  <!-- Charge CDN #2 si F7 manquant -->
   <script>
-    (function ensureF7(){
-      if (window.Framework7) return;
-      var s = document.createElement('script');
-      s.src = 'https://unpkg.com/framework7@8.3.4/framework7-bundle.min.js';
-      s.onload = function(){ console.info('[F7] chargé via CDN #2'); initApp(); };
-      s.onerror = function(){
-        console.warn('[F7] échec des 2 CDNs — fallback CSS activé');
-        document.getElementById('fallback-banner').style.display='block';
-        document.getElementById('fallback-sheet').style.display='block';
-      };
-      document.head.appendChild(s);
-    }());
-  </script>
+    // App + sheet minimalistes
+    const app = new Framework7({
+      el: '#app',
+      on: {
+        init() {
+          // créer la sheet
+          const sheet = app.sheet.create({
+            el: '#my-sheet',
+            swipeToStep: true,         // 2 étapes compact ↔ plein écran
+            swipeHandler: '.swipe-handler',
+            // Dé-commente si tu veux l'effet "push view"
+            // push: true,
+          });
 
-  <!-- Init app -->
-  <script>
-    function initApp(){
-      // On enlève la classe “no-f7” si F7 dispo
-      document.documentElement.classList.remove('no-f7');
+          // boutons d'ouverture
+          const open = (e)=>{ e && e.preventDefault(); sheet.open(); };
+          document.getElementById('openSheetBtn').addEventListener('click', open);
+          document.getElementById('openSheetLink').addEventListener('click', open);
 
-      const app = new Framework7({
-        el:'#app',
-        name:'DemoSheet2Steps',
-        theme:'auto',
-        sheet:{
-          closeByBackdropClick:false,
-          closeByOutsideClick:false,
-        },
-        on:{
-          init(){
-            const sheet = app.sheet.create({
-              el:'#sheet-demo',
-              swipeToStep:true,           // 2 états compact ↔ plein écran
-              swipeToClose:false,         // jamais fermer complètement
-              swipeHandler:'.swipe-handler',
-              push:true,                  // push view en plein écran
-              backdrop:true,              // backdrop en plein écran
-            });
-
-            // Debug visuel
-            const dbg = document.createElement('div');
-            dbg.id='debug';
-            dbg.textContent='init…';
-            document.body.appendChild(dbg);
-            const log = (t)=>{ dbg.textContent=t; console.info(t); };
-
-            sheet.on('open', ()=>log('[sheet] open'));
-            sheet.on('opened', ()=>log('[sheet] opened'));
-            sheet.on('closed', ()=>log('[sheet] closed'));
-            sheet.on('stepOpen', ()=>log('[sheet] stepOpen (plein écran)'));
-            sheet.on('stepClose', ()=>log('[sheet] stepClose (compact)'));
-
-            // Ouvrir + forcer compact (visible)
-            sheet.open(false);
-            sheet.stepClose(false);
-
-            // Garde-fou: si quelque chose rate, on ré-applique un peu plus tard
-            setTimeout(()=>{ try{ sheet.open(false); sheet.stepClose(false); sheet.setSwipeStep(); }catch(e){} }, 150);
-
-            // Interdit toute fermeture totale
-            sheet.on('close', ()=>{
-              sheet.open(false);
-              sheet.stepClose(false);
-            });
-
-            // Recalibrage si dimension change
-            requestAnimationFrame(()=>sheet.setSwipeStep());
-            addEventListener('resize', ()=>sheet.setSwipeStep(), {passive:true});
-          }
+          // (facultatif) ouvrir directement en compact :
+          // sheet.open(); sheet.stepClose();
         }
-      });
-    }
-
-    // Si F7 déjà dispo via CDN #1, init tout de suite
-    if (window.Framework7) {
-      console.info('[F7] chargé via CDN #1');
-      initApp();
-    } else {
-      // Sinon, ensureF7() ci-dessus s’occupera de charger CDN #2 et d’appeler initApp()
-      document.getElementById('fallback-banner').style.display='block';
-      document.getElementById('fallback-banner').textContent =
-        'Chargement de Framework7… Si ce message persiste, le CDN est peut-être bloqué : fallback CSS actif.';
-      document.getElementById('fallback-sheet').style.display='block';
-    }
+      }
+    });
   </script>
 </body>
 </html>
