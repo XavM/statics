@@ -3,30 +3,36 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Grapher — Chart en page / Contrôles en sheet</title>
+  <title>Grapher — Chart en page / Contrôles en sheet (Stock)</title>
 
-  <!-- Framework7 + Highcharts -->
+  <!-- Framework7 + Highcharts Stock -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
-  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/stock/highstock.js"></script>
 
   <style>
-    /* Page = graph plein écran */
+    /* Page = graph plein écran (100% de largeur / pas plus haut que l'écran) */
+    :root { --nav-h: var(--f7-navbar-height, 44px); }
     #chart-container {
       width: 100%;
-      height: calc(100vh - var(--f7-navbar-height) - env(safe-area-inset-bottom, 0));
+      height: calc(100vh - var(--nav-h) - env(safe-area-inset-bottom, 0));
+      max-height: calc(100vh - var(--nav-h) - env(safe-area-inset-bottom, 0));
     }
 
     /* Sheet en 2 étapes + push view ; handle juste indicatif */
     #controls-sheet { height: auto; }
-    #controls-sheet .sheet-modal-swipe-step { min-height: 84px; }
+    #controls-sheet .sheet-modal-swipe-step { min-height: 92px; }
     .sheet-handle { height: 20px; display:flex; align-items:center; justify-content:center; }
     .sheet-handle::before { content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6; }
 
     /* Mise en forme rapide des contrôles */
-    .ctrls .list input, .ctrls .list select, .ctrls .list textarea { width: 100%; }
+    .ctrls .list input,
+    .ctrls .list select,
+    .ctrls .list textarea { width: 100%; }
     .ctrls .button-row { display: flex; gap: 8px; }
     .ctrls .button-row .button { flex: 1; }
+    .ctrls textarea { min-height: 140px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+    .muted { color: var(--f7-text-muted); font-size: 12px; }
   </style>
 </head>
 <body>
@@ -36,7 +42,7 @@
       <div class="navbar">
         <div class="navbar-bg"></div>
         <div class="navbar-inner">
-          <div class="title">Grapher</div>
+          <div class="title">Grapher (Stock)</div>
           <div class="right"><a href="#" class="link" id="openControls">Contrôles</a></div>
         </div>
       </div>
@@ -55,162 +61,372 @@
       <!-- Étape compacte visible en bas -->
       <div class="sheet-modal-swipe-step">
         <div class="block no-margin">
-          <p class="no-margin text-color-gray">Contrôles — swipe/tap pour agrandir ⤴︎</p>
+          <p class="no-margin text-color-gray">
+            Contrôles — swipe/tap pour agrandir ⤴︎
+          </p>
         </div>
       </div>
 
       <!-- Contenu contrôles -->
       <div class="block crtls">
-        <!-- AUTO-MOVE: si ta page a déjà des contrôles (form/#controls/.controls),
-             ils seront déplacés ici au démarrage. Sinon, tu peux coller les tiens ci-dessous. -->
-
-        <!-- PLACE TES CONTROLES ICI (si auto-move ne trouve rien) -->
-        <div id="fallback-controls" class="list inset">
+        <div class="list inset">
           <ul>
             <li class="item-content item-input">
               <div class="item-inner">
                 <div class="item-title item-label">Type de série</div>
                 <div class="item-input-wrap">
                   <select id="seriesType">
-                    <option value="spline" selected>spline</option>
-                    <option value="line">line</option>
-                    <option value="area">area</option>
-                    <option value="column">column</option>
-                    <option value="bar">bar</option>
-                    <option value="scatter">scatter</option>
+                    <option value="spline" selected>Spline</option>
+                    <option value="line">Line</option>
+                    <option value="area">Area</option>
+                    <option value="areaspline">Area Spline</option>
+                    <option value="column">Column</option>
+                    <option value="scatter">Scatter</option>
+                    <!-- Tu peux en ajouter d'autres supportés par Highcharts Stock -->
                   </select>
                 </div>
               </div>
             </li>
+
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Série (CSV nums, ex: 1,3,2,4)</div>
+                <div class="item-title item-label">Empiler les colonnes (stacked)</div>
                 <div class="item-input-wrap">
-                  <input id="seriesData" type="text" value="1,3,2,4,6,3,5,7" />
+                  <label class="toggle toggle-init">
+                    <input type="checkbox" id="stackedColumns">
+                    <span class="toggle-icon"></span>
+                  </label>
                 </div>
               </div>
             </li>
+
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Titre</div>
+                <div class="item-title item-label">Charger un JSON (time series)</div>
                 <div class="item-input-wrap">
-                  <input id="chartTitle" type="text" value="Ma série" />
+                  <input type="file" id="jsonFile" accept="application/json,.json" />
+                </div>
+              </div>
+            </li>
+
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">
+                  JSON (éditable) — format attendu: <code>[[ts,value], ...]</code>
+                </div>
+                <div class="item-input-wrap">
+                  <textarea id="jsonEditor" spellcheck="false">[[1719964800000,1],[1719968400000,3],[1719972000000,2],[1719975600000,4],[1719979200000,6]]</textarea>
+                  <div class="muted">ts = timestamp (ms). Exemple: [[1723257600000, 42], [1723261200000, 37]]</div>
+                </div>
+              </div>
+            </li>
+
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">Nom de la série / sauvegarde</div>
+                <div class="item-input-wrap">
+                  <input id="datasetName" type="text" placeholder="Nom pour sauvegarder" />
+                </div>
+              </div>
+            </li>
+
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">Séries enregistrées (localStorage)</div>
+                <div class="item-input-wrap">
+                  <select id="savedList"></select>
                 </div>
               </div>
             </li>
           </ul>
-          <div class="block button-row">
-            <a href="#" class="button button-fill" id="applyBtn">Appliquer</a>
-            <a href="#" class="button" id="resetBtn">Réinitialiser</a>
-          </div>
         </div>
-        <!-- /PLACE TES CONTROLES ICI -->
+
+        <div class="block button-row">
+          <a href="#" class="button button-fill" id="applyBtn">Appliquer</a>
+          <a href="#" class="button" id="saveBtn">Sauvegarder</a>
+          <a href="#" class="button" id="loadBtn">Charger</a>
+          <a href="#" class="button color-red" id="deleteBtn">Supprimer</a>
+        </div>
+
+        <div class="block">
+          <p class="muted">
+            Toute modification du JSON est <b>automatiquement sauvegardée</b> dans <code>localStorage</code> (jeu “courant”).  
+            Les sauvegardes nommées apparaissent dans la liste et peuvent être rechargées.
+          </p>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // App F7 + sheet (push + 2 steps, drag sur toute la sheet)
+  // ======= Helpers LocalStorage =======
+  const LS_CURRENT_KEY = 'grapher.current.timeseries';
+  const LS_SAVED_MAP_KEY = 'grapher.saved.timeseries.map'; // { name: jsonString }
+
+  function lsGetSavedMap() {
+    try { return JSON.parse(localStorage.getItem(LS_SAVED_MAP_KEY) || '{}'); }
+    catch(e){ return {}; }
+  }
+  function lsSetSavedMap(map) {
+    localStorage.setItem(LS_SAVED_MAP_KEY, JSON.stringify(map || {}));
+  }
+  function lsGetCurrent() {
+    return localStorage.getItem(LS_CURRENT_KEY) || '';
+  }
+  function lsSetCurrent(str) {
+    localStorage.setItem(LS_CURRENT_KEY, String(str ?? ''));
+  }
+
+  // ======= Parsing / Validation =======
+  function parseSeriesJson(str) {
+    let data = JSON.parse(str);
+    // autoriser tableau de paires [ts,val] ou objet avec key data
+    if (!Array.isArray(data) && data && Array.isArray(data.data)) data = data.data;
+
+    if (!Array.isArray(data)) throw new Error('JSON racine doit être un tableau');
+
+    // Convertir éventuels ts en ISO/secondes → ms
+    const norm = data.map(p => {
+      if (!Array.isArray(p) || p.length < 2) throw new Error('Chaque point doit être [ts,value]');
+      let ts = p[0];
+      let v  = p[1];
+
+      if (typeof ts === 'string') {
+        const d = new Date(ts);
+        if (isNaN(d)) throw new Error('Timestamp invalide: ' + ts);
+        ts = d.getTime();
+      }
+      // si c’est en secondes (10 chiffres), multiplier
+      if (typeof ts === 'number' && ts < 2e12) {
+        // heuristique: si < 2e12, c’est probablement en s (ou ms il y a longtemps)
+        if (ts < 1e11) ts = ts * 1000;
+        // sinon on garde (ms)
+      }
+      const numV = Number(v);
+      if (Number.isNaN(numV)) throw new Error('Valeur non numérique: ' + v);
+      return [ts, numV];
+    });
+
+    // Tri par ts croissant
+    norm.sort((a,b) => a[0] - b[0]);
+    return norm;
+  }
+
+  function prettyJson(arr) {
+    return JSON.stringify(arr, null, 2);
+  }
+
+  // ======= Highcharts Stock init =======
   const app = new Framework7({
     el: '#app',
     on: {
       init: function () {
+        // Sheet
         const sheet = this.sheet.create({
           el: '#controls-sheet',
           swipeToStep: true,
           swipeToClose: false,
           push: true,
           backdrop: true
-          // pas de swipeHandler => drag sur toute la sheet
         });
-
-        // Ouvrir par défaut en compact (visible)
+        // Ouverte par défaut en compact (visible)
         sheet.open(false);
         sheet.stepClose(false);
-
-        // Toggle via le bouton navbar
         document.getElementById('openControls').addEventListener('click', (e) => {
-          e.preventDefault();
-          sheet.open();
+          e.preventDefault(); sheet.open();
         });
-
-        // === AUTO-MOVE DES CONTRÔLES EXISTANTS ===
-        const target = document.querySelector('#controls-sheet .crtls');
-        const candidates = [
-          document.getElementById('controls'),
-          ...document.querySelectorAll('.controls'),
-          ...document.querySelectorAll('form')
-        ].filter(Boolean);
-
-        // Ne déplace JAMAIS le formulaire Highcharts export (si présent)
-        const isExportForm = (el) => el.tagName === 'FORM' && el.getAttribute('action')?.includes('export');
-
-        let moved = false;
-        candidates.forEach(el => {
-          if (isExportForm(el)) return;
-          // Évite de déplacer le container du chart s’il a été mal nommé
-          if (el.id === 'chart-container' || el.id === 'container') return;
-          // Déplace l’élément dans la sheet
-          target.appendChild(el);
-          moved = true;
-        });
-
-        if (moved) {
-          const fb = document.getElementById('fallback-controls');
-          fb?.parentNode?.removeChild(fb);
-        }
-
-        // === HIGHCHARTS DEMO (remplace par ton init si tu as déjà le tien) ===
-        const chartEl = document.getElementById('chart-container');
-        const initialSeries = (document.getElementById('seriesData')?.value || '1,3,2,4').split(',').map(v => +v.trim()).filter(v => !Number.isNaN(v));
-        const initialType = document.getElementById('seriesType')?.value || 'spline';
-        const initialTitle = document.getElementById('chartTitle')?.value || 'Ma série';
-
-        let chart = Highcharts.chart(chartEl, {
-          chart: { type: initialType, animation: false },
-          title: { text: initialTitle },
-          credits: { enabled: false },
-          legend: { enabled: false },
-          xAxis: { tickLength: 0 },
-          yAxis: { title: { text: null } },
-          tooltip: { shared: true },
-          series: [{ name: 'S1', data: initialSeries }]
-        });
-
-        // Appliquer (démos de base ; garde si tes contrôles n’existent pas)
-        const apply = () => {
-          const type = document.getElementById('seriesType')?.value || 'spline';
-          const title = document.getElementById('chartTitle')?.value || '';
-          const nums = (document.getElementById('seriesData')?.value || '')
-            .split(',')
-            .map(v => +v.trim())
-            .filter(v => !Number.isNaN(v));
-
-          chart.update({ chart: { type }, title: { text: title } }, false, true);
-          if (nums.length) chart.series[0].setData(nums, false);
-          chart.redraw();
-        };
-        document.getElementById('applyBtn')?.addEventListener('click', (e) => { e.preventDefault(); apply(); });
-        document.getElementById('resetBtn')?.addEventListener('click', (e) => {
-          e.preventDefault();
-          document.getElementById('seriesType').value = 'spline';
-          document.getElementById('seriesData').value = '1,3,2,4,6,3,5,7';
-          document.getElementById('chartTitle').value = 'Ma série';
-          apply();
-        });
-
-        // Tap-to-toggle compact/plein écran
-        document.getElementById('controls-sheet').addEventListener('click', (e) => {
+        // Tap-to-toggle + reflow
+        const sheetEl = document.getElementById('controls-sheet');
+        sheetEl.addEventListener('click', (e) => {
           if (e.target.closest('a,button,select,input,textarea,label')) return;
-          chart?.reflow(); // bon réflexe après redimensionnement
           sheet.stepOpened ? sheet.stepClose() : sheet.stepOpen();
         });
 
-        // Reflow chart quand la sheet change de taille
-        sheet.on('stepOpen', () => chart?.reflow());
-        sheet.on('stepClose', () => chart?.reflow());
-        window.addEventListener('resize', () => chart?.reflow(), { passive: true });
+        // Chart
+        const chartEl = document.getElementById('chart-container');
+
+        function isColumnLike(type){ return String(type).toLowerCase() === 'column'; }
+        function yAxisIndexFor(type){ return isColumnLike(type) ? 0 : 1; }
+
+        // Valeurs initiales
+        const $jsonEditor = document.getElementById('jsonEditor');
+        // Charger depuis localStorage “courant” si présent
+        const currentSaved = lsGetCurrent();
+        if (currentSaved) $jsonEditor.value = currentSaved;
+
+        const initialType = document.getElementById('seriesType').value || 'spline';
+        const initialData = safeParseEditor();
+
+        let chart = Highcharts.stockChart(chartEl, {
+          chart: { animation: false },
+          credits: { enabled: false },
+          legend: { enabled: false },
+          rangeSelector: { selected: 1 },
+          tooltip: { shared: true, split: false },
+          yAxis: [{
+            title: { text: null }, opposite: false // gauche (column/stacked)
+          },{
+            title: { text: null }, opposite: true  // droite (autres)
+          }],
+          plotOptions: {
+            series: {
+              dataGrouping: { enabled: true },
+              // stacking défini dynamiquement selon le type + toggle
+            }
+          },
+          series: [{
+            name: 'S1',
+            type: initialType,
+            data: initialData,
+            yAxis: yAxisIndexFor(initialType)
+          }]
+        });
+
+        function reflow(){ try{ chart && chart.reflow(); }catch(e){} }
+        sheet.on('stepOpen', reflow);
+        sheet.on('stepClose', reflow);
+        window.addEventListener('resize', reflow, { passive: true });
+
+        // ======= Contrôles =======
+        const $type    = document.getElementById('seriesType');
+        const $stacked = document.getElementById('stackedColumns');
+        const $file    = document.getElementById('jsonFile');
+        const $name    = document.getElementById('datasetName');
+        const $list    = document.getElementById('savedList');
+
+        // Peupler la liste des sauvegardes
+        function refreshSavedList(selectedName) {
+          const map = lsGetSavedMap();
+          $list.innerHTML = '';
+          const optEmpty = document.createElement('option');
+          optEmpty.value = ''; optEmpty.textContent = '-- sélectionner --';
+          $list.appendChild(optEmpty);
+          Object.keys(map).sort().forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            if (selectedName && name === selectedName) opt.selected = true;
+            $list.appendChild(opt);
+          });
+        }
+        refreshSavedList();
+
+        // Appliquer les changements au chart
+        function applyChanges() {
+          const type = $type.value;
+          const stacked = $stacked.checked;
+          const data = safeParseEditor(); // lève erreur déjà gérée et autosave
+
+          // stacking: seulement si column + stacked
+          const stacking = (isColumnLike(type) && stacked) ? 'normal' : undefined;
+
+          chart.update({
+            plotOptions: { series: { stacking } },
+            tooltip: { shared: true, split: false },
+          }, false, true);
+
+          chart.series[0].update({
+            type,
+            yAxis: yAxisIndexFor(type),
+          }, false);
+
+          chart.series[0].setData(data, false);
+          chart.redraw();
+        }
+
+        // JSON editor: parse + autosave
+        function safeParseEditor() {
+          const raw = $jsonEditor.value.trim();
+          // autosave du “courant”
+          lsSetCurrent(raw);
+          if (!raw) return [];
+          try {
+            return parseSeriesJson(raw);
+          } catch (e) {
+            // Simple feedback console, on n’interrompt pas l’UX tant qu’on ne clique pas “Appliquer”
+            console.warn('JSON invalide:', e.message);
+            throw e;
+          }
+        }
+
+        // Déclencheurs
+        document.getElementById('applyBtn').addEventListener('click', (e) => {
+          e.preventDefault();
+          try { applyChanges(); reflow(); }
+          catch(err){ app.dialog.alert('JSON invalide : ' + err.message); }
+        });
+
+        // Sauvegarder nommé
+        document.getElementById('saveBtn').addEventListener('click', (e) => {
+          e.preventDefault();
+          const name = ($name.value || '').trim();
+          if (!name) { app.dialog.alert('Donne un nom pour sauvegarder.'); return; }
+          const raw = $jsonEditor.value.trim();
+          if (!raw) { app.dialog.alert('Le JSON est vide.'); return; }
+          // Valider avant de sauver
+          try { parseSeriesJson(raw); } catch(err){ app.dialog.alert('JSON invalide : ' + err.message); return; }
+          const map = lsGetSavedMap();
+          map[name] = raw;
+          lsSetSavedMap(map);
+          refreshSavedList(name);
+          app.toast.create({ text: 'Sauvegardé', closeTimeout: 1500 }).open();
+        });
+
+        // Charger depuis la liste
+        document.getElementById('loadBtn').addEventListener('click', (e) => {
+          e.preventDefault();
+          const name = $list.value;
+          if (!name) { app.dialog.alert('Sélectionne une sauvegarde.'); return; }
+          const map = lsGetSavedMap();
+          const raw = map[name];
+          if (!raw) { app.dialog.alert('Introuvable en localStorage.'); return; }
+          $jsonEditor.value = raw;
+          lsSetCurrent(raw);
+          try { applyChanges(); reflow(); } catch(err){ app.dialog.alert('JSON invalide : ' + err.message); }
+        });
+
+        // Supprimer une sauvegarde
+        document.getElementById('deleteBtn').addEventListener('click', (e) => {
+          e.preventDefault();
+          const name = $list.value;
+          if (!name) { app.dialog.alert('Sélectionne une sauvegarde à supprimer.'); return; }
+          const map = lsGetSavedMap();
+          delete map[name];
+          lsSetSavedMap(map);
+          refreshSavedList();
+          app.toast.create({ text: 'Supprimé', closeTimeout: 1500 }).open();
+        });
+
+        // Upload JSON
+        $file.addEventListener('change', async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          try {
+            const text = await file.text();
+            // Valider
+            parseSeriesJson(text);
+            $jsonEditor.value = text;
+            lsSetCurrent(text);
+            app.toast.create({ text: 'Fichier chargé', closeTimeout: 1500 }).open();
+          } catch(err){
+            app.dialog.alert('JSON invalide : ' + err.message);
+          } finally {
+            e.target.value = '';
+          }
+        });
+
+        // Autosave en tapant (debounce light)
+        let t;
+        $jsonEditor.addEventListener('input', () => {
+          clearTimeout(t);
+          t = setTimeout(() => {
+            lsSetCurrent($jsonEditor.value);
+          }, 300);
+        });
+
+        // Changement de type / stacked => appliquer direct
+        $type.addEventListener('change', () => { try { applyChanges(); reflow(); } catch(e){ /* ignore tant que JSON invalide */ } });
+        $stacked.addEventListener('change', () => { try { applyChanges(); reflow(); } catch(e){ } });
       }
     }
   });
