@@ -1,99 +1,155 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Time Series Viewer — Highcharts Stock</title>
-<!-- La seule dépendance autorisée -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Grapher — Highcharts Stock + Framework7 Sheet</title>
+
+<!-- Highcharts Stock -->
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
+
+<!-- Framework7 (bundle) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css">
+<script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
+
 <style>
   :root{
-    --bg:#0b0c0f;--panel:#12141a;--fg:#e5e7eb;--muted:#9aa3af;--border:#1f2430;--accent:#7c5cff;
-    --pad:12px;--radius:12px;
+    --bg:#0b0c0f; --fg:#e5e7eb; --panel:#12141a; --muted:#9aa3af; --border:#1f2430; --accent:#7c5cff;
   }
   [data-theme="light"]{
-    --bg:#f7f7fb;--panel:#ffffff;--fg:#0f172a;--muted:#4b5563;--border:#e5e7ef;--accent:#6d28d9;
+    --bg:#f7f7fb; --fg:#0f172a; --panel:#ffffff; --muted:#4b5563; --border:#e7e7ef; --accent:#6d28d9;
   }
-  *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
-  /* Chart sticky plein écran en largeur */
-  #chartWrap{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+  /* Chart full width, sticky */
+  #chartWrap{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border)}
   #chart{width:100%;height:65vh;min-height:320px}
-  /* Contrôles sous le graphe, look propre */
-  main{padding:clamp(10px,2vw,20px);display:grid;gap:16px;max-width:1200px;margin:0 auto}
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:var(--pad)}
-  .grid{display:grid;gap:12px}
-  .grid.cols-2{grid-template-columns:1fr 1fr}
-  @media (max-width:900px){.grid.cols-2{grid-template-columns:1fr}}
-  input[type="text"],textarea,select,button{
-    background:transparent;border:1px solid var(--border);color:var(--fg);padding:10px 12px;border-radius:8px
-  }
-  textarea{min-height:140px;resize:vertical}
-  .row{display:flex;gap:8px;flex-wrap:wrap}
-  .title{font-weight:600}
-  .muted{color:var(--muted)}
-  button.accent{background:var(--accent);border-color:transparent;color:#fff}
-  button.warn{background:transparent;border-color:#ef44441a;color:#ef4444}
-  .series-table{display:grid;gap:8px}
+  /* Open-sheet FAB */
+  .fab{position:fixed;right:16px;bottom:16px;z-index:20}
+  .fab > a{background:var(--accent) !important;color:#fff !important}
+  /* Sheet content visuals */
+  .block-title{color:var(--muted)}
   .series-row{display:grid;grid-template-columns:1fr 160px 100px;gap:8px;align-items:center}
+  .muted{color:var(--muted)}
+  textarea, input[type="text"], select, button{background:transparent;border:1px solid var(--border);color:var(--fg);padding:8px;border-radius:8px}
+  textarea{min-height:120px;resize:vertical}
 </style>
 </head>
 <body data-theme="dark">
+<div id="app"><!-- F7 root -->
 
-<div id="chartWrap">
-  <div id="chart"></div>
+  <!-- CHART -->
+  <div id="chartWrap">
+    <div id="chart"></div>
+  </div>
+
+  <!-- OPEN SHEET BUTTON (FAB) -->
+  <div class="fab fab-right-bottom">
+    <a href="#" class="sheet-open" data-sheet="#controls-sheet">
+      <i class="icon f7-icons if-not-md">slider_horizontal_3</i>
+      <i class="icon material-icons if-md">tune</i>
+    </a>
+  </div>
+
+  <!-- SHEET MODAL: controls -->
+  <div class="sheet-modal" id="controls-sheet"
+       style="height:auto"
+       data-backdrop="true"
+       data-swipe-to-close="true"
+       data-breakpoints='[0.2,0.5,0.9,1]'
+       data-backdrop-breakpoint="0.2">
+    <div class="sheet-modal-inner">
+      <!-- FIRST STEP (visible at partial open) -->
+      <div class="sheet-modal-swipe-step">
+        <div class="block">
+          <div class="row">
+            <div class="col"><div class="block-title">Contrôles</div></div>
+            <div class="col text-align-right">
+              <a class="button button-outline" id="btnTheme">Thème</a>
+              <a class="button button-fill color-red sheet-close">Fermer</a>
+            </div>
+          </div>
+          <div class="block-footer muted">Swipe vers le haut pour plus d’options • Breakpoints : 20% / 50% / 90% / 100%.</div>
+        </div>
+      </div>
+
+      <!-- REST OF CONTENT (revealed at higher breakpoints) -->
+      <div class="block">
+        <div class="block-title">Importer / Coller des données</div>
+        <div class="list no-hairlines-md">
+          <ul>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">Fichier JSON</div>
+                <div class="item-input-wrap">
+                  <input type="file" id="fileInput" accept="application/json,.json,.txt">
+                </div>
+              </div>
+            </li>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">Nom par défaut d’une série (si absent)</div>
+                <div class="item-input-wrap">
+                  <input id="defaultSeriesName" type="text" placeholder="series">
+                </div>
+              </div>
+            </li>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-title item-label">JSON</div>
+                <div class="item-input-wrap">
+                  <textarea id="jsonInput" placeholder='Formats:
+- Map: { "http-2xx":[[ts,val],...], "http-5xx":[...], ... }
+- Array: [ {"name":"http-2xx","data":[[ts,val],...]}, ... ]
+- Single: [[ts,val],...]  ou  [{"timestamp":"...","value":123}, ...]'></textarea>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="row padding-horizontal">
+          <a class="button button-fill" id="btnReplace">Charger (Remplace)</a>
+          <a class="button" id="btnAdd">Ajouter</a>
+          <a class="button button-outline color-red" id="btnClear">Vider</a>
+        </div>
+        <div id="status" class="padding muted"></div>
+
+        <div class="block-title">Séries (type par série)</div>
+        <div id="seriesControls" class="list simple-list"></div>
+
+        <div class="block-title">Données (localStorage)</div>
+        <div class="row padding-horizontal">
+          <a class="button" id="btnExport">Exporter</a>
+          <a class="button" id="btnImport">Importer</a>
+          <a class="button button-outline color-red" id="btnClearAll">Tout supprimer</a>
+          <input id="importAllInput" type="file" accept="application/json" style="display:none" />
+        </div>
+        <div class="padding muted">Les séries et le thème sont persistés dans le navigateur.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<main>
-  <section class="panel grid cols-2">
-    <div class="grid">
-      <div class="title">Importer / Coller des données</div>
-      <div class="row">
-        <button id="btnTheme" class="accent">Basculer thème</button>
-        <input id="fileInput" type="file" accept="application/json,.json,.txt" />
-      </div>
-      <input id="defaultSeriesName" type="text" placeholder="Nom par défaut d'une série (si absent)" />
-      <textarea id="jsonInput" placeholder='Formats:
-- Map: { "http-2xx": [[ts,val],...], "http-5xx":[...], ... }
-- Array: [ { "name":"http-2xx","data":[[ts,val],...] }, ... ]
-- Single: [[ts,val],...]  ou  [{"timestamp":"...","value":123}, ...]'></textarea>
-      <div class="row">
-        <button id="btnReplace">Charger (Remplace)</button>
-        <button id="btnAdd">Ajouter</button>
-        <button id="btnClear" class="warn">Vider la zone</button>
-      </div>
-      <div id="status" class="muted"></div>
-    </div>
-
-    <div class="grid">
-      <div class="title">Séries (type par série)</div>
-      <div class="muted">`column` & `column-stacked` → axe Y gauche, autres → axe Y droite. Toute modif est sauvegardée.</div>
-      <div id="seriesControls" class="series-table"></div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="title">Données enregistrées</div>
-    <div class="row" style="margin:6px 0 10px">
-      <button id="btnExport">Exporter</button>
-      <button id="btnImport">Importer</button>
-      <button id="btnClearAll" class="warn">Tout supprimer</button>
-      <input id="importAllInput" type="file" accept="application/json" style="display:none" />
-    </div>
-    <div class="muted">Les données et le thème sont persistés dans le navigateur.</div>
-  </section>
-</main>
-
 <script>
-/* ====================== Utils & parsing ====================== */
-const THEME_KEY='ts_theme';           // 'dark' | 'light'
-const DATA_KEY='ts_data_v1';          // [{name,type,data:[[ts,val],...]}]
-const TYPE_OPTIONS=['spline','line','area','areaspline','column','column-stacked'];
+/* ========== Framework7 App (sheet breakpoints) ========== */
+const app = new Framework7({
+  el: '#app',
+  theme: 'auto',
+  sheet: { closeByBackdropClick: true } // defaults
+});
+// helper: open sheet to a breakpoint programmatically if needed
+function openSheetAt(bp){ const sh = app.sheet.get('#controls-sheet'); if(sh) sh.setBreakpoint(bp); }
 
-const $ = id => document.getElementById(id);
-const isHttpSeries = name => /^http-\dxx$/i.test(name);
-const isLatency = name => /time|latency|ms/i.test(name);
-const toMillis = ts => (typeof ts==='number') ? ts : (Number(ts)>1e10 ? Number(ts) : Date.parse(ts));
+/* ========== Highcharts config ========== */
+const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
+const DATA_KEY = 'ts_data_v2';
+const THEME_KEY = 'ts_theme';
+const $ = (id)=>document.getElementById(id);
+
+const yAxisForType = (t)=> (t==='column'||t==='column-stacked') ? 0 : 1;
+const normalizeType = (t)=> (t==='column-stacked') ? {actual:'column', stacked:true} : {actual:(t||'spline'), stacked:false};
+const anyStacked = (list)=> list.some(s => s.type==='column-stacked');
+
+const toMillis = (ts) => (typeof ts==='number') ? ts : (Number(ts)>1e10 ? Number(ts) : Date.parse(ts));
 function normalizeDataArray(arr){
   if(!Array.isArray(arr)) throw new Error('Une série doit être un tableau');
   if(!arr.length) return [];
@@ -107,71 +163,30 @@ function parseJson(text, defaultName='series'){
   }
   if(Array.isArray(obj)){
     if(obj.length && typeof obj[0]==='object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])){
-      return obj.map((s,i)=>({ name: s.name ?? `${defaultName} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? [])}));
+      return obj.map((s,i)=>({ name: s.name ?? `${defaultName} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
     }
     return [{ name: defaultName, data: normalizeDataArray(obj) }];
   }
   throw new Error('Format JSON non supporté');
 }
-function defaultTypeFor(name){
-  if(isHttpSeries(name)) return 'column-stacked';
-  if(isLatency(name))    return 'spline';
-  return 'spline';
-}
-const yAxisForType = t => (t==='column' || t==='column-stacked') ? 0 : 1;
-const normalizeType = t => (t==='column-stacked') ? { actual:'column', stacked:true } : { actual:(t||'spline'), stacked:false };
-const anyStacked = list => list.some(s => s.type === 'column-stacked');
 
-/* ====================== Thème Highcharts ====================== */
-function applyTheme(theme){
-  document.body.setAttribute('data-theme', theme==='light' ? 'light' : 'dark');
-  localStorage.setItem(THEME_KEY, theme);
-  const dark = theme!=='light';
-  Highcharts.setOptions({
-    chart: { backgroundColor:'transparent', style:{ color: dark ? '#e5e7eb' : '#0f172a' } },
-    rangeSelector: { selected: 1, inputEnabled:false, buttonTheme:{ fill:'transparent', style:{ color: dark ? '#e5e7eb' : '#0f172a'} } },
-    xAxis: { gridLineColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', labels:{ style:{ color: dark ? '#cbd5e1' : '#334155'} } },
-    yAxis: [{ labels:{ style:{ color: dark ? '#cbd5e1' : '#334155'} } }, { labels:{ style:{ color: dark ? '#cbd5e1' : '#334155'} }, opposite:true }],
-    legend: { itemStyle:{ color: dark ? '#e5e7eb' : '#0f172a' } },
-    tooltip: { backgroundColor: dark ? 'rgba(17,24,39,0.95)' : 'rgba(255,255,255,0.95)', style:{ color: dark ? '#e5e7eb' : '#0f172a' } },
-    navigator: { outlineColor: dark ? '#374151' : '#e5e7eb' },
-    scrollbar: { barBackgroundColor: dark ? '#475569' : '#cbd5e1' }
-  });
-}
-
-/* ====================== Données & persistance ====================== */
-let storedData = [];
-function loadData(){
-  try { storedData = JSON.parse(localStorage.getItem(DATA_KEY) || '[]'); } catch { storedData = []; }
-}
-function saveData(){ localStorage.setItem(DATA_KEY, JSON.stringify(storedData)); }
-
-/* ====================== Démo 7j x 1 min ====================== */
+/* Demo data (only if none persisted) */
 function generateDemoData(){
   const now = new Date(); now.setSeconds(0,0);
   const end = new Date(now.getTime() - 60*1000);
-  const points = 7*24*60; // 10080
+  const points = 7*24*60;
   const start = new Date(end.getTime() - (points-1)*60*1000);
-  const hourMult = [0.25,0.20,0.18,0.18,0.20,0.30,0.45,0.60,0.80,0.95,1.00,1.05,1.10,1.10,1.05,1.00,0.95,0.90,0.85,0.80,0.70,0.55,0.40,0.30];
-  const s2=[], s3=[], s5=[], srt=[];
-  const spikes=new Set(); // quelques spikes 5xx par jour
-  for(let d=0; d<7; d++){
-    const offset=d*1440;
-    const nSp=2+Math.floor(Math.random()*3);
-    for(let k=0;k<nSp;k++) spikes.add(offset + Math.floor(Math.random()*1440));
-  }
+  const hourMult=[0.25,0.20,0.18,0.18,0.20,0.30,0.45,0.60,0.80,0.95,1.00,1.05,1.10,1.10,1.05,1.00,0.95,0.90,0.85,0.80,0.70,0.55,0.40,0.30];
+  const s2=[],s3=[],s5=[],srt=[];
+  const spikes=new Set();
+  for(let d=0; d<7; d++){ const off=d*1440; const n=2+Math.floor(Math.random()*3); for(let k=0;k<n;k++) spikes.add(off+Math.floor(Math.random()*1440)); }
   for(let i=0;i<points;i++){
-    const t = new Date(start.getTime()+i*60*1000);
-    const ts = t.getTime();
-    let mult = hourMult[t.getHours()];
-    if(t.getDay()===0 || t.getDay()===6) mult *= 0.75;
-    const mean2 = 120*mult;
-    const v2 = Math.max(0, Math.round(mean2 + (Math.random()*0.2-0.1)*mean2));
-    const v3 = Math.max(0, Math.round(v2 * (0.02+Math.random()*0.04)));
-    let v5 = Math.random()<0.85 ? 0 : 1;
-    if(spikes.has(i)) v5 += 5 + Math.floor(Math.random()*16);
-    const vrt = Math.max(50, Math.round(120 + 80*mult + (spikes.has(i)?(40+Math.random()*80):0) + (Math.random()*24-12)));
-    s2.push([ts, v2]); s3.push([ts, v3]); s5.push([ts, v5]); srt.push([ts, vrt]);
+    const t=new Date(start.getTime()+i*60*1000); const ts=t.getTime(); let mult=hourMult[t.getHours()]; if(t.getDay()===0||t.getDay()===6) mult*=0.75;
+    const v2=Math.max(0,Math.round(120*mult + (Math.random()*0.2-0.1)*120*mult));
+    const v3=Math.max(0,Math.round(v2*(0.02+Math.random()*0.04)));
+    let v5=Math.random()<0.85?0:1; if(spikes.has(i)) v5+=5+Math.floor(Math.random()*16);
+    const vrt=Math.max(50,Math.round(120+80*mult+(spikes.has(i)?(40+Math.random()*80):0)+(Math.random()*24-12)));
+    s2.push([ts,v2]); s3.push([ts,v3]); s5.push([ts,v5]); srt.push([ts,vrt]);
   }
   return [
     { name:'http-2xx', type:'column-stacked', data:s2 },
@@ -181,158 +196,124 @@ function generateDemoData(){
   ];
 }
 
-/* ====================== Highcharts Stock ====================== */
+/* Persist */
+let storedData=[];
+function loadData(){ try{ storedData = JSON.parse(localStorage.getItem(DATA_KEY) || '[]'); }catch{ storedData=[]; } }
+function saveData(){ localStorage.setItem(DATA_KEY, JSON.stringify(storedData)); }
+function setTheme(t){ document.body.setAttribute('data-theme', t==='light'?'light':'dark'); localStorage.setItem(THEME_KEY, t); }
+
+/* Chart init */
 let chart;
-const GROUP_UNITS = [
-  ['minute', [1,5,10,15,30]],
-  ['hour',   [1,6,12]],
-  ['day',    [1,7]]
-];
+const GROUP_UNITS = [['minute',[1,5,10,15,30]],['hour',[1,6,12]],['day',[1,7]]];
 function buildSeriesConfig(s){
-  const { actual } = normalizeType(s.type);
-  const approx = isHttpSeries(s.name) ? 'sum' : (isLatency(s.name) ? 'average' : 'average');
-  return {
-    name: s.name,
-    type: actual,
-    yAxis: yAxisForType(s.type),
-    data: s.data,
-    dataGrouping: { enabled:true, units: GROUP_UNITS, approximation: approx }
-  };
+  const {actual} = normalizeType(s.type);
+  const approx = /^http-\dxx$/i.test(s.name) ? 'sum' : 'average';
+  return { name:s.name, type:actual, yAxis:yAxisForType(s.type), data:s.data,
+           dataGrouping:{enabled:true, units:GROUP_UNITS, approximation:approx} };
 }
 function renderChart(){
-  // stacking global selon présence de 'column-stacked'
   const stacked = anyStacked(storedData) ? 'normal' : null;
-  chart = Highcharts.stockChart('chart', {
-    chart: { backgroundColor:'transparent' },
-    title: { text:'' },
-    credits: { enabled:false },
-    rangeSelector: { selected: 1, inputEnabled:false },
-    navigator: { adaptToUpdatedData: false },
-    scrollbar: { liveRedraw: false },
-    tooltip: { shared: true, split: false },
-    xAxis: { type:'datetime' },
-    yAxis: [
-      { title: { text: 'Colonnes' } },         // gauche
-      { title: { text: 'Lignes / Aires' }, opposite: true } // droite
-    ],
-    plotOptions: {
-      series: { turboThreshold: 0, animation: false },
-      column: { stacking: stacked, borderWidth: 0, pointPadding: 0.05, groupPadding: 0.08 }
+  chart = Highcharts.stockChart('chart',{
+    chart:{ backgroundColor:'transparent' },
+    title:{ text:'' }, credits:{enabled:false},
+    rangeSelector:{ selected:1, inputEnabled:false },
+    tooltip:{ shared:true, split:false },
+    xAxis:{ type:'datetime' },
+    yAxis:[ { title:{text:'Colonnes'} }, { title:{text:'Lignes/Aires'}, opposite:true } ],
+    plotOptions:{
+      series:{ turboThreshold:0, animation:false },
+      column:{ stacking:stacked, borderWidth:0, pointPadding:0.05, groupPadding:0.08 }
     },
     series: storedData.map(buildSeriesConfig)
   });
   refreshSeriesControls();
 }
 
-/* ====================== UI: sérialisation & actions ====================== */
+/* UI: series controls */
 function refreshSeriesControls(){
-  const box = $('seriesControls'); box.innerHTML = '';
-  if(!storedData.length){ box.innerHTML='<div class="muted">Aucune série.</div>'; return; }
+  const box = $('seriesControls'); box.innerHTML='';
+  if(!storedData.length){ box.innerHTML='<div class="muted padding">Aucune série.</div>'; return; }
   storedData.forEach((s, idx)=>{
-    const row=document.createElement('div'); row.className='series-row';
-    const name=document.createElement('div'); name.textContent=s.name;
+    const row = document.createElement('div'); row.className='series-row';
+    const name = document.createElement('div'); name.textContent=s.name;
 
-    const sel=document.createElement('select');
+    const sel = document.createElement('select');
     TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; if(s.type===t) o.selected=true; sel.appendChild(o); });
-    sel.addEventListener('change', ()=>{
-      s.type = sel.value;
-      saveData();
-      renderChart(); // re-crée les séries pour MAJ yAxis + stacking
-    });
+    sel.addEventListener('change', ()=>{ s.type = sel.value; saveData(); renderChart(); });
 
-    const btn=document.createElement('button'); btn.textContent='Supprimer'; btn.className='warn';
-    btn.addEventListener('click', ()=>{
-      storedData.splice(idx,1);
-      saveData();
-      renderChart();
-    });
+    const btn = document.createElement('button'); btn.textContent='Supprimer';
+    btn.addEventListener('click', ()=>{ storedData.splice(idx,1); saveData(); renderChart(); });
 
     row.append(name, sel, btn); box.appendChild(row);
   });
 }
 
+/* Actions */
 $('btnReplace').addEventListener('click', ()=>{
   try{
     const def = $('defaultSeriesName').value.trim() || 'series';
-    const parsed = parseJson($('jsonInput').value, def).map(s=>({
-      name: s.name,
-      type: defaultTypeFor(s.name),
-      data: s.data
-    }));
-    storedData = parsed;
-    saveData();
-    renderChart();
-    $('status').textContent = `Remplacé: ${parsed.length} série(s).`;
+    const parsed = parseJson($('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
+    storedData = parsed; saveData(); renderChart(); $('status').textContent = `Remplacé: ${parsed.length} série(s).`;
   }catch(e){ $('status').textContent = e.message; }
 });
 $('btnAdd').addEventListener('click', ()=>{
   try{
     const def = $('defaultSeriesName').value.trim() || 'series';
-    const parsed = parseJson($('jsonInput').value, def).map(s=>({
-      name: s.name,
-      type: defaultTypeFor(s.name),
-      data: s.data
-    }));
-    storedData.push(...parsed);
-    saveData();
-    renderChart();
-    $('status').textContent = `Ajouté: ${parsed.length} série(s).`;
+    const parsed = parseJson($('jsonInput').value, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
+    storedData.push(...parsed); saveData(); renderChart(); $('status').textContent = `Ajouté: ${parsed.length} série(s).`;
   }catch(e){ $('status').textContent = e.message; }
 });
 $('btnClear').addEventListener('click', ()=>{ $('jsonInput').value=''; $('status').textContent=''; });
 
 $('fileInput').addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f) return;
-  try{
-    const text = await f.text();
-    $('jsonInput').value = text;
-  }catch(err){ $('status').textContent = 'Lecture du fichier impossible.'; }
-});
-
-/* Thème */
-$('btnTheme').addEventListener('click', ()=>{
-  const current = localStorage.getItem(THEME_KEY) || 'dark';
-  const next = current==='dark' ? 'light' : 'dark';
-  applyTheme(next);
-  renderChart();
+  try{ const text=await f.text(); $('jsonInput').value = text; $('status').textContent='Fichier chargé dans la zone JSON.'; }
+  catch{ $('status').textContent='Lecture de fichier impossible.'; }
 });
 
 /* Export / Import / Reset */
 $('btnExport').addEventListener('click', ()=>{
-  const blob=new Blob([JSON.stringify(storedData, null, 2)], {type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series.json'; a.click();
-  URL.revokeObjectURL(a.href);
+  const blob=new Blob([JSON.stringify(storedData,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series.json'; a.click(); URL.revokeObjectURL(a.href);
 });
 $('btnImport').addEventListener('click', ()=>$('importAllInput').click());
 $('importAllInput').addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f) return;
   try{
-    const text = await f.text();
     const def = $('defaultSeriesName').value.trim() || 'series';
-    const parsed = parseJson(text, def).map(s=>({ name: s.name, type: defaultTypeFor(s.name), data: s.data }));
-    storedData = parsed;
-    saveData(); renderChart();
-  }catch(err){ alert('Import échoué: '+err.message); }
+    const text = await f.text();
+    const parsed = parseJson(text, def).map(s=>({ name:s.name, type: guessType(s.name), data:s.data }));
+    storedData = parsed; saveData(); renderChart();
+  }catch(err){ app.dialog.alert('Import échoué: '+err.message); }
   finally{ e.target.value=''; }
 });
 $('btnClearAll').addEventListener('click', ()=>{
-  if(!confirm('Supprimer TOUTES les données (et thème) ?')) return;
-  localStorage.removeItem(DATA_KEY);
-  // Ne supprime pas le thème pour ne pas te flasher les yeux ; change à la demande
-  storedData=[]; renderChart();
+  app.dialog.confirm('Supprimer TOUTES les données ?','Confirmer', ()=>{
+    localStorage.removeItem(DATA_KEY); storedData=[]; renderChart();
+  });
 });
 
-/* ====================== Boot ====================== */
-(function boot(){
-  // Thème
-  const t = localStorage.getItem(THEME_KEY) || 'dark';
-  applyTheme(t);
-  // Données
+/* Theme toggle inside sheet header */
+$('btnTheme').addEventListener('click', ()=>{
+  const cur = localStorage.getItem(THEME_KEY) || 'dark';
+  const next = (cur==='dark') ? 'light' : 'dark';
+  setTheme(next);
+});
+
+/* Helpers */
+const guessType = (name)=>{
+  if(/^http-\dxx$/i.test(name)) return 'column-stacked';
+  if(/(time|latency|ms)/i.test(name)) return 'spline';
+  return 'spline';
+};
+
+/* Boot */
+(function init(){
+  // theme
+  const t = localStorage.getItem(THEME_KEY) || 'dark'; setTheme(t);
+  // data
   loadData();
-  if(!storedData.length){
-    storedData = generateDemoData(); // auto-démo au premier lancement
-    saveData();
-  }
+  if(!storedData.length){ storedData = generateDemoData(); saveData(); }
   renderChart();
 })();
 </script>
