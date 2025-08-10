@@ -3,23 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Framework7 — Sheet minimale</title>
+  <title>Framework7 — Sheet minimale (fix TDZ)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
   <style>
-    /* minimal: ensure compact step is visible (not 0px) */
-    #my-sheet { height: auto; }
-    #my-sheet .sheet-modal-swipe-step { min-height: 80px; }
-    #debug {
-      position: fixed; bottom: 8px; right: 8px; z-index: 99999;
-      background: rgba(0,0,0,.7); color: #fff; padding: 6px 8px; border-radius: 6px;
-      font: 12px/1.2 ui-monospace,Menlo,Consolas,monospace;
-    }
-    noscript { display:block; background:#fee; color:#900; padding:8px; border:1px solid #f99; }
+    #sheet { height: auto; }                 /* requis pour swipe-to-step */
+    #sheet .sheet-modal-swipe-step { min-height: 80px; } /* évite un compact à 0px */
+    .swipe-handler { height: 20px; display: flex; align-items: center; justify-content: center; cursor: ns-resize; }
+    .swipe-handler::before { content: ""; width: 36px; height: 4px; border-radius: 2px; background: #999; opacity: .6; }
+    #debug { position: fixed; right: 8px; bottom: 8px; background: rgba(0,0,0,.7); color:#fff; padding:6px 8px; border-radius:6px; font: 12px ui-monospace,Menlo,Consolas,monospace; }
   </style>
 </head>
 <body>
-<noscript>JavaScript est désactivé. Active-le pour voir la sheet.</noscript>
-
 <div id="app">
   <div class="view view-main view-init" data-url="/">
     <div class="page">
@@ -27,35 +21,30 @@
         <div class="navbar-bg"></div>
         <div class="navbar-inner">
           <div class="title">Sheet minimale</div>
-          <div class="right">
-            <!-- Auto-handled by F7 (no JS needed) -->
-            <a href="#" class="link sheet-open" data-sheet="#my-sheet">Ouvrir</a>
-          </div>
+          <div class="right"><a href="#" class="link" id="open-link">Ouvrir</a></div>
         </div>
       </div>
       <div class="page-content">
         <div class="block">
-          <p>Démo minimale. Tu peux ouvrir la sheet via :</p>
-          <p><a href="#" class="button button-fill sheet-open" data-sheet="#my-sheet">Ouvrir la sheet</a></p>
-          <p>Sinon, elle s’ouvrira en compact automatiquement au chargement.</p>
+          <p>Démo minimale. Clique pour ouvrir la sheet :</p>
+          <p><a href="#" class="button button-fill" id="open-btn">Ouvrir la sheet</a></p>
+          <p>Lorem ipsum dolor sit amet…</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Sheet minimale (auto-initialisée) -->
-  <div class="sheet-modal sheet-init" id="my-sheet"
-       data-swipe-to-step="true"
-       data-swipe-to-close="false"
-       data-backdrop="true">
+  <!-- Sheet -->
+  <div class="sheet-modal" id="sheet">
+    <div class="swipe-handler"></div>
     <div class="sheet-modal-inner">
       <!-- zone visible à l’état compact -->
       <div class="sheet-modal-swipe-step">
         <div class="block no-margin">
-          <p class="no-margin text-color-gray">Étape compacte — glisse vers le haut pour agrandir ⤴︎</p>
+          <p class="no-margin text-color-gray">Compact — glisse vers le haut pour agrandir ⤴︎</p>
         </div>
       </div>
-      <!-- contenu visible en step ouvert -->
+      <!-- contenu plein écran -->
       <div class="block">
         <p>Contenu plein écran. Glisse vers le bas pour revenir au compact.</p>
       </div>
@@ -63,51 +52,60 @@
   </div>
 </div>
 
-<div id="debug" style="display:none">debug…</div>
+<div id="debug" style="display:none"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.js"></script>
 <script>
-  // Surface any JS error to the page (so we SEE it)
-  window.onerror = function(msg, url, line, col, err){
+  // Montre les erreurs JS à l’écran
+  window.onerror = function (msg) {
     const d = document.getElementById('debug');
     d.style.display = 'block';
     d.textContent = 'JS error: ' + msg;
   };
 
-  (function start(){
-    if (!window.Framework7) {
-      alert('Framework7 ne s’est pas chargé (CDN bloqué ?).');
-      const d = document.getElementById('debug');
-      d.style.display = 'block';
-      d.textContent = 'F7 introuvable';
-      return;
-    }
+  if (!window.Framework7) {
+    alert('Framework7 ne s’est pas chargé (CDN bloqué ?)');
+  }
 
-    const app = new Framework7({
-      el: '#app',
-      on: {
-        init() {
-          const dbg = document.getElementById('debug');
-          dbg.style.display = 'block';
-          dbg.textContent = 'F7 OK — init';
+  const app = new Framework7({
+    el: '#app',
+    on: {
+      // IMPORTANT: function() { ... } pour avoir this === app
+      init: function () {
+        const d = document.getElementById('debug');
+        d.style.display = 'block';
+        d.textContent = 'F7 init OK';
 
-          // Get the auto-initialized sheet instance and force compact-open on load
-          const sheet = app.sheet.get('#my-sheet');
-          if (!sheet) {
-            dbg.textContent = 'Sheet non trouvée';
-            return;
-          }
-          sheet.on('opened', () => dbg.textContent = 'Sheet ouverte');
-          sheet.on('stepClose', () => dbg.textContent = 'Sheet compact');
-          sheet.on('stepOpen', () => dbg.textContent = 'Sheet plein écran');
+        // Crée la sheet ICI (pas de .sheet-init)
+        const sheet = this.sheet.create({
+          el: '#sheet',
+          swipeToStep: true,          // 2 étapes compact ↔ plein écran
+          swipeToClose: false,        // ne jamais fermer complètement
+          swipeHandler: '.swipe-handler',
+          // push: true,               // décommente si tu veux l’effet push view
+          backdrop: true
+        });
 
-          // Open then collapse to compact so it's visible by default
-          sheet.open(false);
-          sheet.stepClose(false);
-        }
+        // Ouverture programmée par défaut en compact (visible)
+        sheet.open(false);
+        sheet.stepClose(false);
+
+        // Boutons d’ouverture (lien + bouton)
+        const open = (e) => { e && e.preventDefault(); sheet.open(); };
+        document.getElementById('open-link').addEventListener('click', open);
+        document.getElementById('open-btn').addEventListener('click', open);
+
+        // Logs d’état
+        sheet.on('opened', () => d.textContent = 'Sheet ouverte');
+        sheet.on('stepClose', () => d.textContent = 'Sheet compact');
+        sheet.on('stepOpen', () => d.textContent = 'Sheet plein écran');
+
+        // Sécurité: recalibre le step après layout
+        requestAnimationFrame(() => sheet.setSwipeStep());
+        window.addEventListener('resize', () => sheet.setSwipeStep(), { passive: true });
       }
-    });
-  }());
+    }
+  });
 </script>
 </body>
 </html>
