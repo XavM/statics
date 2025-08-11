@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Grapher — Chart en page / Contrôles en sheet (Stock)</title>
+  <title>Grapher — Chart en page / Contrôles en sheet (Stock + multi-séries)</title>
 
   <!-- Framework7 + Highcharts Stock -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
@@ -13,29 +13,25 @@
   <style>
     :root { --nav-h: var(--f7-navbar-height, 44px); }
 
-    /* Graph: 100% largeur et ne dépasse jamais l'écran (navigator inclus) */
+    /* Graph: 100% largeur, hauteur = viewport - navbar (navigator inclus), ne dépasse jamais l'écran */
     #chart-container {
       width: 100%;
       height: calc(100vh - var(--nav-h));
       max-height: calc(100vh - var(--nav-h));
     }
 
-    /* Sheet en 2 étapes + push view ; handle indicatif */
+    /* Sheet: 2 steps + push, ne dépasse pas 100vh et scrollable */
     #controls-sheet { height: auto; max-height: 100vh; }
     #controls-sheet .sheet-modal-swipe-step { min-height: 92px; }
     .sheet-handle { height: 20px; display:flex; align-items:center; justify-content:center; }
     .sheet-handle::before { content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6; }
-
-    /* Quand la sheet est en plein écran, son contenu reste scollable et borné à 100vh */
     #controls-sheet .sheet-modal-inner {
-      max-height: calc(100vh - 20px); /* 20px ≈ handle */
+      max-height: calc(100vh - 20px);
       overflow: auto;
     }
 
-    /* Mise en forme rapide des contrôles */
-    .ctrls .list input,
-    .ctrls .list select,
-    .ctrls .list textarea { width: 100%; }
+    /* Contrôles */
+    .ctrls .list input, .ctrls .list select, .ctrls .list textarea { width: 100%; }
     .ctrls .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .ctrls .button-row .button { flex: 1; min-width: 120px; }
     .ctrls textarea {
@@ -45,7 +41,7 @@
     }
     .muted { color: var(--f7-text-muted); font-size: 12px; }
 
-    /* Navbar cachée en orientation paysage */
+    /* Navbar cachée en paysage */
     @media (orientation: landscape) {
       .navbar { display: none !important; }
       :root { --nav-h: 0px; }
@@ -65,7 +61,6 @@
       </div>
 
       <div class="page-content">
-        <!-- ICI: LE GRAPH UNIQUEMENT -->
         <div id="chart-container"></div>
       </div>
     </div>
@@ -75,22 +70,18 @@
   <div class="sheet-modal sheet-modal-push" id="controls-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-modal-inner">
-      <!-- Étape compacte visible en bas -->
       <div class="sheet-modal-swipe-step">
         <div class="block no-margin">
-          <p class="no-margin text-color-gray">
-            Contrôles — swipe/tap pour agrandir ⤴︎
-          </p>
+          <p class="no-margin text-color-gray">Contrôles — swipe/tap pour agrandir ⤴︎</p>
         </div>
       </div>
 
-      <!-- Contenu contrôles -->
       <div class="block crtls">
         <div class="list inset">
           <ul>
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Type de série</div>
+                <div class="item-title item-label">Type des séries</div>
                 <div class="item-input-wrap">
                   <select id="seriesType">
                     <option value="spline" selected>Spline</option>
@@ -128,20 +119,24 @@
             <li class="item-content item-input">
               <div class="item-inner">
                 <div class="item-title item-label">
-                  JSON (éditable) — format attendu: <code>[[ts,value], ...]</code>
+                  JSON (éditable) — formats acceptés:
+                  <br><code>[[ts,val],...]</code> • <code>{data:[...]}</code> • <code>{ seriesName:[...], other:[...] }</code>
                 </div>
                 <div class="item-input-wrap">
-                  <textarea id="jsonEditor" spellcheck="false">[[1719964800000,1],[1719968400000,3],[1719972000000,2],[1719975600000,4],[1719979200000,6]]</textarea>
-                  <div class="muted">ts = timestamp (ms). Ex: [[1723257600000, 42], [1723261200000, 37]] — les clés <code>meta</code> / <code>_meta</code> sont ignorées.</div>
+                  <textarea id="jsonEditor" spellcheck="false">[[1719964800000,1],[1719968400000,3],[1719972000000,2]]</textarea>
+                  <div class="muted">
+                    - <b>Clés ignorées</b>: <code>meta</code>, <code>_meta</code>.<br>
+                    - Si plusieurs clés (ex. <code>{"http-2xx":[...],"http-5xx":[...]}</code>), une <b>série par clé</b> est créée.
+                  </div>
                 </div>
               </div>
             </li>
 
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Nom de la série / sauvegarde</div>
+                <div class="item-title item-label">Nom (pour sauvegarder)</div>
                 <div class="item-input-wrap">
-                  <input id="datasetName" type="text" placeholder="Nom pour sauvegarder" />
+                  <input id="datasetName" type="text" placeholder="Nom de la sauvegarde" />
                 </div>
               </div>
             </li>
@@ -166,8 +161,8 @@
 
         <div class="block">
           <p class="muted">
-            Toute modification du JSON est <b>automatiquement sauvegardée</b> dans <code>localStorage</code> (jeu “courant”).  
-            Les sauvegardes nommées apparaissent dans la liste et peuvent être rechargées.
+            Toute modification du JSON est <b>auto-sauvegardée</b> (jeu “courant”).  
+            Les sauvegardes nommées sont listées ci-dessus.
           </p>
         </div>
       </div>
@@ -176,44 +171,19 @@
 </div>
 
 <script>
-  // ======= LocalStorage =======
+  /* ===== LocalStorage ===== */
   const LS_CURRENT_KEY = 'grapher.current.timeseries';
-  const LS_SAVED_MAP_KEY = 'grapher.saved.timeseries.map'; // { name: jsonString }
+  const LS_SAVED_MAP_KEY = 'grapher.saved.timeseries.map';
   const lsGetSavedMap = () => { try { return JSON.parse(localStorage.getItem(LS_SAVED_MAP_KEY) || '{}'); } catch { return {}; } };
   const lsSetSavedMap = (m) => localStorage.setItem(LS_SAVED_MAP_KEY, JSON.stringify(m || {}));
   const lsGetCurrent = () => localStorage.getItem(LS_CURRENT_KEY) || '';
   const lsSetCurrent = (s) => localStorage.setItem(LS_CURRENT_KEY, String(s ?? ''));
 
-  // ======= Parsing / Validation =======
-  function stripMeta(obj) {
-    if (!obj || typeof obj !== 'object') return obj;
-    const clone = Array.isArray(obj) ? [...obj] : { ...obj };
-    delete clone.meta;
-    delete clone._meta;
-    return clone;
-  }
-  function extractData(root) {
-    // Supporte: tableau direct, {data:[...]}, {series:[...]}; ignore meta/_meta
-    let r = stripMeta(root);
-    if (r && !Array.isArray(r) && typeof r === 'object') {
-      if (Array.isArray(r.data)) r = r.data;
-      else if (Array.isArray(r.series)) r = r.series;
-      else {
-        // Si l'objet ne contient que meta/_meta → pas de data
-        const keys = Object.keys(r);
-        const filtered = keys.filter(k => k !== 'meta' && k !== '_meta');
-        if (filtered.length === 0) r = [];
-      }
-    }
-    return r;
-  }
-  function parseSeriesJson(str) {
-    let parsed = JSON.parse(str);
-    parsed = extractData(parsed);
+  /* ===== Parsing / Normalisation ===== */
+  const IGNORED_KEYS = new Set(['meta','_meta']);
 
-    if (!Array.isArray(parsed)) throw new Error('Le JSON doit être un tableau de points ou un objet avec "data"/"series".');
-
-    const norm = parsed.map(p => {
+  function normalizePoints(arr) {
+    return arr.map(p => {
       if (!Array.isArray(p) || p.length < 2) throw new Error('Chaque point doit être [ts, value]');
       let ts = p[0], v = p[1];
 
@@ -227,24 +197,60 @@
       const numV = Number(v);
       if (Number.isNaN(numV)) throw new Error('Valeur non numérique: ' + v);
       return [ts, numV];
-    });
-
-    norm.sort((a,b) => a[0] - b[0]);
-    return norm;
+    }).sort((a,b)=>a[0]-b[0]);
   }
-  const prettyJson = (arr) => JSON.stringify(arr, null, 2);
 
-  // ======= Layout utils =======
+  // Retourne { series: [{name,data}, ...] }
+  function parseAnySeries(str) {
+    let root = JSON.parse(str);
+    // cas tableau direct: [[ts,val],...]
+    if (Array.isArray(root)) {
+      return { series: [{ name: 'S1', data: normalizePoints(root) }] };
+    }
+    // cas objet: on ignore meta/_meta
+    if (root && typeof root === 'object') {
+      // { data:[...] }
+      if (Array.isArray(root.data)) {
+        return { series: [{ name: 'S1', data: normalizePoints(root.data) }] };
+      }
+      // { series:[...] } → si c'est un tableau de points, on le prend; si c'est un tableau de séries, on mappe
+      if (Array.isArray(root.series)) {
+        const s = root.series;
+        // si series est un tableau de points
+        if (Array.isArray(s[0])) return { series: [{ name:'S1', data: normalizePoints(s) }] };
+        // sinon objet(s) {name, data}
+        const out = s.map((it, idx) => {
+          const name = it && (it.name || ('S'+(idx+1)));
+          const data = Array.isArray(it?.data) ? normalizePoints(it.data) : [];
+          return { name, data };
+        }).filter(s=>s.data.length);
+        if (out.length) return { series: out };
+      }
+      // mapping libre { key1:[...], key2:[...], _meta:{...} }
+      const keys = Object.keys(root).filter(k => !IGNORED_KEYS.has(k));
+      const out = [];
+      keys.forEach((k, i) => {
+        const val = root[k];
+        if (Array.isArray(val)) out.push({ name: k, data: normalizePoints(val) });
+        else if (val && typeof val === 'object' && Array.isArray(val.data)) {
+          out.push({ name: k, data: normalizePoints(val.data) });
+        }
+      });
+      if (out.length) return { series: out };
+    }
+    throw new Error('Format non reconnu. Utilise [[ts,val],...], {data:[...]}, {series:[...]}, ou {nom:[...],...}.');
+  }
+
+  /* ===== UI / Chart helpers ===== */
+  function viewportHeight() {
+    return (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  }
   function isNavbarVisible() {
     const nav = document.querySelector('.navbar');
-    if (!nav) return { visible: false, height: 0 };
-    const style = getComputedStyle(nav);
-    if (style.display === 'none' || style.visibility === 'hidden') return { visible: false, height: 0 };
-    return { visible: true, height: nav.offsetHeight || 0 };
-  }
-  function viewportHeight() {
-    // VisualViewport est plus fiable sur mobile
-    return (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    if (!nav) return { visible:false, height:0 };
+    const st = getComputedStyle(nav);
+    if (st.display === 'none' || st.visibility === 'hidden') return { visible:false, height:0 };
+    return { visible:true, height: nav.offsetHeight||0 };
   }
   function applyChartHeight() {
     const vh = viewportHeight();
@@ -256,7 +262,10 @@
     el.style.maxHeight = h + 'px';
   }
 
-  // ======= Highcharts Stock + F7 =======
+  function isColumnLike(type){ return String(type).toLowerCase() === 'column'; }
+  function yAxisIndexFor(type){ return isColumnLike(type) ? 0 : 1; }
+
+  /* ===== App ===== */
   const app = new Framework7({
     el: '#app',
     on: {
@@ -269,27 +278,16 @@
           push: true,
           backdrop: true
         });
-        // Limitation stricte de hauteur + scroll du contenu
-        function limitSheetSize() {
+        const sheetEl = document.getElementById('controls-sheet');
+        function limitSheetSize(){
           const vh = viewportHeight();
-          const sheetEl = document.getElementById('controls-sheet');
-          const inner = sheetEl.querySelector('.sheet-modal-inner');
           sheetEl.style.maxHeight = vh + 'px';
-          inner.style.maxHeight = (vh - 20) + 'px'; // 20px ≈ handle
-          inner.style.overflow = 'auto';
+          sheetEl.querySelector('.sheet-modal-inner').style.maxHeight = (vh - 20) + 'px';
         }
         limitSheetSize();
-
-        // Ouvrir par défaut en compact
-        sheet.open(false);
-        sheet.stepClose(false);
-
-        document.getElementById('openControls').addEventListener('click', (e) => {
-          e.preventDefault(); sheet.open();
-        });
-
-        // Tap-to-toggle
-        document.getElementById('controls-sheet').addEventListener('click', (e) => {
+        sheet.open(false); sheet.stepClose(false);
+        document.getElementById('openControls').addEventListener('click', (e) => { e.preventDefault(); sheet.open(); });
+        sheetEl.addEventListener('click', (e) => {
           if (e.target.closest('a,button,select,input,textarea,label')) return;
           sheet.stepOpened ? sheet.stepClose() : sheet.stepOpen();
         });
@@ -298,48 +296,42 @@
         applyChartHeight();
         const chartEl = document.getElementById('chart-container');
 
-        function isColumnLike(type){ return String(type).toLowerCase() === 'column'; }
-        function yAxisIndexFor(type){ return isColumnLike(type) ? 0 : 1; }
-
+        // Initial data (depuis localStorage si présent)
         const $jsonEditor = document.getElementById('jsonEditor');
         const currentSaved = lsGetCurrent();
         if (currentSaved) $jsonEditor.value = currentSaved;
 
+        const initialParsed = parseAnySeries($jsonEditor.value.trim());
         const initialType = document.getElementById('seriesType').value || 'spline';
-        const initialData = safeParseEditor(); // throws si invalide
 
         let chart = Highcharts.stockChart(chartEl, {
           chart: { animation: false },
           credits: { enabled: false },
-          legend: { enabled: false },
+          legend: { enabled: true },
           rangeSelector: { selected: 1 },
           tooltip: { shared: true, split: false },
           yAxis: [{
-            title: { text: null }, opposite: false // gauche pour column/stacked
+            title: { text: null }, opposite: false
           },{
-            title: { text: null }, opposite: true  // droite pour le reste
+            title: { text: null }, opposite: true
           }],
-          plotOptions: {
-            series: {
-              dataGrouping: { enabled: true }
-            }
-          },
-          series: [{
-            name: 'S1',
+          plotOptions: { series: { dataGrouping: { enabled: true } } },
+          series: initialParsed.series.map(s => ({
+            name: s.name,
             type: initialType,
-            data: initialData,
+            data: s.data,
             yAxis: yAxisIndexFor(initialType)
-          }]
+          }))
         });
 
         function reflow(){ try{ chart && chart.reflow(); }catch(e){} }
         function relayout(){ applyChartHeight(); reflow(); }
-        sheet.on('stepOpen', ()=>{ limitSheetSize(); relayout(); });
-        sheet.on('stepClose', ()=>{ limitSheetSize(); relayout(); });
+        sheet.on('stepOpen', relayout);
+        sheet.on('stepClose', relayout);
         window.addEventListener('resize', ()=>{ limitSheetSize(); relayout(); }, { passive:true });
-        window.addEventListener('orientationchange', ()=>{ setTimeout(()=>{ limitSheetSize(); relayout(); }, 200); });
+        window.addEventListener('orientationchange', ()=> setTimeout(()=>{ limitSheetSize(); relayout(); }, 200), { passive:true });
 
-        // ======= Contrôles =======
+        /* ===== Contrôles ===== */
         const $type    = document.getElementById('seriesType');
         const $stacked = document.getElementById('stackedColumns');
         const $file    = document.getElementById('jsonFile');
@@ -349,14 +341,13 @@
         function refreshSavedList(selectedName) {
           const map = lsGetSavedMap();
           $list.innerHTML = '';
-          const optEmpty = document.createElement('option');
-          optEmpty.value = ''; optEmpty.textContent = '-- sélectionner --';
-          $list.appendChild(optEmpty);
-          Object.keys(map).sort().forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name; opt.textContent = name;
-            if (selectedName && name === selectedName) opt.selected = true;
-            $list.appendChild(opt);
+          const opt = document.createElement('option');
+          opt.value=''; opt.textContent='-- sélectionner --';
+          $list.appendChild(opt);
+          Object.keys(map).sort().forEach(n=>{
+            const o=document.createElement('option'); o.value=n; o.textContent=n;
+            if (selectedName && n === selectedName) o.selected = true;
+            $list.appendChild(o);
           });
         }
         refreshSavedList();
@@ -364,8 +355,10 @@
         function applyChanges() {
           const type = $type.value;
           const stacked = $stacked.checked;
-          const data = safeParseEditor(); // valide et autosauve
 
+          // Parse JSON (multi-séries ok)
+          const parsed = parseAnySeries($jsonEditor.value.trim());
+          // stacking uniquement si type=column
           const stacking = (isColumnLike(type) && stacked) ? 'normal' : undefined;
 
           chart.update({
@@ -373,100 +366,87 @@
             tooltip: { shared: true, split: false },
           }, false, true);
 
-          chart.series[0].update({
-            type,
-            yAxis: yAxisIndexFor(type),
-          }, false);
+          // Synchroniser le nombre de séries
+          const need = parsed.series.length;
+          const have = chart.series.length;
 
-          chart.series[0].setData(data, false);
+          // Supprimer séries excédentaires
+          for (let i=have-1; i>=need; i--) chart.series[i].remove(false);
+
+          // Mettre à jour / créer
+          parsed.series.forEach((s, idx) => {
+            if (idx < chart.series.length) {
+              chart.series[idx].update({ name: s.name, type, yAxis: yAxisIndexFor(type) }, false);
+              chart.series[idx].setData(s.data, false);
+            } else {
+              chart.addSeries({ name: s.name, type, data: s.data, yAxis: yAxisIndexFor(type) }, false);
+            }
+          });
+
           chart.redraw();
           reflow();
         }
 
-        // JSON editor: parse + autosave
-        function safeParseEditor() {
-          const raw = $jsonEditor.value.trim();
-          lsSetCurrent(raw); // autosave du “courant”
-          if (!raw) return [];
-          const parsed = parseSeriesJson(raw);
-          return parsed;
-        }
+        // Auto-save courant pendant saisie
+        let t; $jsonEditor.addEventListener('input', ()=>{
+          clearTimeout(t);
+          t = setTimeout(()=> lsSetCurrent($jsonEditor.value), 300);
+        });
 
-        document.getElementById('applyBtn').addEventListener('click', (e) => {
+        document.getElementById('applyBtn').addEventListener('click', (e)=>{
           e.preventDefault();
           try { applyChanges(); }
           catch(err){ app.dialog.alert('JSON invalide : ' + err.message); }
         });
 
-        document.getElementById('saveBtn').addEventListener('click', (e) => {
+        document.getElementById('saveBtn').addEventListener('click', (e)=>{
           e.preventDefault();
-          const name = ($name.value || '').trim();
+          const name = ($name.value||'').trim();
           if (!name) { app.dialog.alert('Donne un nom pour sauvegarder.'); return; }
-          const raw = document.getElementById('jsonEditor').value.trim();
+          const raw = $jsonEditor.value.trim();
           if (!raw) { app.dialog.alert('Le JSON est vide.'); return; }
-          try { parseSeriesJson(raw); } catch(err){ app.dialog.alert('JSON invalide : ' + err.message); return; }
-          const map = lsGetSavedMap();
-          map[name] = raw;
-          lsSetSavedMap(map);
+          try { parseAnySeries(raw); } catch(err){ app.dialog.alert('JSON invalide : ' + err.message); return; }
+          const map = lsGetSavedMap(); map[name] = raw; lsSetSavedMap(map);
           refreshSavedList(name);
           app.toast.create({ text: 'Sauvegardé', closeTimeout: 1500 }).open();
         });
 
-        document.getElementById('loadBtn').addEventListener('click', (e) => {
+        document.getElementById('loadBtn').addEventListener('click', (e)=>{
           e.preventDefault();
           const name = $list.value;
           if (!name) { app.dialog.alert('Sélectionne une sauvegarde.'); return; }
-          const map = lsGetSavedMap();
-          const raw = map[name];
+          const map = lsGetSavedMap(); const raw = map[name];
           if (!raw) { app.dialog.alert('Introuvable en localStorage.'); return; }
-          document.getElementById('jsonEditor').value = raw;
-          lsSetCurrent(raw);
+          $jsonEditor.value = raw; lsSetCurrent(raw);
           try { applyChanges(); } catch(err){ app.dialog.alert('JSON invalide : ' + err.message); }
         });
 
-        document.getElementById('deleteBtn').addEventListener('click', (e) => {
+        document.getElementById('deleteBtn').addEventListener('click', (e)=>{
           e.preventDefault();
           const name = $list.value;
           if (!name) { app.dialog.alert('Sélectionne une sauvegarde à supprimer.'); return; }
-          const map = lsGetSavedMap();
-          delete map[name];
-          lsSetSavedMap(map);
+          const map = lsGetSavedMap(); delete map[name]; lsSetSavedMap(map);
           refreshSavedList();
           app.toast.create({ text: 'Supprimé', closeTimeout: 1500 }).open();
         });
 
-        // Upload JSON -> modifiable AVANT sauvegarde
-        $file.addEventListener('change', async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
+        // Upload JSON -> injecte dans l’éditeur (modifiable avant sauvegarde)
+        $file.addEventListener('change', async (e)=>{
+          const file = e.target.files?.[0]; if (!file) return;
           try {
             const text = await file.text();
-            // On injecte le texte dans l'éditeur (modifiable), sans forcer la sauvegarde nommée
-            // Valider pour feedback rapide, mais on laisse modifiable avant "Sauvegarder"
-            parseSeriesJson(text); // juste pour vérifier
-            document.getElementById('jsonEditor').value = text;
-            lsSetCurrent(text); // courant auto-sauvé
+            // Valide pour feedback rapide (multi-séries OK)
+            parseAnySeries(text);
+            $jsonEditor.value = text; lsSetCurrent(text);
             app.toast.create({ text: 'Fichier chargé (modifiable avant sauvegarde)', closeTimeout: 2000 }).open();
           } catch(err){
             app.dialog.alert('JSON invalide : ' + err.message);
-          } finally {
-            e.target.value = '';
-          }
+          } finally { e.target.value = ''; }
         });
 
-        // Autosave courant pendant la saisie
-        let t; document.getElementById('jsonEditor').addEventListener('input', () => {
-          clearTimeout(t);
-          t = setTimeout(() => lsSetCurrent(document.getElementById('jsonEditor').value), 300);
-        });
-
-        // Changement de type / stacked => appliquer
-        document.getElementById('seriesType').addEventListener('change', () => {
-          try { applyChanges(); } catch(e){}
-        });
-        document.getElementById('stackedColumns').addEventListener('change', () => {
-          try { applyChanges(); } catch(e){}
-        });
+        // Changement type / stacked => appliquer direct (si JSON OK)
+        document.getElementById('seriesType').addEventListener('change', () => { try { applyChanges(); } catch(e){} });
+        document.getElementById('stackedColumns').addEventListener('change', () => { try { applyChanges(); } catch(e){} });
       }
     }
   });
