@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Grapher — Chart en page / Contrôles en sheet (Stock + multi-séries)</title>
+  <title>Grapher — Stock + types & agrégations par série</title>
 
   <!-- Framework7 + Highcharts Stock -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
@@ -13,33 +13,31 @@
   <style>
     :root { --nav-h: var(--f7-navbar-height, 44px); }
 
-    /* Graph: 100% largeur, hauteur = viewport - navbar (navigator inclus), ne dépasse jamais l'écran */
+    /* Graph: 100% largeur, hauteur = viewport - navbar, ne dépasse jamais l'écran */
     #chart-container {
       width: 100%;
       height: calc(100vh - var(--nav-h));
       max-height: calc(100vh - var(--nav-h));
     }
 
-    /* Sheet: 2 steps + push, ne dépasse pas 100vh et scrollable */
+    /* Sheet: 2 steps + push, ≤ 100vh, scrollable */
     #controls-sheet { height: auto; max-height: 100vh; }
     #controls-sheet .sheet-modal-swipe-step { min-height: 92px; }
     .sheet-handle { height: 20px; display:flex; align-items:center; justify-content:center; }
     .sheet-handle::before { content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6; }
-    #controls-sheet .sheet-modal-inner {
-      max-height: calc(100vh - 20px);
-      overflow: auto;
-    }
+    #controls-sheet .sheet-modal-inner { max-height: calc(100vh - 20px); overflow: auto; }
 
-    /* Contrôles */
     .ctrls .list input, .ctrls .list select, .ctrls .list textarea { width: 100%; }
     .ctrls .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .ctrls .button-row .button { flex: 1; min-width: 120px; }
-    .ctrls textarea {
-      min-height: 160px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      font-size: 12px;
-    }
+    .ctrls textarea { min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px; }
     .muted { color: var(--f7-text-muted); font-size: 12px; }
+
+    /* Tableau des séries */
+    #seriesSettings { width: 100%; border-collapse: collapse; font-size: 13px; }
+    #seriesSettings th, #seriesSettings td { padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    #seriesSettings th { text-align: left; }
+    #seriesSettings select { width: 100%; }
 
     /* Navbar cachée en paysage */
     @media (orientation: landscape) {
@@ -81,9 +79,9 @@
           <ul>
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Type des séries</div>
+                <div class="item-title item-label">Type par défaut (pour nouvelles séries)</div>
                 <div class="item-input-wrap">
-                  <select id="seriesType">
+                  <select id="defaultSeriesType">
                     <option value="spline" selected>Spline</option>
                     <option value="line">Line</option>
                     <option value="area">Area</option>
@@ -120,49 +118,74 @@
               <div class="item-inner">
                 <div class="item-title item-label">
                   JSON (éditable) — formats acceptés:
-                  <br><code>[[ts,val],...]</code> • <code>{data:[...]}</code> • <code>{ seriesName:[...], other:[...] }</code>
+                  <br><code>[[ts,val],...]</code> • <code>{data:[...]}</code> • <code>{ series:[{name,data,meta?}], ... }</code> • <code>{ "http-2xx":[...], "http-5xx":[...], "_meta":{...} }</code>
                 </div>
                 <div class="item-input-wrap">
                   <textarea id="jsonEditor" spellcheck="false">[[1719964800000,1],[1719968400000,3],[1719972000000,2]]</textarea>
                   <div class="muted">
-                    - <b>Clés ignorées</b>: <code>meta</code>, <code>_meta</code>.<br>
-                    - Si plusieurs clés (ex. <code>{"http-2xx":[...],"http-5xx":[...]}</code>), une <b>série par clé</b> est créée.
+                    - Clés ignorées: <code>meta</code>, <code>_meta</code> (globales ou par série).  
+                    - Si plusieurs clés (ex. <code>{"http-2xx":[...],"http-5xx":[...]}</code>), une <b>série par clé</b> est créée.  
+                    - Agrégation auto: <b>sum</b> pour compteurs, <b>average</b> pour temps — surcharge possible par série.
                   </div>
-                </div>
-              </div>
-            </li>
-
-            <li class="item-content item-input">
-              <div class="item-inner">
-                <div class="item-title item-label">Nom (pour sauvegarder)</div>
-                <div class="item-input-wrap">
-                  <input id="datasetName" type="text" placeholder="Nom de la sauvegarde" />
-                </div>
-              </div>
-            </li>
-
-            <li class="item-content item-input">
-              <div class="item-inner">
-                <div class="item-title item-label">Séries enregistrées (localStorage)</div>
-                <div class="item-input-wrap">
-                  <select id="savedList"></select>
                 </div>
               </div>
             </li>
           </ul>
         </div>
 
-        <div class="block button-row">
-          <a href="#" class="button button-fill" id="applyBtn">Appliquer</a>
-          <a href="#" class="button" id="saveBtn">Sauvegarder</a>
-          <a href="#" class="button" id="loadBtn">Charger</a>
-          <a href="#" class="button color-red" id="deleteBtn">Supprimer</a>
+        <!-- Réglages par série -->
+        <div class="block">
+          <div class="block-title">Séries détectées</div>
+          <div class="block">
+            <table id="seriesSettings">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Type</th>
+                  <th>Agrégation</th>
+                </tr>
+              </thead>
+              <tbody id="seriesSettingsBody">
+                <!-- Lignes générées dynamiquement -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="list inset">
+            <ul>
+              <li class="item-content item-input">
+                <div class="item-inner">
+                  <div class="item-title item-label">Nom (pour sauvegarder)</div>
+                  <div class="item-input-wrap">
+                    <input id="datasetName" type="text" placeholder="Nom de la sauvegarde" />
+                  </div>
+                </div>
+              </li>
+              <li class="item-content item-input">
+                <div class="item-inner">
+                  <div class="item-title item-label">Séries enregistrées (localStorage)</div>
+                  <div class="item-input-wrap">
+                    <select id="savedList"></select>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="block button-row">
+            <a href="#" class="button button-fill" id="applyBtn">Appliquer</a>
+            <a href="#" class="button" id="saveBtn">Sauvegarder</a>
+            <a href="#" class="button" id="loadBtn">Charger</a>
+            <a href="#" class="button color-red" id="deleteBtn">Supprimer</a>
+          </div>
         </div>
 
         <div class="block">
           <p class="muted">
-            Toute modification du JSON est <b>auto-sauvegardée</b> (jeu “courant”).  
-            Les sauvegardes nommées sont listées ci-dessus.
+            Le JSON “courant” et les réglages par série sont <b>auto-sauvegardés</b>.  
+            Les sauvegardes nommées stockent <b>JSON + réglages</b>.
           </p>
         </div>
       </div>
@@ -173,14 +196,22 @@
 <script>
   /* ===== LocalStorage ===== */
   const LS_CURRENT_KEY = 'grapher.current.timeseries';
-  const LS_SAVED_MAP_KEY = 'grapher.saved.timeseries.map';
+  const LS_CURRENT_SETTINGS_KEY = 'grapher.current.series.settings'; // map nom -> {type, agg}
+  const LS_SAVED_MAP_KEY = 'grapher.saved.timeseries.map';           // map nom -> { json, settings }
+
   const lsGetSavedMap = () => { try { return JSON.parse(localStorage.getItem(LS_SAVED_MAP_KEY) || '{}'); } catch { return {}; } };
   const lsSetSavedMap = (m) => localStorage.setItem(LS_SAVED_MAP_KEY, JSON.stringify(m || {}));
-  const lsGetCurrent = () => localStorage.getItem(LS_CURRENT_KEY) || '';
-  const lsSetCurrent = (s) => localStorage.setItem(LS_CURRENT_KEY, String(s ?? ''));
+
+  const lsGetCurrentJson = () => localStorage.getItem(LS_CURRENT_KEY) || '';
+  const lsSetCurrentJson = (s) => localStorage.setItem(LS_CURRENT_KEY, String(s ?? ''));
+
+  const lsGetCurrentSettings = () => { try { return JSON.parse(localStorage.getItem(LS_CURRENT_SETTINGS_KEY) || '{}'); } catch { return {}; } };
+  const lsSetCurrentSettings = (m) => localStorage.setItem(LS_CURRENT_SETTINGS_KEY, JSON.stringify(m || {}));
 
   /* ===== Parsing / Normalisation ===== */
   const IGNORED_KEYS = new Set(['meta','_meta']);
+  const TYPE_OPTIONS = ['spline','line','area','areaspline','column','scatter'];
+  const AGG_OPTIONS  = ['auto','sum','average'];
 
   function normalizePoints(arr) {
     return arr.map(p => {
@@ -192,7 +223,7 @@
         if (isNaN(d)) throw new Error('Timestamp invalide: ' + ts);
         ts = d.getTime();
       }
-      if (typeof ts === 'number' && ts < 1e12) ts = ts * 1000; // secondes -> ms (heuristique)
+      if (typeof ts === 'number' && ts < 1e12) ts = ts * 1000; // secondes -> ms
 
       const numV = Number(v);
       if (Number.isNaN(numV)) throw new Error('Valeur non numérique: ' + v);
@@ -200,48 +231,70 @@
     }).sort((a,b)=>a[0]-b[0]);
   }
 
-  // Retourne { series: [{name,data}, ...] }
+  function detectAggByName(name='') {
+    const n = String(name).toLowerCase();
+    const isCount = /(^|[^a-z])(count|hits?|reqs?|requests?|events?)($|[^a-z])/i.test(n)
+                  || /(?:^|[^a-z])(1xx|2xx|3xx|4xx|5xx)(?:$|[^a-z])/.test(n);
+    const isAvg   = /(avg|average|mean|latency|response|time|rt|duration|ms|s|p\d{2})/i.test(n);
+    if (isAvg && !isCount) return 'average';
+    if (isCount && !isAvg) return 'sum';
+    return 'auto';
+  }
+
+  function detectAggFromMeta(meta) {
+    if (!meta || typeof meta !== 'object') return null;
+    const m = { ...meta };
+    const agg = (m.agg || m.approximation || m.approx || '').toLowerCase();
+    const metric = (m.metric || '').toLowerCase();
+    if (agg === 'sum' || metric === 'count') return 'sum';
+    if (agg === 'average' || agg === 'avg' || metric === 'average') return 'average';
+    return null;
+  }
+
+  // Retourne { series: [{name, data, meta?}], rootMeta? }
   function parseAnySeries(str) {
     let root = JSON.parse(str);
-    // cas tableau direct: [[ts,val],...]
+    let rootMeta = (root && (root._meta || root.meta)) || null;
+
     if (Array.isArray(root)) {
-      return { series: [{ name: 'S1', data: normalizePoints(root) }] };
+      return { series: [{ name: 'S1', data: normalizePoints(root) }], rootMeta: null };
     }
-    // cas objet: on ignore meta/_meta
+
     if (root && typeof root === 'object') {
       // { data:[...] }
       if (Array.isArray(root.data)) {
-        return { series: [{ name: 'S1', data: normalizePoints(root.data) }] };
+        return { series: [{ name: 'S1', data: normalizePoints(root.data), meta: (root.data_meta||null) }], rootMeta };
       }
-      // { series:[...] } → si c'est un tableau de points, on le prend; si c'est un tableau de séries, on mappe
+      // { series:[...] }
       if (Array.isArray(root.series)) {
         const s = root.series;
-        // si series est un tableau de points
-        if (Array.isArray(s[0])) return { series: [{ name:'S1', data: normalizePoints(s) }] };
-        // sinon objet(s) {name, data}
+        if (Array.isArray(s[0])) {
+          return { series: [{ name: 'S1', data: normalizePoints(s) }], rootMeta };
+        }
         const out = s.map((it, idx) => {
           const name = it && (it.name || ('S'+(idx+1)));
           const data = Array.isArray(it?.data) ? normalizePoints(it.data) : [];
-          return { name, data };
+          const meta = it?.meta || it?._meta || null;
+          return { name, data, meta };
         }).filter(s=>s.data.length);
-        if (out.length) return { series: out };
+        if (out.length) return { series: out, rootMeta };
       }
-      // mapping libre { key1:[...], key2:[...], _meta:{...} }
+      // mapping libre { key1:[...], key2:{data:[...],meta?}, _meta:{...} }
       const keys = Object.keys(root).filter(k => !IGNORED_KEYS.has(k));
       const out = [];
-      keys.forEach((k, i) => {
+      keys.forEach((k) => {
         const val = root[k];
         if (Array.isArray(val)) out.push({ name: k, data: normalizePoints(val) });
         else if (val && typeof val === 'object' && Array.isArray(val.data)) {
-          out.push({ name: k, data: normalizePoints(val.data) });
+          out.push({ name: k, data: normalizePoints(val.data), meta: (val.meta || val._meta || null) });
         }
       });
-      if (out.length) return { series: out };
+      if (out.length) return { series: out, rootMeta };
     }
     throw new Error('Format non reconnu. Utilise [[ts,val],...], {data:[...]}, {series:[...]}, ou {nom:[...],...}.');
   }
 
-  /* ===== UI / Chart helpers ===== */
+  /* ===== UI helpers ===== */
   function viewportHeight() {
     return (window.visualViewport && window.visualViewport.height) || window.innerHeight;
   }
@@ -261,7 +314,6 @@
     el.style.height = h + 'px';
     el.style.maxHeight = h + 'px';
   }
-
   function isColumnLike(type){ return String(type).toLowerCase() === 'column'; }
   function yAxisIndexFor(type){ return isColumnLike(type) ? 0 : 1; }
 
@@ -296,33 +348,21 @@
         applyChartHeight();
         const chartEl = document.getElementById('chart-container');
 
-        // Initial data (depuis localStorage si présent)
+        // Initial JSON + settings (depuis localStorage si présents)
         const $jsonEditor = document.getElementById('jsonEditor');
-        const currentSaved = lsGetCurrent();
-        if (currentSaved) $jsonEditor.value = currentSaved;
+        const currentJson = lsGetCurrentJson();
+        if (currentJson) $jsonEditor.value = currentJson;
+        let seriesSettings = lsGetCurrentSettings(); // { seriesName: {type, agg} }
 
-        const initialParsed = parseAnySeries($jsonEditor.value.trim());
-        const initialType = document.getElementById('seriesType').value || 'spline';
+        // Parse initial
+        let parsed = parseAnySeries($jsonEditor.value.trim());
+        seriesSettings = initOrMergeSeriesSettings(parsed, seriesSettings);
 
-        let chart = Highcharts.stockChart(chartEl, {
-          chart: { animation: false },
-          credits: { enabled: false },
-          legend: { enabled: true },
-          rangeSelector: { selected: 1 },
-          tooltip: { shared: true, split: false },
-          yAxis: [{
-            title: { text: null }, opposite: false
-          },{
-            title: { text: null }, opposite: true
-          }],
-          plotOptions: { series: { dataGrouping: { enabled: true } } },
-          series: initialParsed.series.map(s => ({
-            name: s.name,
-            type: initialType,
-            data: s.data,
-            yAxis: yAxisIndexFor(initialType)
-          }))
-        });
+        // UI: table séries
+        renderSeriesSettingsTable(parsed, seriesSettings);
+
+        // Chart init
+        let chart = Highcharts.stockChart(chartEl, buildChartOptions(parsed, seriesSettings));
 
         function reflow(){ try{ chart && chart.reflow(); }catch(e){} }
         function relayout(){ applyChartHeight(); reflow(); }
@@ -331,122 +371,237 @@
         window.addEventListener('resize', ()=>{ limitSheetSize(); relayout(); }, { passive:true });
         window.addEventListener('orientationchange', ()=> setTimeout(()=>{ limitSheetSize(); relayout(); }, 200), { passive:true });
 
-        /* ===== Contrôles ===== */
-        const $type    = document.getElementById('seriesType');
-        const $stacked = document.getElementById('stackedColumns');
-        const $file    = document.getElementById('jsonFile');
-        const $name    = document.getElementById('datasetName');
-        const $list    = document.getElementById('savedList');
+        // Controls
+        const $defaultType = document.getElementById('defaultSeriesType');
+        const $stacked     = document.getElementById('stackedColumns');
+        const $file        = document.getElementById('jsonFile');
+        const $name        = document.getElementById('datasetName');
+        const $list        = document.getElementById('savedList');
 
-        function refreshSavedList(selectedName) {
-          const map = lsGetSavedMap();
-          $list.innerHTML = '';
-          const opt = document.createElement('option');
-          opt.value=''; opt.textContent='-- sélectionner --';
-          $list.appendChild(opt);
-          Object.keys(map).sort().forEach(n=>{
-            const o=document.createElement('option'); o.value=n; o.textContent=n;
-            if (selectedName && n === selectedName) o.selected = true;
-            $list.appendChild(o);
-          });
-        }
         refreshSavedList();
 
-        function applyChanges() {
-          const type = $type.value;
-          const stacked = $stacked.checked;
-
-          // Parse JSON (multi-séries ok)
-          const parsed = parseAnySeries($jsonEditor.value.trim());
-          // stacking uniquement si type=column
-          const stacking = (isColumnLike(type) && stacked) ? 'normal' : undefined;
-
-          chart.update({
-            plotOptions: { series: { stacking } },
-            tooltip: { shared: true, split: false },
-          }, false, true);
-
-          // Synchroniser le nombre de séries
-          const need = parsed.series.length;
-          const have = chart.series.length;
-
-          // Supprimer séries excédentaires
-          for (let i=have-1; i>=need; i--) chart.series[i].remove(false);
-
-          // Mettre à jour / créer
-          parsed.series.forEach((s, idx) => {
-            if (idx < chart.series.length) {
-              chart.series[idx].update({ name: s.name, type, yAxis: yAxisIndexFor(type) }, false);
-              chart.series[idx].setData(s.data, false);
-            } else {
-              chart.addSeries({ name: s.name, type, data: s.data, yAxis: yAxisIndexFor(type) }, false);
-            }
-          });
-
-          chart.redraw();
-          reflow();
-        }
-
-        // Auto-save courant pendant saisie
-        let t; $jsonEditor.addEventListener('input', ()=>{
-          clearTimeout(t);
-          t = setTimeout(()=> lsSetCurrent($jsonEditor.value), 300);
-        });
-
+        // Apply
         document.getElementById('applyBtn').addEventListener('click', (e)=>{
           e.preventDefault();
-          try { applyChanges(); }
-          catch(err){ app.dialog.alert('JSON invalide : ' + err.message); }
+          try {
+            parsed = parseAnySeries($jsonEditor.value.trim());
+            seriesSettings = collectSeriesSettingsFromUI(parsed, seriesSettings, $defaultType.value);
+            lsSetCurrentJson($jsonEditor.value.trim());
+            lsSetCurrentSettings(seriesSettings);
+            // rebuild chart fully (séries/approx/type/axes peuvent bouger)
+            while (chart.series.length) chart.series[0].remove(false);
+            const opts = buildChartOptions(parsed, seriesSettings, $stacked.checked);
+            // appliquer yAxis / plotOptions globales
+            chart.update({ plotOptions: opts.plotOptions, yAxis: opts.yAxis, tooltip: opts.tooltip }, false, true);
+            // ajouter séries
+            opts.series.forEach(s => chart.addSeries(s, false));
+            chart.redraw();
+            reflow();
+          } catch(err) {
+            app.dialog.alert('JSON invalide : ' + err.message);
+          }
         });
 
+        // Save
         document.getElementById('saveBtn').addEventListener('click', (e)=>{
           e.preventDefault();
-          const name = ($name.value||'').trim();
-          if (!name) { app.dialog.alert('Donne un nom pour sauvegarder.'); return; }
-          const raw = $jsonEditor.value.trim();
-          if (!raw) { app.dialog.alert('Le JSON est vide.'); return; }
-          try { parseAnySeries(raw); } catch(err){ app.dialog.alert('JSON invalide : ' + err.message); return; }
-          const map = lsGetSavedMap(); map[name] = raw; lsSetSavedMap(map);
-          refreshSavedList(name);
+          const nm = ($name.value||'').trim();
+          if (!nm) return app.dialog.alert('Donne un nom pour sauvegarder.');
+          try { parseAnySeries($jsonEditor.value.trim()); } catch(err){ return app.dialog.alert('JSON invalide : ' + err.message); }
+          const map = lsGetSavedMap();
+          map[nm] = { json: $jsonEditor.value.trim(), settings: collectSeriesSettingsFromUI(parsed, seriesSettings, $defaultType.value) };
+          lsSetSavedMap(map);
+          refreshSavedList(nm);
           app.toast.create({ text: 'Sauvegardé', closeTimeout: 1500 }).open();
         });
 
+        // Load
         document.getElementById('loadBtn').addEventListener('click', (e)=>{
           e.preventDefault();
-          const name = $list.value;
-          if (!name) { app.dialog.alert('Sélectionne une sauvegarde.'); return; }
-          const map = lsGetSavedMap(); const raw = map[name];
-          if (!raw) { app.dialog.alert('Introuvable en localStorage.'); return; }
-          $jsonEditor.value = raw; lsSetCurrent(raw);
-          try { applyChanges(); } catch(err){ app.dialog.alert('JSON invalide : ' + err.message); }
+          const nm = $list.value;
+          if (!nm) return app.dialog.alert('Sélectionne une sauvegarde.');
+          const map = lsGetSavedMap();
+          const rec = map[nm];
+          if (!rec || !rec.json) return app.dialog.alert('Introuvable en localStorage.');
+          try {
+            parsed = parseAnySeries(rec.json);
+          } catch(err){ return app.dialog.alert('JSON invalide dans la sauvegarde : ' + err.message); }
+          // restaurer
+          $jsonEditor.value = rec.json;
+          lsSetCurrentJson(rec.json);
+          seriesSettings = initOrMergeSeriesSettings(parsed, rec.settings || {});
+          lsSetCurrentSettings(seriesSettings);
+          renderSeriesSettingsTable(parsed, seriesSettings);
+          // reconstruire chart
+          while (chart.series.length) chart.series[0].remove(false);
+          const opts = buildChartOptions(parsed, seriesSettings, $stacked.checked);
+          chart.update({ plotOptions: opts.plotOptions, yAxis: opts.yAxis, tooltip: opts.tooltip }, false, true);
+          opts.series.forEach(s => chart.addSeries(s, false));
+          chart.redraw();
+          reflow();
         });
 
+        // Delete
         document.getElementById('deleteBtn').addEventListener('click', (e)=>{
           e.preventDefault();
-          const name = $list.value;
-          if (!name) { app.dialog.alert('Sélectionne une sauvegarde à supprimer.'); return; }
-          const map = lsGetSavedMap(); delete map[name]; lsSetSavedMap(map);
+          const nm = $list.value;
+          if (!nm) return app.dialog.alert('Sélectionne une sauvegarde à supprimer.');
+          const map = lsGetSavedMap(); delete map[nm]; lsSetSavedMap(map);
           refreshSavedList();
           app.toast.create({ text: 'Supprimé', closeTimeout: 1500 }).open();
         });
 
-        // Upload JSON -> injecte dans l’éditeur (modifiable avant sauvegarde)
+        // Upload JSON (modifiable avant sauvegarde)
         $file.addEventListener('change', async (e)=>{
-          const file = e.target.files?.[0]; if (!file) return;
+          const f = e.target.files?.[0]; if (!f) return;
           try {
-            const text = await file.text();
-            // Valide pour feedback rapide (multi-séries OK)
-            parseAnySeries(text);
-            $jsonEditor.value = text; lsSetCurrent(text);
+            const text = await f.text();
+            const tmp = parseAnySeries(text); // validation
+            $jsonEditor.value = text;
+            lsSetCurrentJson(text);
+            // init settings (en gardant type/agg existants si même noms)
+            seriesSettings = initOrMergeSeriesSettings(tmp, seriesSettings, $defaultType.value);
+            lsSetCurrentSettings(seriesSettings);
+            renderSeriesSettingsTable(tmp, seriesSettings);
             app.toast.create({ text: 'Fichier chargé (modifiable avant sauvegarde)', closeTimeout: 2000 }).open();
           } catch(err){
             app.dialog.alert('JSON invalide : ' + err.message);
-          } finally { e.target.value = ''; }
+          } finally { e.target.value=''; }
         });
 
-        // Changement type / stacked => appliquer direct (si JSON OK)
-        document.getElementById('seriesType').addEventListener('change', () => { try { applyChanges(); } catch(e){} });
-        document.getElementById('stackedColumns').addEventListener('change', () => { try { applyChanges(); } catch(e){} });
+        // Autosave courant pendant saisie
+        let t; document.getElementById('jsonEditor').addEventListener('input', ()=>{
+          clearTimeout(t);
+          t = setTimeout(()=> lsSetCurrentJson(document.getElementById('jsonEditor').value), 300);
+        });
+
+        // Stacked toggle ⇒ recalculer (pas de parsing)
+        document.getElementById('stackedColumns').addEventListener('change', ()=>{
+          try {
+            seriesSettings = collectSeriesSettingsFromUI(parsed, seriesSettings, $defaultType.value);
+            lsSetCurrentSettings(seriesSettings);
+            while (chart.series.length) chart.series[0].remove(false);
+            const opts = buildChartOptions(parsed, seriesSettings, $stacked.checked);
+            chart.update({ plotOptions: opts.plotOptions, yAxis: opts.yAxis, tooltip: opts.tooltip }, false, true);
+            opts.series.forEach(s => chart.addSeries(s, false));
+            chart.redraw();
+            reflow();
+          } catch(e){}
+        });
+
+        /* ===== Helpers UI & Chart ===== */
+        function refreshSavedList(selected) {
+          const map = lsGetSavedMap();
+          const sel = document.getElementById('savedList');
+          sel.innerHTML = '';
+          const opt = document.createElement('option');
+          opt.value = ''; opt.textContent = '-- sélectionner --';
+          sel.appendChild(opt);
+          Object.keys(map).sort().forEach(n=>{
+            const o=document.createElement('option'); o.value=n; o.textContent=n;
+            if (selected && n===selected) o.selected = true;
+            sel.appendChild(o);
+          });
+        }
+
+        function initOrMergeSeriesSettings(parsed, existing={}, defaultType='spline') {
+          const out = { ...existing };
+          parsed.series.forEach(s => {
+            if (!out[s.name]) {
+              // détection agrégation: meta série > meta globale > heuristique sur le nom
+              const aggFromMeta = detectAggFromMeta(s.meta) ?? detectAggFromMeta(parsed.rootMeta);
+              const autoAgg = aggFromMeta || detectAggByName(s.name) || 'auto';
+              out[s.name] = {
+                type: TYPE_OPTIONS.includes(defaultType) ? defaultType : 'spline',
+                agg: AGG_OPTIONS.includes(autoAgg) ? autoAgg : 'auto'
+              };
+            }
+          });
+          // nettoyer les réglages orphelins
+          Object.keys(out).forEach(k=>{
+            if (!parsed.series.find(s=>s.name===k)) delete out[k];
+          });
+          return out;
+        }
+
+        function renderSeriesSettingsTable(parsed, settings) {
+          const tbody = document.getElementById('seriesSettingsBody');
+          tbody.innerHTML = '';
+          parsed.series.forEach(s => {
+            const row = document.createElement('tr');
+
+            const cName = document.createElement('td');
+            cName.textContent = s.name;
+
+            const cType = document.createElement('td');
+            const selType = document.createElement('select');
+            TYPE_OPTIONS.forEach(t => {
+              const opt = document.createElement('option');
+              opt.value=t; opt.textContent=t;
+              if ((settings[s.name]?.type||'spline') === t) opt.selected = true;
+              selType.appendChild(opt);
+            });
+            selType.addEventListener('change', ()=>{
+              settings[s.name] = settings[s.name] || {};
+              settings[s.name].type = selType.value;
+              lsSetCurrentSettings(settings);
+            });
+            cType.appendChild(selType);
+
+            const cAgg = document.createElement('td');
+            const selAgg = document.createElement('select');
+            AGG_OPTIONS.forEach(a => {
+              const opt = document.createElement('option');
+              opt.value=a; opt.textContent=a;
+              if ((settings[s.name]?.agg||'auto') === a) opt.selected = true;
+              selAgg.appendChild(opt);
+            });
+            selAgg.addEventListener('change', ()=>{
+              settings[s.name] = settings[s.name] || {};
+              settings[s.name].agg = selAgg.value;
+              lsSetCurrentSettings(settings);
+            });
+            cAgg.appendChild(selAgg);
+
+            row.appendChild(cName); row.appendChild(cType); row.appendChild(cAgg);
+            tbody.appendChild(row);
+          });
+        }
+
+        function aggToApprox(agg, fallbackName) {
+          if (agg === 'sum' || agg === 'average') return agg;
+          // auto => heuristique nom
+          const auto = detectAggByName(fallbackName);
+          return (auto === 'sum' || auto === 'average') ? auto : 'sum'; // par défaut, sum
+        }
+
+        function buildChartOptions(parsed, settings, stacked=false) {
+          // construire séries avec type/approx/yAxis
+          const series = parsed.series.map(s => {
+            const cfg = settings[s.name] || {};
+            const t = TYPE_OPTIONS.includes(cfg.type) ? cfg.type : 'spline';
+            const approx = aggToApprox(cfg.agg || 'auto', s.name);
+            const y = yAxisIndexFor(t);
+            const stacking = (t === 'column' && stacked) ? 'normal' : undefined;
+
+            return {
+              name: s.name,
+              type: t,
+              data: s.data,
+              yAxis: y,
+              dataGrouping: { enabled: true, approximation: approx },
+              // stacking global via plotOptions, mais Highcharts respecte par type
+            };
+          });
+
+          return {
+            tooltip: { shared: true, split: false },
+            yAxis: [{ title: { text: null }, opposite: false },
+                    { title: { text: null }, opposite: true }],
+            plotOptions: { series: { stacking: stacked ? 'normal' : undefined } },
+            series
+          };
+        }
       }
     }
   });
