@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Grapher — Stock + types & agrégations par série</title>
+  <title>Grapher — Stock + per-series types + 75% sheet</title>
 
   <!-- Framework7 + Highcharts Stock -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.4/framework7-bundle.min.css" />
@@ -13,33 +13,39 @@
   <style>
     :root { --nav-h: var(--f7-navbar-height, 44px); }
 
-    /* Graph: 100% largeur, hauteur = viewport - navbar, ne dépasse jamais l'écran */
+    /* Chart: 100% width, height fits viewport minus navbar, never exceeds screen */
     #chart-container {
       width: 100%;
       height: calc(100vh - var(--nav-h));
       max-height: calc(100vh - var(--nav-h));
     }
 
-    /* Sheet: 2 steps + push, ≤ 100vh, scrollable */
-    #controls-sheet { height: auto; max-height: 100vh; }
+    /* Sheet: two steps + push, expanded <= 75% of screen, content scrollable */
+    #controls-sheet { height: auto; max-height: 75vh; }
     #controls-sheet .sheet-modal-swipe-step { min-height: 92px; }
     .sheet-handle { height: 20px; display:flex; align-items:center; justify-content:center; }
     .sheet-handle::before { content:""; width:36px; height:4px; border-radius:2px; background:#999; opacity:.6; }
-    #controls-sheet .sheet-modal-inner { max-height: calc(100vh - 20px); overflow: auto; }
 
+    /* When expanded, inner is scrollable and still capped at 75% */
+    #controls-sheet .sheet-modal-inner {
+      max-height: calc(75vh - 20px); /* 20px ≈ handle */
+      overflow: auto;
+    }
+
+    /* Controls styling */
     .ctrls .list input, .ctrls .list select, .ctrls .list textarea { width: 100%; }
     .ctrls .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .ctrls .button-row .button { flex: 1; min-width: 120px; }
     .ctrls textarea { min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 12px; }
     .muted { color: var(--f7-text-muted); font-size: 12px; }
 
-    /* Tableau des séries */
+    /* Series table with per-series Type column */
     #seriesSettings { width: 100%; border-collapse: collapse; font-size: 13px; }
     #seriesSettings th, #seriesSettings td { padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
     #seriesSettings th { text-align: left; }
     #seriesSettings select { width: 100%; }
 
-    /* Navbar cachée en paysage */
+    /* Hide navbar in landscape; chart height auto-adjusts via JS */
     @media (orientation: landscape) {
       .navbar { display: none !important; }
       :root { --nav-h: 0px; }
@@ -64,13 +70,13 @@
     </div>
   </div>
 
-  <!-- SHEET = CONTRÔLES -->
+  <!-- SHEET = CONTROLS (max 75% viewport, scrollable) -->
   <div class="sheet-modal sheet-modal-push" id="controls-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-modal-inner">
       <div class="sheet-modal-swipe-step">
         <div class="block no-margin">
-          <p class="no-margin text-color-gray">Contrôles — swipe/tap pour agrandir ⤴︎</p>
+          <p class="no-margin text-color-gray">Contrôles — swipe/tap pour agrandir (≤ 75% écran) ⤴︎</p>
         </div>
       </div>
 
@@ -79,7 +85,7 @@
           <ul>
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Type par défaut (pour nouvelles séries)</div>
+                <div class="item-title item-label">Default type (new series)</div>
                 <div class="item-input-wrap">
                   <select id="defaultSeriesType">
                     <option value="spline" selected>Spline</option>
@@ -95,10 +101,10 @@
 
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Empiler les colonnes (stacked)</div>
+                <div class="item-title item-label">Stack columns</div>
                 <div class="item-input-wrap">
                   <label class="toggle toggle-init">
-                    <input type="checkbox" id="stackedColumns">
+                    <input type="checkbox" id="stackedColumns" />
                     <span class="toggle-icon"></span>
                   </label>
                 </div>
@@ -107,7 +113,7 @@
 
             <li class="item-content item-input">
               <div class="item-inner">
-                <div class="item-title item-label">Charger un JSON (time series)</div>
+                <div class="item-title item-label">Upload JSON (time series)</div>
                 <div class="item-input-wrap">
                   <input type="file" id="jsonFile" accept="application/json,.json" />
                 </div>
@@ -117,15 +123,13 @@
             <li class="item-content item-input">
               <div class="item-inner">
                 <div class="item-title item-label">
-                  JSON (éditable) — formats acceptés:
-                  <br><code>[[ts,val],...]</code> • <code>{data:[...]}</code> • <code>{ series:[{name,data,meta?}], ... }</code> • <code>{ "http-2xx":[...], "http-5xx":[...], "_meta":{...} }</code>
+                  JSON (editable) — accepted: <code>[[ts,val],...]</code> • <code>{data:[...]}</code> • <code>{ series:[{name,data,meta?}], ... }</code> • <code>{ "http-2xx":[...],"_meta":{...} }</code>
                 </div>
                 <div class="item-input-wrap">
                   <textarea id="jsonEditor" spellcheck="false">[[1719964800000,1],[1719968400000,3],[1719972000000,2]]</textarea>
                   <div class="muted">
-                    - Clés ignorées: <code>meta</code>, <code>_meta</code> (globales ou par série).  
-                    - Si plusieurs clés (ex. <code>{"http-2xx":[...],"http-5xx":[...]}</code>), une <b>série par clé</b> est créée.  
-                    - Agrégation auto: <b>sum</b> pour compteurs, <b>average</b> pour temps — surcharge possible par série.
+                    Keys <code>meta</code> / <code>_meta</code> ignored (global & per-series).  
+                    Multiple keys create multiple series.
                   </div>
                 </div>
               </div>
@@ -133,21 +137,19 @@
           </ul>
         </div>
 
-        <!-- Réglages par série -->
+        <!-- Per-series settings (includes Type column as requested) -->
         <div class="block">
-          <div class="block-title">Séries détectées</div>
+          <div class="block-title">Detected series</div>
           <div class="block">
             <table id="seriesSettings">
               <thead>
                 <tr>
-                  <th>Nom</th>
-                  <th>Type</th>
-                  <th>Agrégation</th>
+                  <th>Name</th>
+                  <th>Type</th>         <!-- <= you can change per-series types here -->
+                  <th>Aggregation</th>
                 </tr>
               </thead>
-              <tbody id="seriesSettingsBody">
-                <!-- Lignes générées dynamiquement -->
-              </tbody>
+              <tbody id="seriesSettingsBody"></tbody>
             </table>
           </div>
         </div>
@@ -157,15 +159,15 @@
             <ul>
               <li class="item-content item-input">
                 <div class="item-inner">
-                  <div class="item-title item-label">Nom (pour sauvegarder)</div>
+                  <div class="item-title item-label">Save name</div>
                   <div class="item-input-wrap">
-                    <input id="datasetName" type="text" placeholder="Nom de la sauvegarde" />
+                    <input id="datasetName" type="text" placeholder="Preset name" />
                   </div>
                 </div>
               </li>
               <li class="item-content item-input">
                 <div class="item-inner">
-                  <div class="item-title item-label">Séries enregistrées (localStorage)</div>
+                  <div class="item-title item-label">Saved presets (localStorage)</div>
                   <div class="item-input-wrap">
                     <select id="savedList"></select>
                   </div>
@@ -175,17 +177,17 @@
           </div>
 
           <div class="block button-row">
-            <a href="#" class="button button-fill" id="applyBtn">Appliquer</a>
-            <a href="#" class="button" id="saveBtn">Sauvegarder</a>
-            <a href="#" class="button" id="loadBtn">Charger</a>
-            <a href="#" class="button color-red" id="deleteBtn">Supprimer</a>
+            <a href="#" class="button button-fill" id="applyBtn">Apply</a>
+            <a href="#" class="button" id="saveBtn">Save</a>
+            <a href="#" class="button" id="loadBtn">Load</a>
+            <a href="#" class="button color-red" id="deleteBtn">Delete</a>
           </div>
         </div>
 
         <div class="block">
           <p class="muted">
-            Le JSON “courant” et les réglages par série sont <b>auto-sauvegardés</b>.  
-            Les sauvegardes nommées stockent <b>JSON + réglages</b>.
+            Current JSON & per-series settings are auto-saved.  
+            Named presets store <b>JSON + settings</b>.
           </p>
         </div>
       </div>
@@ -196,8 +198,8 @@
 <script>
   /* ===== LocalStorage ===== */
   const LS_CURRENT_KEY = 'grapher.current.timeseries';
-  const LS_CURRENT_SETTINGS_KEY = 'grapher.current.series.settings'; // map nom -> {type, agg}
-  const LS_SAVED_MAP_KEY = 'grapher.saved.timeseries.map';           // map nom -> { json, settings }
+  const LS_CURRENT_SETTINGS_KEY = 'grapher.current.series.settings'; // map name -> {type, agg}
+  const LS_SAVED_MAP_KEY = 'grapher.saved.timeseries.map';           // map presetName -> { json, settings }
 
   const lsGetSavedMap = () => { try { return JSON.parse(localStorage.getItem(LS_SAVED_MAP_KEY) || '{}'); } catch { return {}; } };
   const lsSetSavedMap = (m) => localStorage.setItem(LS_SAVED_MAP_KEY, JSON.stringify(m || {}));
@@ -215,43 +217,34 @@
 
   function normalizePoints(arr) {
     return arr.map(p => {
-      if (!Array.isArray(p) || p.length < 2) throw new Error('Chaque point doit être [ts, value]');
+      if (!Array.isArray(p) || p.length < 2) throw new Error('Each point must be [ts, value]');
       let ts = p[0], v = p[1];
-
-      if (typeof ts === 'string') {
-        const d = new Date(ts);
-        if (isNaN(d)) throw new Error('Timestamp invalide: ' + ts);
-        ts = d.getTime();
-      }
-      if (typeof ts === 'number' && ts < 1e12) ts = ts * 1000; // secondes -> ms
-
-      const numV = Number(v);
-      if (Number.isNaN(numV)) throw new Error('Valeur non numérique: ' + v);
+      if (typeof ts === 'string') { const d = new Date(ts); if (isNaN(d)) throw new Error('Invalid ts: '+ts); ts = d.getTime(); }
+      if (typeof ts === 'number' && ts < 1e12) ts = ts * 1000; // seconds -> ms (heuristic)
+      const numV = Number(v); if (Number.isNaN(numV)) throw new Error('Non numeric value: '+v);
       return [ts, numV];
     }).sort((a,b)=>a[0]-b[0]);
   }
 
   function detectAggByName(name='') {
     const n = String(name).toLowerCase();
-    const isCount = /(^|[^a-z])(count|hits?|reqs?|requests?|events?)($|[^a-z])/i.test(n)
-                  || /(?:^|[^a-z])(1xx|2xx|3xx|4xx|5xx)(?:$|[^a-z])/.test(n);
+    const isCount = /(^|[^a-z])(count|hits?|reqs?|requests?|events?)([^a-z]|$)/i.test(n)
+                 || /(^|[^a-z])(1xx|2xx|3xx|4xx|5xx)([^a-z]|$)/i.test(n);
     const isAvg   = /(avg|average|mean|latency|response|time|rt|duration|ms|s|p\d{2})/i.test(n);
     if (isAvg && !isCount) return 'average';
     if (isCount && !isAvg) return 'sum';
     return 'auto';
   }
-
   function detectAggFromMeta(meta) {
     if (!meta || typeof meta !== 'object') return null;
-    const m = { ...meta };
-    const agg = (m.agg || m.approximation || m.approx || '').toLowerCase();
-    const metric = (m.metric || '').toLowerCase();
+    const agg = (meta.agg || meta.approximation || meta.approx || '').toLowerCase();
+    const metric = (meta.metric || '').toLowerCase();
     if (agg === 'sum' || metric === 'count') return 'sum';
     if (agg === 'average' || agg === 'avg' || metric === 'average') return 'average';
     return null;
   }
 
-  // Retourne { series: [{name, data, meta?}], rootMeta? }
+  // Returns { series:[{name,data,meta?}], rootMeta? }
   function parseAnySeries(str) {
     let root = JSON.parse(str);
     let rootMeta = (root && (root._meta || root.meta)) || null;
@@ -259,42 +252,35 @@
     if (Array.isArray(root)) {
       return { series: [{ name: 'S1', data: normalizePoints(root) }], rootMeta: null };
     }
-
     if (root && typeof root === 'object') {
-      // { data:[...] }
       if (Array.isArray(root.data)) {
         return { series: [{ name: 'S1', data: normalizePoints(root.data), meta: (root.data_meta||null) }], rootMeta };
       }
-      // { series:[...] }
       if (Array.isArray(root.series)) {
         const s = root.series;
-        if (Array.isArray(s[0])) {
-          return { series: [{ name: 'S1', data: normalizePoints(s) }], rootMeta };
-        }
-        const out = s.map((it, idx) => {
-          const name = it && (it.name || ('S'+(idx+1)));
-          const data = Array.isArray(it?.data) ? normalizePoints(it.data) : [];
-          const meta = it?.meta || it?._meta || null;
-          return { name, data, meta };
-        }).filter(s=>s.data.length);
+        if (Array.isArray(s[0])) return { series: [{ name:'S1', data: normalizePoints(s) }], rootMeta };
+        const out = s.map((it, idx) => ({
+          name: it?.name || ('S'+(idx+1)),
+          data: Array.isArray(it?.data) ? normalizePoints(it.data) : [],
+          meta: it?.meta || it?._meta || null
+        })).filter(s=>s.data.length);
         if (out.length) return { series: out, rootMeta };
       }
-      // mapping libre { key1:[...], key2:{data:[...],meta?}, _meta:{...} }
       const keys = Object.keys(root).filter(k => !IGNORED_KEYS.has(k));
       const out = [];
-      keys.forEach((k) => {
-        const val = root[k];
-        if (Array.isArray(val)) out.push({ name: k, data: normalizePoints(val) });
-        else if (val && typeof val === 'object' && Array.isArray(val.data)) {
-          out.push({ name: k, data: normalizePoints(val.data), meta: (val.meta || val._meta || null) });
+      keys.forEach(k => {
+        const v = root[k];
+        if (Array.isArray(v)) out.push({ name: k, data: normalizePoints(v) });
+        else if (v && typeof v === 'object' && Array.isArray(v.data)) {
+          out.push({ name: k, data: normalizePoints(v.data), meta: (v.meta||v._meta||null) });
         }
       });
       if (out.length) return { series: out, rootMeta };
     }
-    throw new Error('Format non reconnu. Utilise [[ts,val],...], {data:[...]}, {series:[...]}, ou {nom:[...],...}.');
+    throw new Error('Unsupported format.');
   }
 
-  /* ===== UI helpers ===== */
+  /* ===== Layout helpers ===== */
   function viewportHeight() {
     return (window.visualViewport && window.visualViewport.height) || window.innerHeight;
   }
@@ -314,15 +300,16 @@
     el.style.height = h + 'px';
     el.style.maxHeight = h + 'px';
   }
-  function isColumnLike(type){ return String(type).toLowerCase() === 'column'; }
-  function yAxisIndexFor(type){ return isColumnLike(type) ? 0 : 1; }
+
+  function isColumnLike(t){ return String(t).toLowerCase() === 'column'; }
+  function yAxisIndexFor(t){ return isColumnLike(t) ? 0 : 1; }
 
   /* ===== App ===== */
   const app = new Framework7({
     el: '#app',
     on: {
       init: function () {
-        // Sheet
+        // Sheet (limit open height to 75% of viewport)
         const sheet = this.sheet.create({
           el: '#controls-sheet',
           swipeToStep: true,
@@ -331,12 +318,18 @@
           backdrop: true
         });
         const sheetEl = document.getElementById('controls-sheet');
-        function limitSheetSize(){
+        const innerEl = sheetEl.querySelector('.sheet-modal-inner');
+
+        function capSheetTo75vh(){
           const vh = viewportHeight();
-          sheetEl.style.maxHeight = vh + 'px';
-          sheetEl.querySelector('.sheet-modal-inner').style.maxHeight = (vh - 20) + 'px';
+          const max = Math.floor(vh * 0.75);
+          sheetEl.style.maxHeight = max + 'px';
+          innerEl.style.maxHeight = (max - 20) + 'px'; // keep it scrollable
+          innerEl.style.overflow = 'auto';
         }
-        limitSheetSize();
+        capSheetTo75vh();
+
+        // Open compact by default; tap background of sheet toggles step
         sheet.open(false); sheet.stepClose(false);
         document.getElementById('openControls').addEventListener('click', (e) => { e.preventDefault(); sheet.open(); });
         sheetEl.addEventListener('click', (e) => {
@@ -344,34 +337,34 @@
           sheet.stepOpened ? sheet.stepClose() : sheet.stepOpen();
         });
 
-        // Chart
+        // Chart init
         applyChartHeight();
         const chartEl = document.getElementById('chart-container');
 
-        // Initial JSON + settings (depuis localStorage si présents)
+        // Current JSON & settings
         const $jsonEditor = document.getElementById('jsonEditor');
         const currentJson = lsGetCurrentJson();
         if (currentJson) $jsonEditor.value = currentJson;
-        let seriesSettings = lsGetCurrentSettings(); // { seriesName: {type, agg} }
+        let seriesSettings = lsGetCurrentSettings(); // { name: {type, agg} }
 
-        // Parse initial
+        // Parse & merge settings
         let parsed = parseAnySeries($jsonEditor.value.trim());
         seriesSettings = initOrMergeSeriesSettings(parsed, seriesSettings);
 
-        // UI: table séries
+        // Render per-series settings table (includes Type column)
         renderSeriesSettingsTable(parsed, seriesSettings);
 
-        // Chart init
         let chart = Highcharts.stockChart(chartEl, buildChartOptions(parsed, seriesSettings));
 
         function reflow(){ try{ chart && chart.reflow(); }catch(e){} }
-        function relayout(){ applyChartHeight(); reflow(); }
+        function relayout(){ applyChartHeight(); capSheetTo75vh(); reflow(); }
+
         sheet.on('stepOpen', relayout);
         sheet.on('stepClose', relayout);
-        window.addEventListener('resize', ()=>{ limitSheetSize(); relayout(); }, { passive:true });
-        window.addEventListener('orientationchange', ()=> setTimeout(()=>{ limitSheetSize(); relayout(); }, 200), { passive:true });
+        window.addEventListener('resize', relayout, { passive:true });
+        window.addEventListener('orientationchange', ()=> setTimeout(relayout, 200), { passive:true });
 
-        // Controls
+        /* ===== Controls ===== */
         const $defaultType = document.getElementById('defaultSeriesType');
         const $stacked     = document.getElementById('stackedColumns');
         const $file        = document.getElementById('jsonFile');
@@ -380,7 +373,6 @@
 
         refreshSavedList();
 
-        // Apply
         document.getElementById('applyBtn').addEventListener('click', (e)=>{
           e.preventDefault();
           try {
@@ -388,94 +380,86 @@
             seriesSettings = collectSeriesSettingsFromUI(parsed, seriesSettings, $defaultType.value);
             lsSetCurrentJson($jsonEditor.value.trim());
             lsSetCurrentSettings(seriesSettings);
-            // rebuild chart fully (séries/approx/type/axes peuvent bouger)
+
+            // Rebuild chart with possibly changed series/types/agg
             while (chart.series.length) chart.series[0].remove(false);
             const opts = buildChartOptions(parsed, seriesSettings, $stacked.checked);
-            // appliquer yAxis / plotOptions globales
             chart.update({ plotOptions: opts.plotOptions, yAxis: opts.yAxis, tooltip: opts.tooltip }, false, true);
-            // ajouter séries
             opts.series.forEach(s => chart.addSeries(s, false));
             chart.redraw();
-            reflow();
+            relayout();
           } catch(err) {
-            app.dialog.alert('JSON invalide : ' + err.message);
+            app.dialog.alert('Invalid JSON: ' + err.message);
           }
         });
 
-        // Save
         document.getElementById('saveBtn').addEventListener('click', (e)=>{
           e.preventDefault();
           const nm = ($name.value||'').trim();
-          if (!nm) return app.dialog.alert('Donne un nom pour sauvegarder.');
-          try { parseAnySeries($jsonEditor.value.trim()); } catch(err){ return app.dialog.alert('JSON invalide : ' + err.message); }
+          if (!nm) return app.dialog.alert('Name required.');
+          try { parseAnySeries($jsonEditor.value.trim()); } catch(err){ return app.dialog.alert('Invalid JSON: ' + err.message); }
           const map = lsGetSavedMap();
           map[nm] = { json: $jsonEditor.value.trim(), settings: collectSeriesSettingsFromUI(parsed, seriesSettings, $defaultType.value) };
           lsSetSavedMap(map);
           refreshSavedList(nm);
-          app.toast.create({ text: 'Sauvegardé', closeTimeout: 1500 }).open();
+          app.toast.create({ text: 'Saved', closeTimeout: 1500 }).open();
         });
 
-        // Load
         document.getElementById('loadBtn').addEventListener('click', (e)=>{
           e.preventDefault();
           const nm = $list.value;
-          if (!nm) return app.dialog.alert('Sélectionne une sauvegarde.');
-          const map = lsGetSavedMap();
-          const rec = map[nm];
-          if (!rec || !rec.json) return app.dialog.alert('Introuvable en localStorage.');
-          try {
-            parsed = parseAnySeries(rec.json);
-          } catch(err){ return app.dialog.alert('JSON invalide dans la sauvegarde : ' + err.message); }
-          // restaurer
+          if (!nm) return app.dialog.alert('Select a preset.');
+          const rec = lsGetSavedMap()[nm];
+          if (!rec || !rec.json) return app.dialog.alert('Preset not found.');
+          try { parsed = parseAnySeries(rec.json); } catch(err){ return app.dialog.alert('Preset JSON invalid: '+err.message); }
+
           $jsonEditor.value = rec.json;
           lsSetCurrentJson(rec.json);
           seriesSettings = initOrMergeSeriesSettings(parsed, rec.settings || {});
           lsSetCurrentSettings(seriesSettings);
           renderSeriesSettingsTable(parsed, seriesSettings);
-          // reconstruire chart
+
+          // Rebuild chart
           while (chart.series.length) chart.series[0].remove(false);
           const opts = buildChartOptions(parsed, seriesSettings, $stacked.checked);
           chart.update({ plotOptions: opts.plotOptions, yAxis: opts.yAxis, tooltip: opts.tooltip }, false, true);
           opts.series.forEach(s => chart.addSeries(s, false));
           chart.redraw();
-          reflow();
+          relayout();
         });
 
-        // Delete
         document.getElementById('deleteBtn').addEventListener('click', (e)=>{
           e.preventDefault();
           const nm = $list.value;
-          if (!nm) return app.dialog.alert('Sélectionne une sauvegarde à supprimer.');
+          if (!nm) return app.dialog.alert('Select a preset to delete.');
           const map = lsGetSavedMap(); delete map[nm]; lsSetSavedMap(map);
           refreshSavedList();
-          app.toast.create({ text: 'Supprimé', closeTimeout: 1500 }).open();
+          app.toast.create({ text: 'Deleted', closeTimeout: 1500 }).open();
         });
 
-        // Upload JSON (modifiable avant sauvegarde)
         $file.addEventListener('change', async (e)=>{
           const f = e.target.files?.[0]; if (!f) return;
           try {
             const text = await f.text();
-            const tmp = parseAnySeries(text); // validation
+            const tmp = parseAnySeries(text); // validate
             $jsonEditor.value = text;
             lsSetCurrentJson(text);
-            // init settings (en gardant type/agg existants si même noms)
             seriesSettings = initOrMergeSeriesSettings(tmp, seriesSettings, $defaultType.value);
             lsSetCurrentSettings(seriesSettings);
             renderSeriesSettingsTable(tmp, seriesSettings);
-            app.toast.create({ text: 'Fichier chargé (modifiable avant sauvegarde)', closeTimeout: 2000 }).open();
+            app.toast.create({ text: 'File loaded (editable before save)', closeTimeout: 2000 }).open();
           } catch(err){
-            app.dialog.alert('JSON invalide : ' + err.message);
+            app.dialog.alert('Invalid JSON: ' + err.message);
           } finally { e.target.value=''; }
         });
 
-        // Autosave courant pendant saisie
+        // Auto-save current JSON while typing
         let t; document.getElementById('jsonEditor').addEventListener('input', ()=>{
           clearTimeout(t);
           t = setTimeout(()=> lsSetCurrentJson(document.getElementById('jsonEditor').value), 300);
         });
 
-        // Stacked toggle ⇒ recalculer (pas de parsing)
+        // Stacked toggle -> rebuild using existing parsed/settings
         document.getElementById('stackedColumns').addEventListener('change', ()=>{
           try {
             seriesSettings = collectSeriesSettingsFromUI(parsed, seriesSettings, $defaultType.value);
@@ -485,17 +469,17 @@
             chart.update({ plotOptions: opts.plotOptions, yAxis: opts.yAxis, tooltip: opts.tooltip }, false, true);
             opts.series.forEach(s => chart.addSeries(s, false));
             chart.redraw();
-            reflow();
+            relayout();
           } catch(e){}
         });
 
-        /* ===== Helpers UI & Chart ===== */
+        /* ===== Helpers ===== */
         function refreshSavedList(selected) {
           const map = lsGetSavedMap();
           const sel = document.getElementById('savedList');
           sel.innerHTML = '';
           const opt = document.createElement('option');
-          opt.value = ''; opt.textContent = '-- sélectionner --';
+          opt.value = ''; opt.textContent = '-- select --';
           sel.appendChild(opt);
           Object.keys(map).sort().forEach(n=>{
             const o=document.createElement('option'); o.value=n; o.textContent=n;
@@ -508,7 +492,6 @@
           const out = { ...existing };
           parsed.series.forEach(s => {
             if (!out[s.name]) {
-              // détection agrégation: meta série > meta globale > heuristique sur le nom
               const aggFromMeta = detectAggFromMeta(s.meta) ?? detectAggFromMeta(parsed.rootMeta);
               const autoAgg = aggFromMeta || detectAggByName(s.name) || 'auto';
               out[s.name] = {
@@ -517,7 +500,7 @@
               };
             }
           });
-          // nettoyer les réglages orphelins
+          // prune orphans
           Object.keys(out).forEach(k=>{
             if (!parsed.series.find(s=>s.name===k)) delete out[k];
           });
@@ -570,27 +553,22 @@
 
         function aggToApprox(agg, fallbackName) {
           if (agg === 'sum' || agg === 'average') return agg;
-          // auto => heuristique nom
           const auto = detectAggByName(fallbackName);
-          return (auto === 'sum' || auto === 'average') ? auto : 'sum'; // par défaut, sum
+          return (auto === 'sum' || auto === 'average') ? auto : 'sum';
         }
 
         function buildChartOptions(parsed, settings, stacked=false) {
-          // construire séries avec type/approx/yAxis
           const series = parsed.series.map(s => {
             const cfg = settings[s.name] || {};
             const t = TYPE_OPTIONS.includes(cfg.type) ? cfg.type : 'spline';
             const approx = aggToApprox(cfg.agg || 'auto', s.name);
             const y = yAxisIndexFor(t);
-            const stacking = (t === 'column' && stacked) ? 'normal' : undefined;
-
             return {
               name: s.name,
               type: t,
               data: s.data,
               yAxis: y,
-              dataGrouping: { enabled: true, approximation: approx },
-              // stacking global via plotOptions, mais Highcharts respecte par type
+              dataGrouping: { enabled: true, approximation: approx }
             };
           });
 
