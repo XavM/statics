@@ -4,15 +4,21 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>TS Viewer</title>
+
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
+
 <style>
   :root { --gap: 10px; --fab: 56px; }
   html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#fff; }
+  /* Fullscreen chart */
   #chartWrap { position:relative; width:100vw; height:100dvh; height:-webkit-fill-available; }
   #chart { width:100%; height:100%; min-height:320px; }
+  /* Floating Action Button */
   #fab { position:fixed; right:16px; bottom:16px; width:var(--fab); height:var(--fab); border-radius:50%; border:none; box-shadow:0 4px 12px rgba(0,0,0,.2); background:#1976d2; color:#fff; font-size:28px; line-height:1; cursor:pointer; z-index:20; }
+  /* Slide-over panel */
   dialog#panel { border:none; padding:0; margin:0; width:100vw; max-width:900px; height:100dvh; height:-webkit-fill-available; inset:0 0 0 auto; position:fixed; transform:translateX(100%); transition:transform .25s ease; background:#fff; z-index:30; }
-  dialog#panel[open]{ transform:translateX(0); } dialog::backdrop{ background:rgba(0,0,0,.2); }
+  dialog#panel[open]{ transform:translateX(0); }
+  dialog::backdrop{ background:rgba(0,0,0,.2); }
   .panel-head{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index:1; }
   .panel-body{ height:calc(100% - 54px); overflow:auto; padding:12px 16px 24px; display:grid; gap:14px; }
   textarea,input[type="text"],select{ width:100%; padding:8px; } textarea{ min-height:140px; resize:vertical; }
@@ -23,9 +29,11 @@
 </head>
 <body>
 
+<!-- FULLSCREEN CHART -->
 <div id="chartWrap"><div id="chart"></div></div>
 <button id="fab" title="Open controls">≡</button>
 
+<!-- PANEL -->
 <dialog id="panel">
   <div class="panel-head">
     <strong>Controls</strong>
@@ -36,7 +44,7 @@
       <input id="datasetName" type="text" placeholder="Dataset name" />
       <input id="defaultSeriesName" type="text" placeholder="Default series name (if missing)" />
       <input id="fileInput" type="file" accept=".json,.txt,application/json" />
-      <textarea id="jsonInput" placeholder='JSON here (map or array of series). "_meta" or "meta" keys are ignored.'></textarea>
+      <textarea id="jsonInput" placeholder='JSON here (map or array of series). Keys "_meta"/"meta" ignored.'></textarea>
       <div class="actions">
         <button id="btnAdd">Add to chart</button>
         <button id="btnReplace">Replace chart</button>
@@ -65,83 +73,39 @@
 </dialog>
 
 <script>
-/* ================== Storage (granulaire) ==================
-   - Index des datasets: clé INDEX_KEY (array d'ids)
-   - Chaque dataset: clé DS_PREFIX + id  (objet {id,name,series,...})
-   - Active id: ACTIVE_KEY
-   - Migration depuis ancien blob si trouvé.
-*/
-const INDEX_KEY   = 'ts_ds_index_v1';
-const DS_PREFIX   = 'ts_ds_';
-const ACTIVE_KEY  = 'ts_active_dataset_id';
-const LEGACY_KEY  = 'ts_datasets_v7'; // anciennes versions éventuelles
+/* ================== localStorage granular ================== */
+const INDEX_KEY  = 'ts_ds_index_v2';
+const DS_PREFIX  = 'ts_ds_';
+const ACTIVE_KEY = 'ts_active_dataset_id';
 
 function lsGet(k){ return localStorage.getItem(k); }
 function lsSet(k,v){ localStorage.setItem(k,v); }
 function lsDel(k){ localStorage.removeItem(k); }
 
-function loadIndex(){
-  try{ return JSON.parse(lsGet(INDEX_KEY)||'[]'); } catch{ return []; }
-}
-function saveIndex(ids){
-  lsSet(INDEX_KEY, JSON.stringify(ids));
-}
+function loadIndex(){ try{ return JSON.parse(lsGet(INDEX_KEY)||'[]'); }catch{ return []; } }
+function saveIndex(ids){ lsSet(INDEX_KEY, JSON.stringify(ids)); }
 function listIds(){ return loadIndex(); }
 
 function getDataset(id){
-  try{
-    const raw = lsGet(DS_PREFIX+id);
-    if(!raw) return null;
-    return JSON.parse(raw);
-  }catch{ return null; }
+  try{ const raw=lsGet(DS_PREFIX+id); return raw?JSON.parse(raw):null; }catch{ return null; }
 }
 function saveDataset(ds){
-  const key = DS_PREFIX+ds.id;
-  const ids = loadIndex();
-  try{
-    lsSet(key, JSON.stringify(ds));
-  }catch(e){
-    if (String(e).includes('Quota') || String(e).includes('quota')) throw e; // relayer
-    throw e;
-  }
-  if(!ids.includes(ds.id)){ ids.push(ds.id); saveIndex(ids); }
+  // may throw QuotaExceededError -> caller handles it
+  lsSet(DS_PREFIX+ds.id, JSON.stringify(ds));
+  const ids=loadIndex(); if(!ids.includes(ds.id)){ ids.push(ds.id); saveIndex(ids); }
 }
 function deleteDataset(id){
-  const ids = loadIndex().filter(x=>x!==id);
-  saveIndex(ids); lsDel(DS_PREFIX+id);
+  lsDel(DS_PREFIX+id);
+  saveIndex(loadIndex().filter(x=>x!==id));
 }
-function getAllDatasetsMeta(){
-  const ids = listIds();
-  return ids.map(id=>{
-    const ds = getDataset(id);
-    return ds ? { id, name: ds.name, updatedAt: ds.updatedAt||ds.savedAt||0, count: ds.series?.length||0 } : null;
-  }).filter(Boolean).sort((a,b)=>(b.updatedAt)-(a.updatedAt));
-}
-function migrateLegacyIfAny(){
-  const legacy = lsGet(LEGACY_KEY);
-  if(!legacy) return;
-  try{
-    const obj = JSON.parse(legacy);
-    const entries = Object.values(obj||{});
-    entries.forEach(ds=>{
-      try{ saveDataset(ds); }catch(_e){ /* si quota atteint, on arrête la migration */ }
-    });
-  }catch{}
-  lsDel(LEGACY_KEY);
+function getAllMetas(){
+  return listIds().map(id=>{
+    const ds=getDataset(id);
+    return ds?{id, name:ds.name, updatedAt:ds.updatedAt||ds.savedAt||0, count:ds.series?.length||0}:null;
+  }).filter(Boolean).sort((a,b)=>b.updatedAt-a.updatedAt);
 }
 
-/* ================== Active dataset helpers ================== */
-function getActiveId(){ return lsGet(ACTIVE_KEY) || null; }
-function setActiveId(id){ lsSet(ACTIVE_KEY, id); renderSavedList(); }
-function patchActiveDataset(mut){
-  const id=getActiveId(); if(!id) return;
-  const ds=getDataset(id); if(!ds) return;
-  mut(ds); ds.updatedAt=Date.now();
-  try{ saveDataset(ds); }catch(e){ console.warn('Save failed:', e); }
-  renderSavedList();
-}
-
-/* ================== Parsing helpers ================== */
+/* ================== Parse helpers ================== */
 function toMillis(ts){
   if (typeof ts === 'number') return ts < 1e12 ? Math.round(ts*1000) : Math.round(ts);
   const n = Number(ts); if (!Number.isNaN(n)) return n < 1e12 ? Math.round(n*1000) : Math.round(n);
@@ -162,21 +126,62 @@ function parseInput(text, defaultName){
   }
   if(Array.isArray(obj)){
     if(obj.length && typeof obj[0]==='object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])){
-      return obj.map((s,i)=>({ name: s.name ?? `${defaultSeriesName||'series'} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
+      return obj.map((s,i)=>({ name: s.name ?? `${defaultName||'series'} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
     }
-    return [{ name: defaultSeriesName || ('series '+new Date().toISOString()), data: normalizeDataArray(obj) }];
+    return [{ name: defaultName || ('series '+new Date().toISOString()), data: normalizeDataArray(obj) }];
   }
   throw new Error('Unsupported JSON');
 }
 
-/* ================== Chart & UI helpers ================== */
+/* ================== Build dataset(s) from ANY JSON ================== */
+function buildDatasetObject(name, seriesList){
+  return {
+    id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+    name, savedAt: Date.now(), updatedAt: Date.now(),
+    series: seriesList.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }))
+  };
+}
+// Accept dump of datasets OR plain series JSON (like your file).
+function datasetsFromAnyJson(obj, nameHint){
+  const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+
+  // Single dataset object?
+  if (obj && typeof obj==='object' && !Array.isArray(obj) && Array.isArray(obj.series)) {
+    const ds = { ...obj };
+    if (!ds.id) ds.id = makeId();
+    if (!ds.name) ds.name = nameHint || 'Imported dataset';
+    return [ds];
+  }
+  // Map id->dataset?
+  if (obj && typeof obj==='object' && !Array.isArray(obj)) {
+    const vals = Object.values(obj);
+    if (vals.length && vals.every(v => v && typeof v==='object' && Array.isArray(v.series))) {
+      return vals.map(v => ({ ...v, id: v.id || makeId(), name: v.name || nameHint || 'Imported dataset' }));
+    }
+    // Map of series -> dataset
+    const parsed = parseInput(JSON.stringify(obj), 'series');
+    const list = parsed.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }));
+    return [buildDatasetObject(nameHint || `Imported ${new Date().toLocaleString()}`, list)];
+  }
+  // Array (datasets or series)
+  if (Array.isArray(obj)) {
+    if (obj.length && obj[0] && typeof obj[0]==='object' && Array.isArray(obj[0].series)) {
+      return obj.map(v => ({ ...v, id: v.id || makeId(), name: v.name || nameHint || 'Imported dataset' }));
+    }
+    const parsed = parseInput(JSON.stringify(obj), 'series');
+    const list = parsed.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }));
+    return [buildDatasetObject(nameHint || `Imported ${new Date().toLocaleString()}`, list)];
+  }
+  throw new Error('Unsupported JSON');
+}
+
+/* ================== Chart ================== */
 function yAxisIndexForType(uiType){ return (uiType==='column'||uiType==='column-stacked') ? 0 : 1; }
 function normalizeType(t){ return (t==='column-stacked') ? { actualType:'column', stacked:true } : { actualType:(t||'spline'), stacked:false }; }
 function applyGlobalStacking(){
   const any = chart.series.some(s=> (s.userOptions && s.userOptions._uiType==='column-stacked'));
   chart.update({ plotOptions:{ column:{ stacking: any ? 'normal' : null } } }, false);
 }
-
 let chart = Highcharts.stockChart('chart', {
   rangeSelector: { selected: 1 },
   title: { text: '' },
@@ -190,7 +195,6 @@ let chart = Highcharts.stockChart('chart', {
   plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
   series: []
 });
-
 function addSeriesToChart(name, data, uiType){
   const { actualType } = normalizeType(uiType);
   const yIdx = yAxisIndexForType(uiType||'spline');
@@ -201,9 +205,7 @@ function addSeriesToChart(name, data, uiType){
 function replaceChartWithSeries(seriesList){
   while(chart.series.length) chart.series[0].remove(false);
   for(const s of seriesList) addSeriesToChart(s.name, s.data, s.type);
-  applyGlobalStacking();
-  chart.redraw();
-  buildSeriesTable();
+  applyGlobalStacking(); chart.redraw(); buildSeriesTable();
 }
 function snapshotChartSeries(){
   return chart.series.map(ser => ({
@@ -215,8 +217,11 @@ function snapshotChartSeries(){
   }));
 }
 function saveActiveFromChart(){
-  const id=getActiveId(); if(!id) return;
-  patchActiveDataset(ds => { ds.series = snapshotChartSeries(); });
+  const id = lsGet(ACTIVE_KEY); if(!id) return;
+  const ds = getDataset(id); if(!ds) return;
+  ds.series = snapshotChartSeries();
+  ds.updatedAt = Date.now();
+  try{ saveDataset(ds); }catch(e){ console.warn('Persist failed:', e); }
 }
 
 /* ================== UI: FAB + Panel ================== */
@@ -241,34 +246,25 @@ function defaults(){ return {
 function tryParseAndReport(){
   const status = el('status'); status.textContent = '';
   const { defaultSeriesName } = defaults();
-  // utiliser defaultSeriesName dans parseInput (scope global)
-  window.defaultSeriesName = defaultSeriesName;
   const parsed = parseInput(el('jsonInput').value, defaultSeriesName);
   const n = parsed.reduce((a,s)=>a+(s.data?.length||0),0);
   status.textContent = `Parsed ${parsed.length} series, ${n} points.`;
   return parsed;
 }
 
-function buildDatasetObject(name, seriesList){
-  return {
-    id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
-    name, savedAt: Date.now(), updatedAt: Date.now(),
-    series: seriesList.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }))
-  };
-}
-
 function persistAndActivate(list, datasetName){
   const ds = buildDatasetObject(datasetName, list);
   try{
     saveDataset(ds);
-    setActiveId(ds.id);
+    lsSet(ACTIVE_KEY, ds.id);
     saveActiveFromChart();
     buildSeriesTable();
   }catch(e){
-    alert('Saved in memory only (storage quota reached). You can still export the chart.');
+    alert('Saved in memory only (localStorage quota or write blocked). You can still export.');
   }
 }
 
+/* Buttons Add/Replace */
 el('btnAdd').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
@@ -279,7 +275,6 @@ el('btnAdd').addEventListener('click', () => {
     persistAndActivate(list, datasetName);
   } catch(e){ el('status').textContent = e.message; }
 });
-
 el('btnReplace').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
@@ -289,10 +284,7 @@ el('btnReplace').addEventListener('click', () => {
     persistAndActivate(list, datasetName);
   } catch(e){ el('status').textContent = e.message; }
 });
-
-el('btnClearInput').addEventListener('click', ()=>{
-  el('jsonInput').value=''; el('status').textContent='';
-});
+el('btnClearInput').addEventListener('click', ()=>{ el('jsonInput').value=''; el('status').textContent=''; });
 
 /* ================== Series table (editable) ================== */
 function buildSeriesTable(){
@@ -346,12 +338,12 @@ function buildSeriesTable(){
   wrap.innerHTML = ''; wrap.appendChild(tbl);
 }
 
-/* ================== Saved datasets (UI) ================== */
+/* ================== Saved datasets UI ================== */
 function renderSavedList(){
   const container = document.getElementById('savedList');
-  const metas = getAllDatasetsMeta();
+  const metas = getAllMetas();
   if(!metas.length){ container.textContent='No saved datasets yet.'; return; }
-  const active = getActiveId();
+  const active = lsGet(ACTIVE_KEY);
 
   const frag = document.createDocumentFragment();
   metas.forEach(m=>{
@@ -361,7 +353,7 @@ function renderSavedList(){
     btnLoad.addEventListener('click', ()=>{
       const ds=getDataset(m.id); if(!ds) return;
       ds.series.forEach(sdef=>addSeriesToChart(sdef.name, sdef.data, sdef.type||'spline'));
-      applyGlobalStacking(); chart.redraw(); setActiveId(m.id); saveActiveFromChart(); buildSeriesTable();
+      applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY, m.id); saveActiveFromChart(); buildSeriesTable();
     });
     const btnDel=document.createElement('button'); btnDel.textContent='Delete';
     btnDel.addEventListener('click', ()=>{ if(confirm(`Delete "${m.name}"?`)) { deleteDataset(m.id); renderSavedList(); } });
@@ -373,9 +365,7 @@ function renderSavedList(){
 
 /* ================== Export / Import / Bulk load / Clear ================== */
 document.getElementById('btnExportAll').addEventListener('click', ()=>{
-  const ids = listIds();
-  const out = {};
-  ids.forEach(id=>{ const ds=getDataset(id); if(ds) out[id]=ds; });
+  const ids=listIds(); const out={}; ids.forEach(id=>{ const ds=getDataset(id); if(ds) out[id]=ds; });
   const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series_datasets.json'; a.click(); URL.revokeObjectURL(a.href);
 });
@@ -386,70 +376,57 @@ document.getElementById('importAllInput').addEventListener('change', async (e)=>
   const f=e.target.files?.[0]; if(!f) return;
   try{
     const text=await f.text();
-    const obj=JSON.parse(text);
-    // accepter soit un map {id:ds}, soit un array [ds,...]
-    let entries=[];
-    if(obj && typeof obj==='object' && !Array.isArray(obj)){
-      entries = Object.values(obj);
-    } else if(Array.isArray(obj)){
-      entries = obj;
-    } else {
-      throw new Error('File must contain an object map or an array of datasets');
-    }
+    let obj; try{ obj=JSON.parse(text); }catch{ throw new Error('Invalid JSON'); }
 
-    let ok=0, fail=0;
-    for(const ds of entries){
-      if(!ds?.id || !ds?.series){ fail++; continue; }
+    const baseName = (f.name||'import').replace(/\.[^.]+$/, '').replace(/[_\-]+/g,' ').trim();
+    const datasets = datasetsFromAnyJson(obj, baseName);
+
+    let ok=0, fail=0, quota=false;
+    // Charge sur le graph AU FUR ET À MESURE, et tente d’enregistrer
+    datasets.forEach(ds=>{
+      (ds.series||[]).forEach(s=>addSeriesToChart(s.name, s.data, s.type||'spline'));
+    });
+    applyGlobalStacking(); chart.redraw(); buildSeriesTable();
+
+    for (const ds of datasets){
       try{
-        // normaliser champs
-        ds.updatedAt = Date.now();
-        ds.savedAt = ds.savedAt || Date.now();
-        // tenter l’enregistrement dataset par dataset
-        saveDataset(ds);
-        ok++;
+        ds.updatedAt = Date.now(); if(!ds.savedAt) ds.savedAt = ds.updatedAt;
+        saveDataset(ds); ok++; lsSet(ACTIVE_KEY, ds.id);
       }catch(e2){
-        if (String(e2).includes('Quota') || String(e2).includes('quota')) {
-          fail++;
-          // on stoppe sur quota pour éviter boucles inutiles
-          break;
-        } else {
-          fail++;
-        }
+        fail++; if(String(e2).toLowerCase().includes('quota')){ quota=true; break; }
       }
     }
     renderSavedList();
     if(fail===0){
-      alert(`Imported ${ok} datasets.`);
-    } else {
-      alert(`Imported ${ok} datasets. Skipped ${fail} (storage quota reached or bad format).`);
+      alert(`Imported ${ok} dataset(s).`);
+    }else if(quota){
+      alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail} (localStorage quota). You can still Export.`);
+    }else{
+      alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail} (write error/bad format).`);
     }
-  } catch(err){
-    alert('Import failed: '+ (err?.message || err));
-  } finally{
+  }catch(err){
+    alert('Import failed: '+(err?.message||err));
+  }finally{
     e.target.value='';
   }
 });
 
 document.getElementById('btnLoadAllSaved').addEventListener('click', ()=>{
-  const metas=getAllDatasetsMeta(); if(!metas.length) return alert('No saved datasets.');
+  const metas=getAllMetas(); if(!metas.length) return alert('No saved datasets.');
   metas.forEach(m=>{ const ds=getDataset(m.id); if(!ds) return; ds.series.forEach(sd=>addSeriesToChart(sd.name, sd.data, sd.type||'spline')); });
-  applyGlobalStacking(); chart.redraw(); setActiveId(metas[0].id); saveActiveFromChart(); buildSeriesTable();
+  applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY, metas[0].id); saveActiveFromChart(); buildSeriesTable();
 });
 
 document.getElementById('btnClearAll').addEventListener('click', ()=>{
   if(!confirm('Delete ALL saved datasets in this browser?')) return;
   listIds().forEach(id=>deleteDataset(id));
-  saveIndex([]); localStorage.removeItem(ACTIVE_KEY);
+  saveIndex([]); lsDel(ACTIVE_KEY);
   renderSavedList(); buildSeriesTable();
 });
 
-/* ================== Init ================== */
-migrateLegacyIfAny();
+/* ================== Boot ================== */
 renderSavedList();
 buildSeriesTable();
-
-/* ========== Chart actions that persist ========== */
-function refreshAfterChange(){ applyGlobalStacking(); chart.redraw(); saveActiveFromChart(); buildSeriesTable(); }
 </script>
 </body>
 </html>
