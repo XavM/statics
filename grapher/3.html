@@ -2,125 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>TS Viewer</title>
-
-<!-- Highcharts Stock -->
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
-
 <style>
   :root { --gap: 10px; --fab: 56px; }
-
-  /* No page scrolling, ever */
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;               /* bloque scroll global */
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    background: #fff;
-  }
-
-  /* Fullscreen chart container */
-  #chartWrap {
-    position: relative;
-    width: 100vw;
-    height: 100dvh;                 /* occupe toute la hauteur visible */
-    height: -webkit-fill-available; /* iOS fallback */
-  }
-  #chart {
-    width: 100%;
-    height: 100%;
-    min-height: 320px;
-  }
-
-  /* Floating Action Button */
-  #fab {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    width: var(--fab);
-    height: var(--fab);
-    border-radius: 50%;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,.2);
-    background: #1976d2;
-    color: #fff;
-    font-size: 28px;
-    line-height: 1;
-    cursor: pointer;
-    z-index: 20;
-  }
-
-  /* Slide-over panel (pure CSS/Dialog) */
-  dialog#panel {
-    border: none;
-    padding: 0;
-    margin: 0;
-    width: 100vw;
-    max-width: 900px;
-    height: 100dvh;
-    height: -webkit-fill-available;
-    inset: 0 0 0 auto;              /* anchor to right */
-    position: fixed;
-    transform: translateX(100%);
-    transition: transform .25s ease;
-    background: #fff;
-    z-index: 30;
-  }
-  dialog#panel[open] { transform: translateX(0); }
-  dialog::backdrop {
-    background: rgba(0,0,0,.2);
-  }
-
-  /* Panel content */
-  .panel-head {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; border-bottom: 1px solid #eee;
-    position: sticky; top: 0; background: #fff; z-index: 1;
-  }
-  .panel-body {
-    height: calc(100% - 54px);
-    overflow: auto;                 /* le panneau scrolle, pas la page */
-    padding: 12px 16px 24px;
-    display: grid;
-    gap: 14px;
-  }
-
-  textarea, input[type="text"], select { width: 100%; padding: 8px; }
-  textarea { min-height: 140px; resize: vertical; }
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
-  button { padding: 8px 12px; cursor: pointer; }
-
-  /* Series table */
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-  th { position: sticky; top: 0; background: #fafafa; z-index: 1; }
-  .muted { color: #666; }
-
-  /* Utility sections */
-  details > summary { cursor: pointer; user-select: none; padding: 6px 0; }
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#fff; }
+  #chartWrap { position:relative; width:100vw; height:100dvh; height:-webkit-fill-available; }
+  #chart { width:100%; height:100%; min-height:320px; }
+  #fab { position:fixed; right:16px; bottom:16px; width:var(--fab); height:var(--fab); border-radius:50%; border:none; box-shadow:0 4px 12px rgba(0,0,0,.2); background:#1976d2; color:#fff; font-size:28px; line-height:1; cursor:pointer; z-index:20; }
+  dialog#panel { border:none; padding:0; margin:0; width:100vw; max-width:900px; height:100dvh; height:-webkit-fill-available; inset:0 0 0 auto; position:fixed; transform:translateX(100%); transition:transform .25s ease; background:#fff; z-index:30; }
+  dialog#panel[open]{ transform:translateX(0); } dialog::backdrop{ background:rgba(0,0,0,.2); }
+  .panel-head{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index:1; }
+  .panel-body{ height:calc(100% - 54px); overflow:auto; padding:12px 16px 24px; display:grid; gap:14px; }
+  textarea,input[type="text"],select{ width:100%; padding:8px; } textarea{ min-height:140px; resize:vertical; }
+  .actions{ display:flex; flex-wrap:wrap; gap:8px; } button{ padding:8px 12px; cursor:pointer; }
+  table{ width:100%; border-collapse:collapse; } th,td{ text-align:left; padding:8px; border-bottom:1px solid #eee; } th{ position:sticky; top:0; background:#fafafa; z-index:1; }
+  .muted{ color:#666; } details>summary{ cursor:pointer; user-select:none; padding:6px 0; }
 </style>
 </head>
 <body>
 
-<!-- FULLSCREEN CHART ONLY -->
 <div id="chartWrap"><div id="chart"></div></div>
-
-<!-- FLOATING ACTION BUTTON -->
 <button id="fab" title="Open controls">≡</button>
 
-<!-- SLIDE-OVER PANEL (inputs + series table + saved datasets) -->
 <dialog id="panel">
   <div class="panel-head">
     <strong>Controls</strong>
-    <div>
-      <button id="btnClose">Close</button>
-    </div>
+    <div><button id="btnClose">Close</button></div>
   </div>
   <div class="panel-body">
-
     <section aria-label="Input">
       <input id="datasetName" type="text" placeholder="Dataset name" />
       <input id="defaultSeriesName" type="text" placeholder="Default series name (if missing)" />
@@ -154,25 +65,86 @@
 </dialog>
 
 <script>
-/* ================== Storage & Active dataset ================== */
-const STORAGE_KEY = 'ts_datasets_v7';
+/* ================== Storage (granulaire) ==================
+   - Index des datasets: clé INDEX_KEY (array d'ids)
+   - Chaque dataset: clé DS_PREFIX + id  (objet {id,name,series,...})
+   - Active id: ACTIVE_KEY
+   - Migration depuis ancien blob si trouvé.
+*/
+const INDEX_KEY   = 'ts_ds_index_v1';
+const DS_PREFIX   = 'ts_ds_';
 const ACTIVE_KEY  = 'ts_active_dataset_id';
-function loadStore(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch { return {}; } }
-function saveStore(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
-function getActiveId(){ return localStorage.getItem(ACTIVE_KEY) || null; }
-function setActiveId(id){ localStorage.setItem(ACTIVE_KEY, id); renderSavedList(); }
-function upsertDataset(ds){ const s=loadStore(); ds.updatedAt=Date.now(); s[ds.id]=ds; saveStore(s); if(!getActiveId()) setActiveId(ds.id); renderSavedList(); }
-function deleteDataset(id){ const s=loadStore(); delete s[id]; saveStore(s); if(getActiveId()===id) localStorage.removeItem(ACTIVE_KEY); renderSavedList(); }
+const LEGACY_KEY  = 'ts_datasets_v7'; // anciennes versions éventuelles
+
+function lsGet(k){ return localStorage.getItem(k); }
+function lsSet(k,v){ localStorage.setItem(k,v); }
+function lsDel(k){ localStorage.removeItem(k); }
+
+function loadIndex(){
+  try{ return JSON.parse(lsGet(INDEX_KEY)||'[]'); } catch{ return []; }
+}
+function saveIndex(ids){
+  lsSet(INDEX_KEY, JSON.stringify(ids));
+}
+function listIds(){ return loadIndex(); }
+
+function getDataset(id){
+  try{
+    const raw = lsGet(DS_PREFIX+id);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch{ return null; }
+}
+function saveDataset(ds){
+  const key = DS_PREFIX+ds.id;
+  const ids = loadIndex();
+  try{
+    lsSet(key, JSON.stringify(ds));
+  }catch(e){
+    if (String(e).includes('Quota') || String(e).includes('quota')) throw e; // relayer
+    throw e;
+  }
+  if(!ids.includes(ds.id)){ ids.push(ds.id); saveIndex(ids); }
+}
+function deleteDataset(id){
+  const ids = loadIndex().filter(x=>x!==id);
+  saveIndex(ids); lsDel(DS_PREFIX+id);
+}
+function getAllDatasetsMeta(){
+  const ids = listIds();
+  return ids.map(id=>{
+    const ds = getDataset(id);
+    return ds ? { id, name: ds.name, updatedAt: ds.updatedAt||ds.savedAt||0, count: ds.series?.length||0 } : null;
+  }).filter(Boolean).sort((a,b)=>(b.updatedAt)-(a.updatedAt));
+}
+function migrateLegacyIfAny(){
+  const legacy = lsGet(LEGACY_KEY);
+  if(!legacy) return;
+  try{
+    const obj = JSON.parse(legacy);
+    const entries = Object.values(obj||{});
+    entries.forEach(ds=>{
+      try{ saveDataset(ds); }catch(_e){ /* si quota atteint, on arrête la migration */ }
+    });
+  }catch{}
+  lsDel(LEGACY_KEY);
+}
+
+/* ================== Active dataset helpers ================== */
+function getActiveId(){ return lsGet(ACTIVE_KEY) || null; }
+function setActiveId(id){ lsSet(ACTIVE_KEY, id); renderSavedList(); }
 function patchActiveDataset(mut){
-  const s=loadStore(); const id=getActiveId(); if(!id||!s[id]) return;
-  const ds=s[id]; mut(ds); ds.updatedAt=Date.now(); s[id]=ds; saveStore(s); renderSavedList();
+  const id=getActiveId(); if(!id) return;
+  const ds=getDataset(id); if(!ds) return;
+  mut(ds); ds.updatedAt=Date.now();
+  try{ saveDataset(ds); }catch(e){ console.warn('Save failed:', e); }
+  renderSavedList();
 }
 
 /* ================== Parsing helpers ================== */
 function toMillis(ts){
   if (typeof ts === 'number') return ts < 1e12 ? Math.round(ts*1000) : Math.round(ts);
-  const n = Number(ts);
-  if (!Number.isNaN(n)) return n < 1e12 ? Math.round(n*1000) : Math.round(n);
+  const n = Number(ts); if (!Number.isNaN(n)) return n < 1e12 ? Math.round(n*1000) : Math.round(n);
   const d = Date.parse(ts); if(!Number.isNaN(d)) return d;
   throw new Error('Bad timestamp: '+ts);
 }
@@ -185,23 +157,19 @@ function normalizeDataArray(arr){
 function parseInput(text, defaultName){
   const obj = JSON.parse(text);
   if(obj && typeof obj==='object' && !Array.isArray(obj)){
-    const out=[];
-    for(const [name,data] of Object.entries(obj)){
-      if (name === '_meta' || name === 'meta') continue;
-      out.push({ name, data: normalizeDataArray(data) });
-    }
+    const out=[]; for(const [name,data] of Object.entries(obj)){ if(name==='_meta'||name==='meta') continue; out.push({ name, data: normalizeDataArray(data) }); }
     return out;
   }
   if(Array.isArray(obj)){
     if(obj.length && typeof obj[0]==='object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])){
-      return obj.map((s,i)=>({ name: s.name ?? `${defaultName||'series'} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
+      return obj.map((s,i)=>({ name: s.name ?? `${defaultSeriesName||'series'} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
     }
-    return [{ name: defaultName || ('series '+new Date().toISOString()), data: normalizeDataArray(obj) }];
+    return [{ name: defaultSeriesName || ('series '+new Date().toISOString()), data: normalizeDataArray(obj) }];
   }
   throw new Error('Unsupported JSON');
 }
 
-/* ================== Axis routing & stacking ================== */
+/* ================== Chart & UI helpers ================== */
 function yAxisIndexForType(uiType){ return (uiType==='column'||uiType==='column-stacked') ? 0 : 1; }
 function normalizeType(t){ return (t==='column-stacked') ? { actualType:'column', stacked:true } : { actualType:(t||'spline'), stacked:false }; }
 function applyGlobalStacking(){
@@ -209,10 +177,6 @@ function applyGlobalStacking(){
   chart.update({ plotOptions:{ column:{ stacking: any ? 'normal' : null } } }, false);
 }
 
-/* ================== Aggregations (metadata only for now) ================== */
-const AGG_OPTIONS = ['none','sum','avg','min','max','stdev'];
-
-/* ================== Chart ================== */
 let chart = Highcharts.stockChart('chart', {
   rangeSelector: { selected: 1 },
   title: { text: '' },
@@ -220,37 +184,34 @@ let chart = Highcharts.stockChart('chart', {
   legend: { enabled: true },
   tooltip: { shared: true, split: false },
   yAxis: [
-    { title:{ text:'' }, opposite:false, alignTicks:true }, // left
-    { title:{ text:'' }, opposite:true,  alignTicks:true }  // right
+    { title:{ text:'' }, opposite:false, alignTicks:true },
+    { title:{ text:'' }, opposite:true,  alignTicks:true }
   ],
   plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
   series: []
 });
 
-function addSeriesToChart(name, data, uiType, agg='none'){
+function addSeriesToChart(name, data, uiType){
   const { actualType } = normalizeType(uiType);
   const yIdx = yAxisIndexForType(uiType||'spline');
   const s = chart.addSeries({ name, data, type: actualType, yAxis: yIdx }, false);
-  s.update({ _uiType: (uiType||'spline'), _agg: agg }, false); // store UI type + aggregation as custom flags
+  s.update({ _uiType: (uiType||'spline') }, false);
   return s;
 }
 function replaceChartWithSeries(seriesList){
   while(chart.series.length) chart.series[0].remove(false);
-  for(const s of seriesList) addSeriesToChart(s.name, s.data, s.type, s.agg||'none');
+  for(const s of seriesList) addSeriesToChart(s.name, s.data, s.type);
   applyGlobalStacking();
   chart.redraw();
   buildSeriesTable();
 }
-
-/* Snapshot chart -> dataset.series */
 function snapshotChartSeries(){
   return chart.series.map(ser => ({
     name: ser.name,
     type: (ser.userOptions && ser.userOptions._uiType) ? ser.userOptions._uiType : ser.type,
-    agg:  (ser.userOptions && ser.userOptions._agg)     ? ser.userOptions._agg     : 'none',
     data: (ser.options && Array.isArray(ser.options.data) && ser.options.data.length)
-           ? ser.options.data
-           : ser.points?.map(p=>[p.x, p.y]) || []
+      ? ser.options.data
+      : ser.points?.map(p=>[p.x, p.y]) || []
   }));
 }
 function saveActiveFromChart(){
@@ -267,7 +228,7 @@ document.getElementById('btnClose').addEventListener('click', ()=> panel.close()
 const el = id => document.getElementById(id);
 const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
 
-el('fileInput').addEventListener('change', async (e)=>{
+document.getElementById('fileInput').addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f) return;
   el('jsonInput').value = await f.text();
 });
@@ -280,6 +241,8 @@ function defaults(){ return {
 function tryParseAndReport(){
   const status = el('status'); status.textContent = '';
   const { defaultSeriesName } = defaults();
+  // utiliser defaultSeriesName dans parseInput (scope global)
+  window.defaultSeriesName = defaultSeriesName;
   const parsed = parseInput(el('jsonInput').value, defaultSeriesName);
   const n = parsed.reduce((a,s)=>a+(s.data?.length||0),0);
   status.textContent = `Parsed ${parsed.length} series, ${n} points.`;
@@ -290,23 +253,28 @@ function buildDatasetObject(name, seriesList){
   return {
     id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
     name, savedAt: Date.now(), updatedAt: Date.now(),
-    series: seriesList.map(s=>({ name:s.name, type:s.type||'spline', agg:s.agg||'none', data:s.data }))
+    series: seriesList.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }))
   };
 }
 
 function persistAndActivate(list, datasetName){
   const ds = buildDatasetObject(datasetName, list);
-  upsertDataset(ds); setActiveId(ds.id);
-  saveActiveFromChart();
-  buildSeriesTable();
+  try{
+    saveDataset(ds);
+    setActiveId(ds.id);
+    saveActiveFromChart();
+    buildSeriesTable();
+  }catch(e){
+    alert('Saved in memory only (storage quota reached). You can still export the chart.');
+  }
 }
 
 el('btnAdd').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
     const { datasetName } = defaults();
-    const list = parsed.map(s=>({ ...s, type: s.type || 'spline', agg: s.agg || 'none' }));
-    for(const s of list) addSeriesToChart(s.name, s.data, s.type, s.agg);
+    const list = parsed.map(s=>({ ...s, type: s.type || 'spline' }));
+    for(const s of list) addSeriesToChart(s.name, s.data, s.type);
     applyGlobalStacking(); chart.redraw();
     persistAndActivate(list, datasetName);
   } catch(e){ el('status').textContent = e.message; }
@@ -316,7 +284,7 @@ el('btnReplace').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
     const { datasetName } = defaults();
-    const list = parsed.map(s=>({ ...s, type: s.type || 'spline', agg: s.agg || 'none' }));
+    const list = parsed.map(s=>({ ...s, type: s.type || 'spline' }));
     replaceChartWithSeries(list);
     persistAndActivate(list, datasetName);
   } catch(e){ el('status').textContent = e.message; }
@@ -333,34 +301,21 @@ function buildSeriesTable(){
 
   const tbl = document.createElement('table');
   const thead = document.createElement('thead');
-  thead.innerHTML = `
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Aggregation</th>
-      <th></th>
-    </tr>`;
+  thead.innerHTML = `<tr><th>Name</th><th>Type</th><th></th></tr>`;
   const tbody = document.createElement('tbody');
 
   chart.series.forEach((s)=>{
     const tr = document.createElement('tr');
 
-    // Name (inline edit on click)
     const tdName = document.createElement('td');
     const nameInput = document.createElement('input');
-    nameInput.type = 'text'; nameInput.value = s.name;
-    nameInput.addEventListener('change', ()=>{
-      s.update({ name: nameInput.value }, false);
-      chart.redraw(); saveActiveFromChart(); renderSavedList();
-    });
+    nameInput.type='text'; nameInput.value=s.name;
+    nameInput.addEventListener('change', ()=>{ s.update({ name: nameInput.value }, false); chart.redraw(); saveActiveFromChart(); });
     tdName.appendChild(nameInput);
 
-    // Type dropdown
     const tdType = document.createElement('td');
     const selType = document.createElement('select');
-    TYPE_OPTIONS.forEach(t=>{
-      const o=document.createElement('option'); o.value=t; o.textContent=t; selType.appendChild(o);
-    });
+    TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; selType.appendChild(o); });
     const uiType = s.userOptions && s.userOptions._uiType
       ? s.userOptions._uiType
       : (s.type==='column' && chart.options.plotOptions?.column?.stacking) ? 'column-stacked' : s.type;
@@ -374,20 +329,6 @@ function buildSeriesTable(){
     });
     tdType.appendChild(selType);
 
-    // Aggregation dropdown
-    const tdAgg = document.createElement('td');
-    const selAgg = document.createElement('select');
-    AGG_OPTIONS.forEach(a=>{
-      const o=document.createElement('option'); o.value=a; o.textContent=a; selAgg.appendChild(o);
-    });
-    selAgg.value = (s.userOptions && s.userOptions._agg) ? s.userOptions._agg : 'none';
-    selAgg.addEventListener('change', ()=>{
-      s.update({ _agg: selAgg.value }, false);
-      chart.redraw(); saveActiveFromChart();
-    });
-    tdAgg.appendChild(selAgg);
-
-    // Remove button
     const tdAct = document.createElement('td');
     const btnRemove = document.createElement('button'); btnRemove.textContent='Remove';
     btnRemove.addEventListener('click', ()=>{
@@ -397,70 +338,118 @@ function buildSeriesTable(){
     });
     tdAct.appendChild(btnRemove);
 
-    tr.append(tdName, tdType, tdAgg, tdAct);
+    tr.append(tdName, tdType, tdAct);
     tbody.appendChild(tr);
   });
 
   tbl.append(thead, tbody);
-  wrap.innerHTML = '';
-  wrap.appendChild(tbl);
+  wrap.innerHTML = ''; wrap.appendChild(tbl);
 }
 
-/* ================== Saved datasets ================== */
+/* ================== Saved datasets (UI) ================== */
 function renderSavedList(){
   const container = document.getElementById('savedList');
-  const s = loadStore(); const active = getActiveId();
-  const ids = Object.keys(s).sort((a,b)=>(s[b].updatedAt??s[b].savedAt)-(s[a].updatedAt??s[a].savedAt));
-  if(!ids.length){ container.textContent='No saved datasets yet.'; return; }
+  const metas = getAllDatasetsMeta();
+  if(!metas.length){ container.textContent='No saved datasets yet.'; return; }
+  const active = getActiveId();
+
   const frag = document.createDocumentFragment();
-  ids.forEach(id=>{
-    const ds=s[id];
+  metas.forEach(m=>{
     const div=document.createElement('div');
-    div.innerHTML = `<strong>${ds.name}</strong> <span class="muted">(${ds.series?.length||0} series)</span>` + (id===active?' <span class="muted">• active</span>':'');
+    div.innerHTML = `<strong>${m.name}</strong> <span class="muted">(${m.count} series)</span>` + (m.id===active?' <span class="muted">• active</span>':'');
     const btnLoad=document.createElement('button'); btnLoad.textContent='Load';
     btnLoad.addEventListener('click', ()=>{
-      ds.series.forEach(sdef=>addSeriesToChart(sdef.name, sdef.data, sdef.type||'spline', sdef.agg||'none'));
-      applyGlobalStacking(); chart.redraw();
-      setActiveId(id); saveActiveFromChart();
-      buildSeriesTable();
+      const ds=getDataset(m.id); if(!ds) return;
+      ds.series.forEach(sdef=>addSeriesToChart(sdef.name, sdef.data, sdef.type||'spline'));
+      applyGlobalStacking(); chart.redraw(); setActiveId(m.id); saveActiveFromChart(); buildSeriesTable();
     });
     const btnDel=document.createElement('button'); btnDel.textContent='Delete';
-    btnDel.addEventListener('click', ()=>{ if(confirm(`Delete "${ds.name}"?`)) deleteDataset(id); buildSeriesTable(); });
+    btnDel.addEventListener('click', ()=>{ if(confirm(`Delete "${m.name}"?`)) { deleteDataset(m.id); renderSavedList(); } });
     const row=document.createElement('div'); row.className='actions'; row.append(btnLoad, btnDel);
     div.appendChild(row); frag.appendChild(div);
   });
   container.innerHTML=''; container.appendChild(frag);
 }
-renderSavedList();
 
-/* Export / Import / Bulk load / Clear */
+/* ================== Export / Import / Bulk load / Clear ================== */
 document.getElementById('btnExportAll').addEventListener('click', ()=>{
-  const blob = new Blob([JSON.stringify(loadStore(), null, 2)], { type:'application/json' });
+  const ids = listIds();
+  const out = {};
+  ids.forEach(id=>{ const ds=getDataset(id); if(ds) out[id]=ds; });
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series_datasets.json'; a.click(); URL.revokeObjectURL(a.href);
 });
+
 document.getElementById('btnImportAll').addEventListener('click', ()=>document.getElementById('importAllInput').click());
+
 document.getElementById('importAllInput').addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f) return;
   try{
     const text=await f.text();
     const obj=JSON.parse(text);
-    if(!obj||typeof obj!=='object'||Array.isArray(obj)) throw new Error('File must contain an object map of datasets');
-    saveStore(obj); renderSavedList(); alert('Imported.');
-  } catch(err){ alert('Import failed: '+err.message); }
-  finally{ e.target.value=''; }
-});
-document.getElementById('btnLoadAllSaved').addEventListener('click', ()=>{
-  const s=loadStore(); const ids=Object.keys(s); if(!ids.length) return alert('No saved datasets.');
-  ids.forEach(id=>{ const ds=s[id]; ds.series.forEach(sd=>addSeriesToChart(sd.name, sd.data, sd.type||'spline', sd.agg||'none')); });
-  applyGlobalStacking(); chart.redraw(); setActiveId(ids[ids.length-1]); saveActiveFromChart(); buildSeriesTable();
-});
-document.getElementById('btnClearAll').addEventListener('click', ()=>{
-  if(!confirm('Delete ALL saved datasets in this browser?')) return;
-  localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(ACTIVE_KEY); renderSavedList(); buildSeriesTable();
+    // accepter soit un map {id:ds}, soit un array [ds,...]
+    let entries=[];
+    if(obj && typeof obj==='object' && !Array.isArray(obj)){
+      entries = Object.values(obj);
+    } else if(Array.isArray(obj)){
+      entries = obj;
+    } else {
+      throw new Error('File must contain an object map or an array of datasets');
+    }
+
+    let ok=0, fail=0;
+    for(const ds of entries){
+      if(!ds?.id || !ds?.series){ fail++; continue; }
+      try{
+        // normaliser champs
+        ds.updatedAt = Date.now();
+        ds.savedAt = ds.savedAt || Date.now();
+        // tenter l’enregistrement dataset par dataset
+        saveDataset(ds);
+        ok++;
+      }catch(e2){
+        if (String(e2).includes('Quota') || String(e2).includes('quota')) {
+          fail++;
+          // on stoppe sur quota pour éviter boucles inutiles
+          break;
+        } else {
+          fail++;
+        }
+      }
+    }
+    renderSavedList();
+    if(fail===0){
+      alert(`Imported ${ok} datasets.`);
+    } else {
+      alert(`Imported ${ok} datasets. Skipped ${fail} (storage quota reached or bad format).`);
+    }
+  } catch(err){
+    alert('Import failed: '+ (err?.message || err));
+  } finally{
+    e.target.value='';
+  }
 });
 
-/* Init empty table */
+document.getElementById('btnLoadAllSaved').addEventListener('click', ()=>{
+  const metas=getAllDatasetsMeta(); if(!metas.length) return alert('No saved datasets.');
+  metas.forEach(m=>{ const ds=getDataset(m.id); if(!ds) return; ds.series.forEach(sd=>addSeriesToChart(sd.name, sd.data, sd.type||'spline')); });
+  applyGlobalStacking(); chart.redraw(); setActiveId(metas[0].id); saveActiveFromChart(); buildSeriesTable();
+});
+
+document.getElementById('btnClearAll').addEventListener('click', ()=>{
+  if(!confirm('Delete ALL saved datasets in this browser?')) return;
+  listIds().forEach(id=>deleteDataset(id));
+  saveIndex([]); localStorage.removeItem(ACTIVE_KEY);
+  renderSavedList(); buildSeriesTable();
+});
+
+/* ================== Init ================== */
+migrateLegacyIfAny();
+renderSavedList();
 buildSeriesTable();
+
+/* ========== Chart actions that persist ========== */
+function refreshAfterChange(){ applyGlobalStacking(); chart.redraw(); saveActiveFromChart(); buildSeriesTable(); }
 </script>
 </body>
 </html>
