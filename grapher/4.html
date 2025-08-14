@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TS Viewer</title>
+
+<!-- Highcharts Stock -->
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+
+<style>
+  :root { --gap: 10px; }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    overflow: hidden; /* pas de scroll */
+  }
+
+  /* Chart container full-screen */
+  #chartWrap {
+    position: relative;
+    width: 100%;
+    height: 100svh;
+    background: #fff;
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+  #chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* FAB bouton */
+  #fab {
+    position: fixed;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    right: calc(16px + env(safe-area-inset-right));
+    z-index: 1000;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Modal */
+  #modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    background: #fff;
+    z-index: 900;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: none;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #modal.open {
+    display: block;
+  }
+
+  main { padding: 12px; display: grid; gap: var(--gap); max-width: 100%; overflow-x: hidden; }
+  textarea, input[type="text"], select { width: 100%; padding: 8px; }
+  textarea { min-height: 140px; resize: vertical; }
+  .row { display: grid; gap: var(--gap); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { padding: 8px 12px; cursor: pointer; }
+  .series-controls { display: grid; gap: 8px; max-width: 100%; overflow-x: hidden; }
+  .series-row { display: grid; grid-template-columns: 1fr 140px 140px auto; gap: 8px; align-items: center; }
+  .muted { color: #666; }
+  details > summary { cursor: pointer; user-select: none; padding: 6px 0; }
+
+  /* Drag & drop zone */
+  .drop-zone {
+    border: 2px dashed #ccc;
+    padding: 30px;
+    text-align: center;
+    color: #666;
+    cursor: pointer;
+  }
+  .drop-zone.dragover {
+    border-color: #1976d2;
+    background: #e3f2fd;
+    color: #1976d2;
+  }
+</style>
+</head>
+<body>
+
+<div id="chartWrap">
+  <div id="chart"></div>
+</div>
+
+<button id="fab">☰</button>
+
+<div id="modal">
+  <main id="controlContent">
+    <!-- Le contenu dynamique est injecté ici -->
+  </main>
+</div>
+
+<script>
+const el = id => document.getElementById(id);
+
+/* Chart config */
+let chart = Highcharts.stockChart('chart', {
+  rangeSelector: { selected: 1 },
+  title: { text: '' },
+  credits: { enabled: false },
+  legend: { enabled: true },
+  tooltip: { shared: true, split: false },
+  yAxis: [
+    { title:{ text:'' }, opposite:false, alignTicks:true, labels:{ align:'right', x:-4 }, offset: 0 },
+    { title:{ text:'' }, opposite:true,  alignTicks:true, labels:{ align:'left', x:4 }, offset: 0 }
+  ],
+  chart: { spacingRight: 20 },
+  plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
+  series: []
+});
+
+/* Toggle modal */
+el('fab').addEventListener('click', () => {
+  el('modal').classList.toggle('open');
+});
+
+/* Contenu modal selon état du chart */
+function renderControls(){
+  const container = el('controlContent');
+  container.innerHTML = '';
+
+  if(chart.series.length === 0){
+    // Drag & Drop zone
+    const drop = document.createElement('div');
+    drop.className = 'drop-zone';
+    drop.textContent = 'Drop your JSON file here or click to select';
+    drop.addEventListener('click', () => {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.json,.txt,application/json';
+      inp.addEventListener('change', handleFileSelect);
+      inp.click();
+    });
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+    drop.addEventListener('dragleave', e => { drop.classList.remove('dragover'); });
+    drop.addEventListener('drop', e => {
+      e.preventDefault();
+      drop.classList.remove('dragover');
+      if(e.dataTransfer.files.length) handleFileSelect({ target:{ files:e.dataTransfer.files } });
+    });
+    container.appendChild(drop);
+  } else {
+    // Table des séries
+    const wrap = document.createElement('div'); wrap.className = 'series-controls';
+    chart.series.forEach(s => {
+      const row = document.createElement('div'); row.className = 'series-row';
+      const nameEl = document.createElement('div'); nameEl.textContent = s.name;
+
+      const typeSel = document.createElement('select');
+      ['spline','line','area','areaspline','column','column-stacked'].forEach(t => {
+        const o = document.createElement('option'); o.value = t; o.textContent = t; if(t===s.type) o.selected = true;
+        typeSel.appendChild(o);
+      });
+
+      const aggSel = document.createElement('select');
+      ['count','sum','min','max'].forEach(a => {
+        const o = document.createElement('option'); o.value = a; o.textContent = a;
+        aggSel.appendChild(o);
+      });
+
+      const btnRemove = document.createElement('button'); btnRemove.textContent = 'Remove';
+      btnRemove.addEventListener('click', () => { s.remove(false); chart.redraw(); renderControls(); });
+
+      row.append(nameEl, typeSel, aggSel, btnRemove);
+      wrap.appendChild(row);
+    });
+    container.appendChild(wrap);
+  }
+
+  // Saved datasets
+  const saved = document.createElement('div');
+  saved.className = 'muted';
+  saved.textContent = 'Saved datasets section here...';
+  container.appendChild(saved);
+}
+
+/* File import simple */
+function handleFileSelect(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  file.text().then(txt => {
+    try {
+      const obj = JSON.parse(txt);
+      // Suppose { "name": [[ts,val],...] }
+      Object.entries(obj).forEach(([name,data])=>{
+        chart.addSeries({ name, data });
+      });
+      chart.redraw();
+      renderControls();
+    } catch(err){
+      alert('Invalid JSON');
+    }
+  });
+}
+
+/* Show controls by default */
+renderControls();
+el('modal').classList.add('open');
+</script>
+</body>
+</html>
