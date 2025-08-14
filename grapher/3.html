@@ -32,7 +32,7 @@
   }
   #chart { width: 100%; height: 100%; min-height: 320px; }
 
-  /* Floating Action Button */
+  /* FAB */
   #fab {
     position: fixed;
     right: calc(16px + env(safe-area-inset-right));
@@ -45,17 +45,21 @@
     z-index: 20;
   }
 
-  /* Slide-over panel (controls) */
+  /* Controls panel (slide-over, OPEN by default) */
   dialog#panel {
     border: none; padding: 0; margin: 0;
     width: min(100vw, 900px);
+    max-width: 100vw;                 /* jamais plus large que l’écran */
+    box-sizing: border-box;
     height: 100dvh; height: -webkit-fill-available;
     inset: 0 0 0 auto; position: fixed;
-    transform: translateX(0);              /* ouvert par défaut */
+    transform: translateX(100%);      /* fermée = hors écran */
     transition: transform .25s ease;
     background: #fff; z-index: 30;
-    display: flex; flex-direction: column; /* pour footer collé en bas */
+    display: flex; flex-direction: column;
+    overflow: hidden;                 /* pas de scroll horizontal */
   }
+  dialog#panel[open] { transform: translateX(0); }
   dialog::backdrop { background: rgba(0,0,0,.2); }
 
   .panel-head {
@@ -64,46 +68,41 @@
     position: sticky; top: 0; background: #fff; z-index: 1;
   }
 
-  /* Panel body = contenu scrollable */
   .panel-body {
     flex: 1 1 auto;
-    overflow: auto;
-    padding: 12px 16px 12px;
+    overflow-y: auto;                 /* scroll vertical interne uniquement */
+    overflow-x: hidden;               /* AUCUN scroll horizontal */
+    padding: 12px 16px 16px;
     display: grid; gap: 14px;
   }
 
-  /* Footer (Saved datasets) toujours visible en bas */
-  .panel-footer {
-    position: sticky; bottom: 0;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) 16px;
-    border-top: 1px solid #eee;
-    background: #fff;
+  textarea, input[type="text"], select {
+    width: 100%; padding: 8px; box-sizing: border-box;
+    max-width: 100%;
   }
-
-  textarea, input[type="text"], select { width: 100%; padding: 8px; }
   textarea { min-height: 140px; resize: vertical; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   button { padding: 8px 12px; cursor: pointer; }
   .muted { color: #666; }
 
-  /* Series table */
-  table { width: 100%; border-collapse: collapse; }
+  /* Series table (no horizontal overflow) */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
   th { position: sticky; top: 0; background: #fafafa; z-index: 1; }
+  td input, td select { width: 100%; box-sizing: border-box; }
+  td, th { word-break: break-word; }
 
-  /* Drag & Drop area */
+  /* Dropzone */
   .dropzone {
     border: 2px dashed #bbb; border-radius: 10px;
     padding: 28px; text-align: center; cursor: pointer;
     transition: border-color .15s ease, background .15s ease;
     background: #fafafa;
   }
-  .dropzone.dragover {
-    border-color: #1976d2; background: #eef4fb;
-  }
+  .dropzone.dragover { border-color: #1976d2; background: #eef4fb; }
 
-  /* Sections */
   .section-title { margin: 6px 0; }
+
 </style>
 </head>
 <body>
@@ -111,21 +110,20 @@
 <div id="chartWrap"><div id="chart"></div></div>
 <button id="fab" title="Toggle controls">≡</button>
 
-<!-- Controls panel (OPEN by default) -->
+<!-- Controls panel -->
 <dialog id="panel">
   <div class="panel-head">
     <strong>Controls</strong>
     <div>
-      <button id="btnClose">Close</button>
+      <button id="btnClose" type="button" aria-label="Close">Close</button>
     </div>
   </div>
 
   <div class="panel-body">
-
-    <!-- Primary area switches between: Dropzone (if 0 series) OR Series table (if >=1) -->
+    <!-- Primary area switches: Dropzone (0 series) OR Series table (>=1) -->
     <section id="primaryArea"></section>
 
-    <!-- Inputs section (toujours disponible en-dessous du primaire) -->
+    <!-- Inputs -->
     <section aria-label="Input">
       <h3 class="section-title">Input</h3>
       <input id="datasetName" type="text" placeholder="Dataset name" />
@@ -133,56 +131,48 @@
       <input id="fileInput" type="file" accept=".json,.txt,application/json" style="display:none" />
       <textarea id="jsonInput" placeholder='JSON here (map or array of series). Keys "_meta"/"meta" ignored.'></textarea>
       <div class="actions">
-        <button id="btnAdd">Add to chart</button>
-        <button id="btnReplace">Replace chart</button>
-        <button id="btnClearInput">Clear</button>
+        <button id="btnAdd" type="button">Add to chart</button>
+        <button id="btnReplace" type="button">Replace chart</button>
+        <button id="btnClearInput" type="button">Clear</button>
       </div>
       <div id="status" class="muted"></div>
     </section>
 
-  </div>
-
-  <!-- Footer ALWAYS visible: Saved datasets -->
-  <div class="panel-footer">
-    <details open>
-      <summary>Saved datasets</summary>
+    <!-- Saved datasets AT THE END (no sticky) -->
+    <section aria-label="Saved datasets">
+      <h3 class="section-title">Saved datasets</h3>
       <div class="actions" style="margin:8px 0;">
-        <button id="btnExportAll">Export all</button>
-        <button id="btnImportAll">Import</button>
-        <button id="btnLoadAllSaved">Load all</button>
-        <button id="btnClearAll">Delete all</button>
+        <button id="btnExportAll" type="button">Export all</button>
+        <button id="btnImportAll" type="button">Import</button>
+        <button id="btnLoadAllSaved" type="button">Load all</button>
+        <button id="btnClearAll" type="button">Delete all</button>
         <input id="importAllInput" type="file" accept=".json" style="display:none" />
       </div>
       <div id="savedList" class="muted">No saved datasets yet.</div>
-    </details>
+    </section>
   </div>
 </dialog>
 
 <script>
-/* ================== localStorage granular ================== */
+/* ====== localStorage granular ====== */
 const INDEX_KEY  = 'ts_ds_index_v2';
 const DS_PREFIX  = 'ts_ds_';
 const ACTIVE_KEY = 'ts_active_dataset_id';
 
-function lsGet(k){ return localStorage.getItem(k); }
-function lsSet(k,v){ localStorage.setItem(k,v); }
-function lsDel(k){ localStorage.removeItem(k); }
+const lsGet = (k)=> localStorage.getItem(k);
+const lsSet = (k,v)=> localStorage.setItem(k,v);
+const lsDel = (k)=> localStorage.removeItem(k);
 
 function loadIndex(){ try{ return JSON.parse(lsGet(INDEX_KEY)||'[]'); }catch{ return []; } }
 function saveIndex(ids){ lsSet(INDEX_KEY, JSON.stringify(ids)); }
 function listIds(){ return loadIndex(); }
 
-function getDataset(id){
-  try{ const raw=lsGet(DS_PREFIX+id); return raw?JSON.parse(raw):null; }catch{ return null; }
-}
+function getDataset(id){ try{ const raw=lsGet(DS_PREFIX+id); return raw?JSON.parse(raw):null; }catch{ return null; } }
 function saveDataset(ds){
   lsSet(DS_PREFIX+ds.id, JSON.stringify(ds));  // may throw QuotaExceededError
   const ids=loadIndex(); if(!ids.includes(ds.id)){ ids.push(ds.id); saveIndex(ids); }
 }
-function deleteDataset(id){
-  lsDel(DS_PREFIX+id);
-  saveIndex(loadIndex().filter(x=>x!==id));
-}
+function deleteDataset(id){ lsDel(DS_PREFIX+id); saveIndex(loadIndex().filter(x=>x!==id)); }
 function getAllMetas(){
   return listIds().map(id=>{
     const ds=getDataset(id);
@@ -190,7 +180,7 @@ function getAllMetas(){
   }).filter(Boolean).sort((a,b)=>b.updatedAt-a.updatedAt);
 }
 
-/* ================== Parse helpers ================== */
+/* ====== Parse helpers ====== */
 function toMillis(ts){
   if (typeof ts === 'number') return ts < 1e12 ? Math.round(ts*1000) : Math.round(ts);
   const n = Number(ts); if (!Number.isNaN(n)) return n < 1e12 ? Math.round(n*1000) : Math.round(n);
@@ -218,7 +208,7 @@ function parseInput(text, defaultName){
   throw new Error('Unsupported JSON');
 }
 
-/* ================== Build dataset(s) from ANY JSON ================== */
+/* ====== Build dataset(s) from ANY JSON ====== */
 function buildDatasetObject(name, seriesList){
   return {
     id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
@@ -228,25 +218,21 @@ function buildDatasetObject(name, seriesList){
 }
 function datasetsFromAnyJson(obj, nameHint){
   const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-  // Single dataset object?
   if (obj && typeof obj==='object' && !Array.isArray(obj) && Array.isArray(obj.series)) {
     const ds = { ...obj };
     if (!ds.id) ds.id = makeId();
     if (!ds.name) ds.name = nameHint || 'Imported dataset';
     return [ds];
   }
-  // Map id->dataset?
   if (obj && typeof obj==='object' && !Array.isArray(obj)) {
     const vals = Object.values(obj);
     if (vals.length && vals.every(v => v && typeof v==='object' && Array.isArray(v.series))) {
       return vals.map(v => ({ ...v, id: v.id || makeId(), name: v.name || nameHint || 'Imported dataset' }));
     }
-    // Map of series -> dataset
     const parsed = parseInput(JSON.stringify(obj), 'series');
     const list = parsed.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }));
     return [buildDatasetObject(nameHint || `Imported ${new Date().toLocaleString()}`, list)];
   }
-  // Array (datasets or series)
   if (Array.isArray(obj)) {
     if (obj.length && obj[0] && typeof obj[0]==='object' && Array.isArray(obj[0].series)) {
       return obj.map(v => ({ ...v, id: v.id || makeId(), name: v.name || nameHint || 'Imported dataset' }));
@@ -258,7 +244,7 @@ function datasetsFromAnyJson(obj, nameHint){
   throw new Error('Unsupported JSON');
 }
 
-/* ================== Chart ================== */
+/* ====== Chart ====== */
 function yAxisIndexForType(uiType){ return (uiType==='column'||uiType==='column-stacked') ? 0 : 1; }
 function normalizeType(t){ return (t==='column-stacked') ? { actualType:'column', stacked:true } : { actualType:(t||'spline'), stacked:false }; }
 function applyGlobalStacking(){
@@ -274,11 +260,11 @@ let chart = Highcharts.stockChart('chart', {
   yAxis: [
     {
       title:{ text:'' }, opposite:false, alignTicks:true,
-      labels: { align: 'right', x: -8 }, offset: 8   /* à l’extérieur à gauche */
+      labels: { align: 'right', x: -8 }, offset: 8  /* ext left */
     },
     {
       title:{ text:'' }, opposite:true,  alignTicks:true,
-      labels: { align: 'left',  x:  8 }, offset: 8   /* à l’extérieur à droite */
+      labels: { align: 'left',  x:  8 }, offset: 8  /* ext right */
     }
   ],
   plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
@@ -313,19 +299,22 @@ function saveActiveFromChart(){
   try{ saveDataset(ds); }catch(e){ console.warn('Persist failed:', e); }
 }
 
-/* ================== UI: FAB + Panel ================== */
+/* ====== UI: FAB + Panel ====== */
 const panel = document.getElementById('panel');
 document.getElementById('fab').addEventListener('click', ()=>{
   if (panel.open) panel.close(); else panel.showModal();
 });
-document.getElementById('btnClose').addEventListener('click', ()=> panel.close());
+document.getElementById('btnClose').addEventListener('click', (e)=>{
+  e.preventDefault();
+  try { panel.close(); } catch(_) { panel.removeAttribute('open'); }  // fallback
+});
 
-/* ================== Inputs & actions ================== */
+/* ====== Inputs & actions ====== */
 const el = id => document.getElementById(id);
 const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
 
 document.getElementById('fileInput').addEventListener('change', async (e)=>{
-  const f=e.target.files?.[0]; if(!f) return; handleFileImport(f, {alsoLoad:true});
+  const f=e.target.files?.[0]; if(!f) return; await handleFileImport(f, {alsoLoad:true, showAlert:true});
 });
 
 function defaults(){ return {
@@ -365,7 +354,6 @@ el('btnAdd').addEventListener('click', () => {
     updatePrimaryArea();
   } catch(e){ el('status').textContent = e.message; }
 });
-
 el('btnReplace').addEventListener('click', () => {
   try {
     const parsed = tryParseAndReport();
@@ -375,18 +363,16 @@ el('btnReplace').addEventListener('click', () => {
     persistAndActivate(list, datasetName);
   } catch(e){ el('status').textContent = e.message; }
 });
-
 el('btnClearInput').addEventListener('click', ()=>{
   el('jsonInput').value=''; el('status').textContent='';
 });
 
-/* ================== Primary area (Dropzone or Series table) ================== */
+/* ====== Primary area ====== */
 function updatePrimaryArea(){
   const primary = document.getElementById('primaryArea');
   primary.innerHTML = '';
 
   if (!chart.series.length) {
-    // DROPZONE
     const dz = document.createElement('div');
     dz.className = 'dropzone';
     dz.innerHTML = `
@@ -401,12 +387,11 @@ function updatePrimaryArea(){
     dz.addEventListener('drop', (e)=>{
       e.preventDefault(); dz.classList.remove('dragover');
       const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(!f) return;
-      handleFileImport(f, {alsoLoad:true});
+      handleFileImport(f, {alsoLoad:true, showAlert:true});
     });
     dz.querySelector('#manualUploadLink').addEventListener('click', (e)=>{ e.preventDefault(); fileInput.click(); });
     primary.appendChild(dz);
   } else {
-    // SERIES TABLE
     const title = document.createElement('h3');
     title.className = 'section-title';
     title.textContent = 'Series';
@@ -415,13 +400,13 @@ function updatePrimaryArea(){
     const wrap = document.createElement('div');
     wrap.id = 'seriesTableWrap';
     primary.appendChild(wrap);
-    buildSeriesTable(); // (re)build into wrap
+    buildSeriesTable();
   }
 }
 
-/* ================== Series table (editable) ================== */
+/* ====== Series table ====== */
 function buildSeriesTable(){
-  const wrap = document.getElementById('seriesTableWrap') || document.getElementById('primaryArea'); // fallback
+  const wrap = document.getElementById('seriesTableWrap') || document.getElementById('primaryArea');
   if(!chart.series.length){ wrap.innerHTML = '<div class="muted">No series on chart.</div>'; return; }
 
   const tbl = document.createElement('table');
@@ -475,7 +460,7 @@ function buildSeriesTable(){
   wrap.appendChild(tbl);
 }
 
-/* ================== Saved datasets UI ================== */
+/* ====== Saved datasets UI ====== */
 function renderSavedList(){
   const container = document.getElementById('savedList');
   const metas = getAllMetas();
@@ -505,7 +490,7 @@ function renderSavedList(){
   container.innerHTML=''; container.appendChild(frag);
 }
 
-/* ================== Import/Export/Clear ================== */
+/* ====== Import/Export/Clear ====== */
 document.getElementById('btnExportAll').addEventListener('click', ()=>{
   const ids=listIds(); const out={}; ids.forEach(id=>{ const ds=getDataset(id); if(ds) out[id]=ds; });
   const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
@@ -527,7 +512,7 @@ document.getElementById('btnClearAll').addEventListener('click', ()=>{
   renderSavedList(); updatePrimaryArea();
 });
 
-/* ================== Import core (file -> datasets -> load+save) ================== */
+/* ====== Import core ====== */
 async function handleFileImport(file, opts={alsoLoad:true, showAlert:true}){
   try{
     const text = await file.text();
@@ -538,7 +523,6 @@ async function handleFileImport(file, opts={alsoLoad:true, showAlert:true}){
     let ok=0, fail=0, quota=false;
 
     if (opts.alsoLoad){
-      // Load into chart first
       datasets.forEach(ds=>{
         (ds.series||[]).forEach(s=>addSeriesToChart(s.name, s.data, s.type||'spline'));
       });
@@ -564,7 +548,7 @@ async function handleFileImport(file, opts={alsoLoad:true, showAlert:true}){
   }
 }
 
-/* ================== Boot ================== */
+/* ====== Boot ====== */
 renderSavedList();
 updatePrimaryArea();
 /* Open controls by default */
