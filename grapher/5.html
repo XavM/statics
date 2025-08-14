@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TS Viewer</title>
+
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+
+<style>
+  :root { --gap: 10px; --fab: 56px; --panel-w: 900px; }
+
+  /* Page full-screen, no page scroll */
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    overflow: hidden;               /* jamais de scroll sur la page */
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #fff;
+  }
+
+  /* Fullscreen chart area with safe-area top/bottom; no horizontal overflow */
+  #chartWrap {
+    position: relative;
+    width: 100vw;
+    height: 100svh;                 /* stable viewport -> pas d'effet barre d'adresse */
+    min-height: 100svh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #fff;
+    overflow: hidden;               /* pas de scroll interne du conteneur */
+  }
+  #chart { width: 100%; height: 100%; min-height: 320px; }
+
+  /* FAB always visible & on top (controls open/close) */
+  #fab {
+    position: fixed;
+    right: calc(16px + env(safe-area-inset-right));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    width: var(--fab); height: var(--fab);
+    border-radius: 50%; border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,.24);
+    background: #1976d2; color: #fff;
+    font-size: 28px; line-height: 1; cursor: pointer;
+    z-index: 1000;                  /* AU-DESSUS de tout, y compris la modale */
+  }
+
+  /* Slide-over panel (custom, no <dialog> modal) */
+  .panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: min(100vw, var(--panel-w));
+    max-width: 100vw;               /* jamais plus large que l’écran */
+    height: 100svh;                 /* min 100% hauteur écran */
+    min-height: 100svh;
+    background: #fff;
+    box-sizing: border-box;
+    border-left: 1px solid #eee;
+    transform: translateX(100%);    /* fermée = hors écran */
+    transition: transform .25s ease;
+    display: flex; flex-direction: column;
+    z-index: 900;                   /* sous le FAB */
+    overflow: hidden;               /* pas de scroll horizontal */
+  }
+  .panel.open { transform: translateX(0); }
+
+  /* Header (plus de bouton Close) */
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid #eee;
+    flex: 0 0 auto;
+  }
+
+  /* Scroll vertical uniquement dans le corps du panneau */
+  .panel-body {
+    flex: 1 1 auto;
+    overflow-y: auto;               /* scroll vertical interne */
+    overflow-x: hidden;             /* pas de scroll horizontal */
+    display: grid;
+  }
+
+  textarea, input[type="text"], select {
+    width: 100%; padding: 8px; box-sizing: border-box; max-width: 100%;
+  }
+  textarea { min-height: 140px; resize: vertical; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { padding: 8px 12px; cursor: pointer; }
+  .muted { color: #666; }
+  .section-title { 
+    margin: 0;
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+  }
+
+  /* Table séries (no horizontal overflow) */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+  th { background: #fafafa; position: sticky; top: 42px; z-index: 1; }
+  td input, td select { width: 100%; box-sizing: border-box; }
+
+  /* Dropzone */
+  .dropzone {
+    margin: 10px;
+    border: 2px dashed #bbb; border-radius: 10px;
+    padding: 28px; text-align: center; cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    background: #fafafa;
+  }
+  .dropzone.dragover { border-color: #1976d2; background: #eef4fb; }
+</style>
+</head>
+<body>
+
+<div id="chartWrap"><div id="chart"></div></div>
+
+<!-- FAB that toggles the panel -->
+<button id="fab" title="Open/close controls">≡</button>
+
+<!-- Controls panel -->
+<aside id="panel" class="panel" aria-label="Controls" aria-live="polite">
+  <div class="panel-body">
+    <!-- Primary area switches: Dropzone (0 series) OR Series table (>=1) -->
+    <section id="primaryArea"></section>
+
+    <section aria-label="Saved datasets">
+      <h3 class="section-title">Saved datasets</h3>
+      <div id="savedList" class="muted">No saved datasets yet.</div>
+      <div class="actions" style="margin:10px 0;">
+        <button id="btnExportAll" type="button">Export all</button>
+        <button id="btnImportAll" type="button">Import</button>
+        <button id="btnLoadAllSaved" type="button">Load all</button>
+        <button id="btnClearAll" type="button">Delete all</button>
+        <input id="importAllInput" type="file" accept=".json" style="display:none" />
+      </div>
+    </section>
+
+    <!-- Grouping (granularity) selector -->
+    <section aria-label="Grouping">
+      <h3 class="section-title">Grouping</h3>
+      <div style="padding:10px; display:flex; gap:10px; align-items:center;">
+        <label for="groupUnit" class="muted">Granularity</label>
+        <select id="groupUnit" style="max-width:200px;">
+          <option value="1m" selected>1 minute</option>
+          <option value="5m">5 minutes</option>
+          <option value="1h">1 heure</option>
+          <option value="1d">1 jour</option>
+        </select>
+      </div>
+    </section>
+    
+    <!-- Inputs -->
+    <section aria-label="Input">
+      <h3 class="section-title">Input</h3>
+      <input id="datasetName" type="text" placeholder="Dataset name" />
+      <input id="defaultSeriesName" type="text" placeholder="Default series name (if missing)" />
+      <input id="fileInput" type="file" accept=".json,.txt,application/json" style="display:none" />
+      <textarea id="jsonInput" placeholder='JSON here (map or array of series). Keys "_meta"/"meta" ignored.'></textarea>
+      <div class="actions">
+        <button id="btnAdd" type="button">Add to chart</button>
+        <button id="btnReplace" type="button">Replace chart</button>
+        <button id="btnClearInput" type="button">Clear</button>
+      </div>
+      <div id="status" class="muted"></div>
+    </section>
+
+  </div>
+</aside>
+
+<script>
+/* ====== localStorage granular ====== */
+const INDEX_KEY  = 'ts_ds_index_v2';
+const DS_PREFIX  = 'ts_ds_';
+const ACTIVE_KEY = 'ts_active_dataset_id';
+
+const lsGet = (k)=> localStorage.getItem(k);
+const lsSet = (k,v)=> localStorage.setItem(k,v);
+const lsDel = (k)=> localStorage.removeItem(k);
+
+function loadIndex(){ try{ return JSON.parse(lsGet(INDEX_KEY)||'[]'); }catch{ return []; } }
+function saveIndex(ids){ lsSet(INDEX_KEY, JSON.stringify(ids)); }
+function listIds(){ return loadIndex(); }
+
+function getDataset(id){ try{ const raw=lsGet(DS_PREFIX+id); return raw?JSON.parse(raw):null; }catch{ return null; } }
+function saveDataset(ds){
+  lsSet(DS_PREFIX+ds.id, JSON.stringify(ds));  // may throw QuotaExceededError
+  const ids=loadIndex(); if(!ids.includes(ds.id)){ ids.push(ds.id); saveIndex(ids); }
+}
+function deleteDataset(id){ lsDel(DS_PREFIX+id); saveIndex(loadIndex().filter(x=>x!==id)); }
+function getAllMetas(){
+  return listIds().map(id=>{
+    const ds=getDataset(id);
+    return ds?{id, name:ds.name, updatedAt:ds.updatedAt||ds.savedAt||0, count:ds.series?.length||0}:null;
+  }).filter(Boolean).sort((a,b)=>b.updatedAt-a.updatedAt);
+}
+
+/* ====== Parse helpers ====== */
+function toMillis(ts){
+  if (typeof ts === 'number') return ts < 1e12 ? Math.round(ts*1000) : Math.round(ts);
+  const n = Number(ts); if (!Number.isNaN(n)) return n < 1e12 ? Math.round(n*1000) : Math.round(n);
+  const d = Date.parse(ts); if(!Number.isNaN(d)) return d;
+  throw new Error('Bad timestamp: '+ts);
+}
+function normalizeDataArray(arr){
+  if(!Array.isArray(arr)) throw new Error('Series data must be an array');
+  if(!arr.length) return [];
+  if(Array.isArray(arr[0])) return arr.map(p=>[toMillis(p[0]), Number(p[1])]);
+  return arr.map(p=>[toMillis(p.timestamp??p.time??p.t), Number(p.value??p.v)]);
+}
+function parseInput(text, defaultName){
+  const obj = JSON.parse(text);
+  if(obj && typeof obj==='object' && !Array.isArray(obj)){
+    const out=[]; for(const [name,data] of Object.entries(obj)){ if(name==='_meta'||name==='meta') continue; out.push({ name, data: normalizeDataArray(data) }); }
+    return out;
+  }
+  if(Array.isArray(obj)){
+    if(obj.length && typeof obj[0]==='object' && !Array.isArray(obj[0]) && ('name' in obj[0] || 'data' in obj[0])){
+      return obj.map((s,i)=>({ name: s.name ?? `${defaultName||'series'} ${i+1}`, data: normalizeDataArray(s.data ?? s.values ?? s.series ?? []) }));
+    }
+    return [{ name: defaultName || ('series '+new Date().toISOString()), data: normalizeDataArray(obj) }];
+  }
+  throw new Error('Unsupported JSON');
+}
+
+/* ====== Build dataset(s) from ANY JSON ====== */
+function buildDatasetObject(name, seriesList){
+  return {
+    id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+    name, savedAt: Date.now(), updatedAt: Date.now(),
+    series: seriesList.map(s=>({ name:s.name, type:s.type||'spline', agg:s.agg||'none', data:s.data }))
+  };
+}
+function datasetsFromAnyJson(obj, nameHint){
+  const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  if (obj && typeof obj==='object' && !Array.isArray(obj) && Array.isArray(obj.series)) {
+    const ds = { ...obj };
+    if (!ds.id) ds.id = makeId();
+    if (!ds.name) ds.name = nameHint || 'Imported dataset';
+    return [ds];
+  }
+  if (obj && typeof obj==='object' && !Array.isArray(obj)) {
+    const vals = Object.values(obj);
+    if (vals.length && vals.every(v => v && typeof v==='object' && Array.isArray(v.series))) {
+      return vals.map(v => ({ ...v, id: v.id || makeId(), name: v.name || nameHint || 'Imported dataset' }));
+    }
+    const parsed = parseInput(JSON.stringify(obj), 'series');
+    const list = parsed.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }));
+    return [buildDatasetObject(nameHint || `Imported ${new Date().toLocaleString()}`, list)];
+  }
+  if (Array.isArray(obj)) {
+    if (obj.length && obj[0] && typeof obj[0]==='object' && Array.isArray(obj[0].series)) {
+      return obj.map(v => ({ ...v, id: v.id || makeId(), name: v.name || nameHint || 'Imported dataset' }));
+    }
+    const parsed = parseInput(JSON.stringify(obj), 'series');
+    const list = parsed.map(s=>({ name:s.name, type:s.type||'spline', data:s.data }));
+    return [buildDatasetObject(nameHint || `Imported ${new Date().toLocaleString()}`, list)];
+  }
+  throw new Error('Unsupported JSON');
+}
+
+/* ====== Aggregation (dataGrouping) + Group-units ====== */
+const GROUP_UNITS = {
+  '1m': [['minute', [1]]],
+  '5m': [['minute', [5]]],
+  '1h': [['hour',   [1]]],
+  '1d': [['day',    [1]]]
+};
+let currentGroupUnits = GROUP_UNITS['1m'];
+
+function approximationFor(agg){
+  if (agg === 'sum')     return 'sum';       // natif
+  if (agg === 'average') return 'average';   // natif (moyenne)
+  if (agg === 'min')     return 'low';       // natif (min)
+  if (agg === 'max')     return 'high';      // natif (max)
+  if (agg === 'count')   return function (arr){
+    if (!arr) return 0;
+    let n = 0; for (let i=0;i<arr.length;i++){ const v = arr[i]; if (v != null && !Number.isNaN(v)) n++; }
+    return n;
+  };
+  return null; // 'none' => pas d'approximation => pas de grouping
+}
+function setSeriesAggregation(series, agg){
+  series.update({ _agg: agg }, false);
+  if (agg && agg !== 'none'){
+    const approx = approximationFor(agg);
+    series.update({
+      dataGrouping: {
+        enabled: true,
+        forced: true,              // force le regroupement selon units choisies
+        units: currentGroupUnits,  // ex: [['minute',[1]]]
+        approximation: approx      // string ou fonction
+      }
+    }, false);
+  } else {
+    series.update({ dataGrouping: { enabled: false } }, false);
+  }
+}
+function applyGroupingUnitsToAllSeries(){
+  chart.series.forEach(s=>{
+    const agg = (s.userOptions && s.userOptions._agg) || 'none';
+    if (agg && agg !== 'none'){
+      const approx = approximationFor(agg);
+      s.update({
+        dataGrouping: {
+          enabled: true,
+          forced: true,
+          units: currentGroupUnits,
+          approximation: approx
+        }
+      }, false);
+    }
+  });
+  chart.redraw();
+  saveActiveFromChart();
+}
+
+/* ====== Chart ====== */
+function yAxisIndexForType(uiType){ return (uiType==='column'||uiType==='column-stacked') ? 0 : 1; }
+function normalizeType(t){ return (t==='column-stacked') ? { actualType:'column', stacked:true } : { actualType:(t||'spline'), stacked:false }; }
+function applyGlobalStacking(){
+  const any = chart.series.some(s=> (s.userOptions && s.userOptions._uiType==='column-stacked'));
+  chart.update({ plotOptions:{ column:{ stacking: any ? 'normal' : null } } }, false);
+}
+
+let chart = Highcharts.stockChart('chart', {
+  chart: {
+    spacingLeft: 8,
+    spacingRight: 22   /* réduit la marge droite sans couper l’axe droit */
+  },
+  rangeSelector: { selected: 1 },
+  title: { text: '' },
+  credits: { enabled: false },
+  legend: { enabled: true },
+  tooltip: { shared: true, split: false },
+  yAxis: [
+    {
+      title:{ text:'' }, opposite:false, alignTicks:true,
+      labels: { align: 'right', x: -6, reserveSpace: true }, offset: 6
+    },
+    {
+      title:{ text:'' }, opposite:true,  alignTicks:true,
+      labels: { align: 'left',  x:  4, reserveSpace: true }, offset: 6
+    }
+  ],
+  plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
+  series: []
+});
+
+function addSeriesToChart(name, data, uiType, agg='none'){
+  const { actualType } = normalizeType(uiType);
+  const yIdx = yAxisIndexForType(uiType||'spline');
+  const s = chart.addSeries({ name, data, type: actualType, yAxis: yIdx }, false);
+  s.update({ _uiType: (uiType||'spline') }, false);
+  setSeriesAggregation(s, agg || 'none');
+  return s;
+}
+function replaceChartWithSeries(seriesList){
+  while(chart.series.length) chart.series[0].remove(false);
+  for(const s of seriesList) addSeriesToChart(s.name, s.data, s.type, s.agg||'none');
+  applyGlobalStacking(); chart.redraw(); buildSeriesTable(); updatePrimaryArea();
+}
+function snapshotChartSeries(){
+  return chart.series.map(ser => ({
+    name: ser.name,
+    type: (ser.userOptions && ser.userOptions._uiType) ? ser.userOptions._uiType : ser.type,
+    agg:  (ser.userOptions && ser.userOptions._agg)     ? ser.userOptions._agg     : 'none',
+    data: (ser.options && Array.isArray(ser.options.data) && ser.options.data.length)
+      ? ser.options.data
+      : ser.points?.map(p=>[p.x, p.y]) || []
+  }));
+}
+function saveActiveFromChart(){
+  const id = lsGet(ACTIVE_KEY); if(!id) return;
+  const ds = getDataset(id); if(!ds) return;
+  ds.series = snapshotChartSeries();
+  ds.updatedAt = Date.now();
+  try{ saveDataset(ds); }catch(e){ console.warn('Persist failed:', e); }
+}
+
+/* ====== UI: FAB + Panel ====== */
+const panel = document.getElementById('panel');
+const fab   = document.getElementById('fab');
+function togglePanel(){ panel.classList.toggle('open'); }
+fab.addEventListener('click', togglePanel);
+
+/* ====== Inputs & actions ====== */
+const el = id => document.getElementById(id);
+const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
+const AGG_OPTIONS  = ['none','count','sum','average','min','max'];
+
+document.getElementById('fileInput').addEventListener('change', async (e)=>{
+  const f=e.target.files?.[0]; if(!f) return; await handleFileImport(f, {alsoLoad:true, showAlert:true});
+});
+
+function defaults(){ return {
+  datasetName: (el('datasetName').value.trim() || `Dataset ${new Date().toLocaleString()}`),
+  defaultSeriesName: (el('defaultSeriesName').value.trim() || 'series')
+};}
+
+function tryParseAndReport(){
+  const status = el('status'); status.textContent = '';
+  const { defaultSeriesName } = defaults();
+  const parsed = parseInput(el('jsonInput').value, defaultSeriesName);
+  const n = parsed.reduce((a,s)=>a+(s.data?.length||0),0);
+  status.textContent = `Parsed ${parsed.length} series, ${n} points.`;
+  return parsed;
+}
+
+function persistAndActivate(list, datasetName){
+  const ds = buildDatasetObject(datasetName, list);
+  try{
+    saveDataset(ds);
+    lsSet(ACTIVE_KEY, ds.id);
+    saveActiveFromChart();
+    buildSeriesTable(); renderSavedList();
+  }catch(e){
+    alert('Saved in memory only (localStorage quota or write blocked). You can still export.');
+  }
+}
+
+el('btnAdd').addEventListener('click', () => {
+  try {
+    const parsed = tryParseAndReport();
+    const { datasetName } = defaults();
+    const list = parsed.map(s=>({ ...s, type: s.type || 'spline', agg: s.agg || 'none' }));
+    for(const s of list) addSeriesToChart(s.name, s.data, s.type, s.agg);
+    applyGlobalStacking(); chart.redraw();
+    persistAndActivate(list, datasetName);
+    updatePrimaryArea();
+  } catch(e){ el('status').textContent = e.message; }
+});
+el('btnReplace').addEventListener('click', () => {
+  try {
+    const parsed = tryParseAndReport();
+    const { datasetName } = defaults();
+    const list = parsed.map(s=>({ ...s, type: s.type || 'spline', agg: s.agg || 'none' }));
+    replaceChartWithSeries(list);
+    persistAndActivate(list, datasetName);
+  } catch(e){ el('status').textContent = e.message; }
+});
+el('btnClearInput').addEventListener('click', ()=>{
+  el('jsonInput').value=''; el('status').textContent='';
+});
+
+/* ====== Primary area ====== */
+function updatePrimaryArea(){
+  const primary = document.getElementById('primaryArea');
+  primary.innerHTML = '';
+
+  if (!chart.series.length) {
+    const dz = document.createElement('div');
+    dz.className = 'dropzone';
+    dz.innerHTML = `
+      <div style="font-weight:600; margin-bottom:6px;">Drop your JSON file here</div>
+      <div class="muted" style="margin-bottom:8px;">Map/array of series (keys "_meta"/"meta" ignored)</div>
+      <div><a href="#" id="manualUploadLink">or click to select a file</a></div>
+    `;
+    const fileInput = document.getElementById('fileInput');
+    dz.addEventListener('click', ()=> fileInput.click());
+    dz.addEventListener('dragover', (e)=>{ e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', ()=> dz.classList.remove('dragover'));
+    dz.addEventListener('drop', (e)=>{
+      e.preventDefault(); dz.classList.remove('dragover');
+      const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(!f) return;
+      handleFileImport(f, {alsoLoad:true, showAlert:true});
+    });
+    dz.querySelector('#manualUploadLink').addEventListener('click', (e)=>{ e.preventDefault(); fileInput.click(); });
+    primary.appendChild(dz);
+  } else {
+    const title = document.createElement('h3');
+    title.className = 'section-title';
+    title.textContent = 'Series';
+    primary.appendChild(title);
+
+    const wrap = document.createElement('div');
+    wrap.id = 'seriesTableWrap';
+    primary.appendChild(wrap);
+    buildSeriesTable();
+  }
+}
+
+/* ====== Series table (Aggregation added before Remove) ====== */
+function buildSeriesTable(){
+  const wrap = document.getElementById('seriesTableWrap') || document.getElementById('primaryArea');
+  if(!chart.series.length){ wrap.innerHTML = '<div class="muted">No series on chart.</div>'; return; }
+
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr><th>Name</th><th>Type</th><th>Aggregation</th><th></th></tr>`;
+  const tbody = document.createElement('tbody');
+
+  chart.series.forEach((s)=>{
+    const tr = document.createElement('tr');
+
+    // Name
+    const tdName = document.createElement('td');
+    const nameInput = document.createElement('input');
+    nameInput.type='text'; nameInput.value=s.name;
+    nameInput.addEventListener('change', ()=>{ s.update({ name: nameInput.value }, false); chart.redraw(); saveActiveFromChart(); });
+    tdName.appendChild(nameInput);
+
+    // Type
+    const tdType = document.createElement('td');
+    const selType = document.createElement('select');
+    TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; selType.appendChild(o); });
+    const uiType = s.userOptions && s.userOptions._uiType
+      ? s.userOptions._uiType
+      : (s.type==='column' && chart.options.plotOptions?.column?.stacking) ? 'column-stacked' : s.type;
+    selType.value = uiType;
+    selType.addEventListener('change', ()=>{
+      const chosen = selType.value;
+      const { actualType } = normalizeType(chosen);
+      const yAxisIdx = yAxisIndexForType(chosen);
+      s.update({ type: actualType, yAxis: yAxisIdx, _uiType: chosen }, false);
+      applyGlobalStacking(); chart.redraw(); saveActiveFromChart();
+    });
+    tdType.appendChild(selType);
+
+    // Aggregation
+    const tdAgg = document.createElement('td');
+    const selAgg = document.createElement('select');
+    AGG_OPTIONS.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; selAgg.appendChild(o); });
+    selAgg.value = (s.userOptions && s.userOptions._agg) ? s.userOptions._agg : 'none';
+    selAgg.addEventListener('change', ()=>{
+      setSeriesAggregation(s, selAgg.value);
+      chart.redraw(); saveActiveFromChart();
+    });
+    tdAgg.appendChild(selAgg);
+
+    // Remove
+    const tdAct = document.createElement('td');
+    const btnRemove = document.createElement('button'); btnRemove.textContent='Remove';
+    btnRemove.addEventListener('click', ()=>{
+      s.remove(false);
+      applyGlobalStacking(); chart.redraw();
+      buildSeriesTable(); saveActiveFromChart();
+      updatePrimaryArea();
+    });
+    tdAct.appendChild(btnRemove);
+
+    tr.append(tdName, tdType, tdAgg, tdAct);
+    tbody.appendChild(tr);
+  });
+
+  tbl.append(thead, tbody);
+  wrap.innerHTML = '';
+  wrap.appendChild(tbl);
+}
+
+/* ====== Saved datasets UI ====== */
+function renderSavedList(){
+  const container = document.getElementById('savedList');
+  const metas = getAllMetas();
+  if(!metas.length){ container.textContent='No saved datasets yet.'; return; }
+  const active = lsGet(ACTIVE_KEY);
+
+  const frag = document.createDocumentFragment();
+  metas.forEach(m=>{
+    const div=document.createElement('div');
+    div.innerHTML = `<strong>${m.name}</strong> <span class="muted">(${m.count} series)</span>` + (m.id===active?' <span class="muted">• active</span>':'');
+    const row=document.createElement('div'); row.className='actions';
+
+    const btnLoad=document.createElement('button'); btnLoad.textContent='Load';
+    btnLoad.addEventListener('click', ()=>{
+      const ds=getDataset(m.id); if(!ds) return;
+      (ds.series||[]).forEach(sdef=>addSeriesToChart(sdef.name, sdef.data, sdef.type||'spline', sdef.agg||'none'));
+      applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY, m.id); saveActiveFromChart();
+      updatePrimaryArea();
+    });
+
+    const btnDel=document.createElement('button'); btnDel.textContent='Delete';
+    btnDel.addEventListener('click', ()=>{ if(confirm(`Delete "${m.name}"?`)) { deleteDataset(m.id); renderSavedList(); } });
+
+    row.append(btnLoad, btnDel);
+    div.appendChild(row); frag.appendChild(div);
+  });
+  container.innerHTML=''; container.appendChild(frag);
+}
+
+/* ====== Import/Export/Clear ====== */
+document.getElementById('btnExportAll').addEventListener('click', ()=>{
+  const ids=listIds(); const out={}; ids.forEach(id=>{ const ds=getDataset(id); if(ds) out[id]=ds; });
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series_datasets.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById('btnImportAll').addEventListener('click', ()=>document.getElementById('importAllInput').click());
+document.getElementById('importAllInput').addEventListener('change', async (e)=>{
+  const f=e.target.files?.[0]; if(!f) return; await handleFileImport(f, {alsoLoad:true, showAlert:true}); e.target.value='';
+});
+document.getElementById('btnLoadAllSaved').addEventListener('click', ()=>{
+  const metas=getAllMetas(); if(!metas.length) return alert('No saved datasets.');
+  metas.forEach(m=>{ const ds=getDataset(m.id); if(!ds) return; (ds.series||[]).forEach(sd=>addSeriesToChart(sd.name, sd.data, sd.type||'spline', sd.agg||'none')); });
+  applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY, metas[0].id); saveActiveFromChart(); updatePrimaryArea();
+});
+document.getElementById('btnClearAll').addEventListener('click', ()=>{
+  if(!confirm('Delete ALL saved datasets in this browser?')) return;
+  listIds().forEach(id=>deleteDataset(id));
+  saveIndex([]); lsDel(ACTIVE_KEY);
+  renderSavedList(); updatePrimaryArea();
+});
+
+/* ====== Import core ====== */
+async function handleFileImport(file, opts={alsoLoad:true, showAlert:true}){
+  try{
+    const text = await file.text();
+    let obj; try{ obj = JSON.parse(text); }catch{ throw new Error('Invalid JSON'); }
+    const baseName = (file.name||'import').replace(/\.[^.]+$/, '').replace(/[_\-]+/g,' ').trim();
+    const datasets = datasetsFromAnyJson(obj, baseName);
+
+    let ok=0, fail=0, quota=false;
+
+    if (opts.alsoLoad){
+      datasets.forEach(ds=>{
+        (ds.series||[]).forEach(s=>addSeriesToChart(s.name, s.data, s.type||'spline', s.agg||'none'));
+      });
+      applyGlobalStacking(); chart.redraw(); buildSeriesTable(); updatePrimaryArea();
+    }
+
+    for (const ds of datasets){
+      try{
+        ds.updatedAt = Date.now(); if(!ds.savedAt) ds.savedAt = ds.updatedAt;
+        saveDataset(ds); ok++; lsSet(ACTIVE_KEY, ds.id);
+      }catch(e2){
+        fail++; if(String(e2).toLowerCase().includes('quota')){ quota=true; break; }
+      }
+    }
+    renderSavedList();
+    if(opts.showAlert){
+      if(fail===0) alert(`Imported ${ok} dataset(s).`);
+      else if(quota) alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail} (localStorage quota). You can still Export.`);
+      else alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail} (write error/bad format).`);
+    }
+  }catch(err){
+    if(opts.showAlert) alert('Import failed: ' + (err?.message || err));
+  }
+}
+
+/* ====== Grouping selector wiring ====== */
+const groupUnitSel = document.getElementById('groupUnit');
+if (groupUnitSel){
+  groupUnitSel.addEventListener('change', (e)=>{
+    const key = e.target.value;
+    currentGroupUnits = GROUP_UNITS[key] || GROUP_UNITS['1m'];
+    applyGroupingUnitsToAllSeries();
+  });
+}
+
+/* ====== Boot ====== */
+renderSavedList();
+updatePrimaryArea();
+/* Ouvre le panneau par défaut (le FAB le fermera/ouvrira ensuite) */
+panel.classList.add('open');
+</script>
+</body>
+</html>
