@@ -75,8 +75,9 @@
     flex: 1 1 auto;
     overflow-y: auto;               /* scroll vertical interne */
     overflow-x: hidden;             /* pas de scroll horizontal */
-    padding: 12px 16px 16px;
-    display: grid; gap: 14px;
+    /* padding: 12px 16px 16px; */
+    display: grid;
+    /* gap: 14px; */
   }
 
   textarea, input[type="text"], select {
@@ -86,7 +87,14 @@
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   button { padding: 8px 12px; cursor: pointer; }
   .muted { color: #666; }
-  .section-title { margin: 6px 0; }
+  .section-title { 
+    /* margin: 6px 0; */
+    margin: 0;
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+  }
 
   /* Table séries (no horizontal overflow) */
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -114,10 +122,11 @@
 
 <!-- Controls panel -->
 <aside id="panel" class="panel" aria-label="Controls" aria-live="polite">
+  <!--
   <div class="panel-head">
     <strong>Controls</strong>
-    <!-- plus de bouton close ici -->
   </div>
+  -->
 
   <div class="panel-body">
     <!-- Primary area switches: Dropzone (0 series) OR Series table (>=1) -->
