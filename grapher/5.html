@@ -210,31 +210,12 @@ function updateGroupingInfo(){
         .css({ fontSize:'0.8em', alignmentBaseline:'middle', dominantBaseline:'middle' })
         .add(rs.group);
     }
-    rs.groupingLabel.attr({ text: `(${text})` });
-
-    const spacing = 8;
-    const lblBB = rs.groupingLabel.getBBox();
-    const btnWidth = rs.buttonGroup ? rs.buttonGroup.getBBox().width : 0;
-    let igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : {x:0,y:0,width:0,height:0};
-    const total = btnWidth + lblBB.width + igBB.width + spacing*3;
-    const max = chart.chartWidth - spacing;
-    if(btnWidth && total > max){
-      rs.buttonGroup.hide();
-      rs.zoomText && rs.zoomText.hide();
-      igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : igBB;
-    } else {
-      rs.buttonGroup.show();
-      rs.zoomText && rs.zoomText.show();
-      igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : igBB;
-    }
+    rs.groupingLabel.attr({ text: `Group by : ${text}` });
     if(rs.inputGroup){
-      const rightEdge = chart.chartWidth - spacing;
-      const igX = rightEdge - (igBB.width + lblBB.width);
-      rs.inputGroup.translate(igX, igBB.y);
-      igBB = rs.inputGroup.getBBox();
-      const x = igBB.x + igBB.width + spacing/2;
+      const igBB = rs.inputGroup.getBBox();
+      const spacing = 8;
       const y = igBB.y + igBB.height/2;
-      rs.groupingLabel.attr({ x, y });
+      rs.groupingLabel.attr({ x: spacing, y });
     }
   }
 }
@@ -242,11 +223,11 @@ function updateGroupingInfo(){
 chart = Highcharts.stockChart('chart', {
   chart: { spacingLeft: 8, spacingRight: 22, events:{ redraw: updateGroupingInfo } },
   rangeSelector: {
-    selected: 1,
+    buttons: [],
+    inputEnabled: true,
     inputDateFormat: '%Y-%m-%d %H:%M',
     inputEditDateFormat: '%Y-%m-%d %H:%M',
     inputBoxWidth: 150,
-    buttonPosition: { align: 'left' },
     inputPosition: { align: 'right' }
   },
   xAxis: { events:{ afterSetExtremes: updateGroupingInfo } },
