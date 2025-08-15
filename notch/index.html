@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notch</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<script>
+function getInset(side) {
+  const div = document.createElement('div');
+  div.style.cssText = `padding-${side}: env(safe-area-inset-${side});`;
+  document.body.appendChild(div);
+  const value = parseInt(getComputedStyle(div).getPropertyValue(`padding-${side}`)) || 0;
+  div.remove();
+  return value;
+}
+function notchSide() {
+  const left = getInset('left');
+  const right = getInset('right');
+  if (left !== right) {
+    return left > right ? 'gauche' : 'droite';
+  }
+  const o = window.orientation;
+  if (o === 90) return 'droite';
+  if (o === -90) return 'gauche';
+  return null;
+}
+function update() {
+  const side = notchSide();
+  document.body.textContent = side ? `Le notch est \u00e0 ${side}` : 'Tournez l\'appareil en paysage';
+}
+window.addEventListener('load', update);
+window.addEventListener('orientationchange', () => setTimeout(update, 50));
+</script>
+</body>
+</html>
