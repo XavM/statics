@@ -132,7 +132,10 @@ function applyNotchPadding() {
     chartWrap.style[prop] = inset + 'px';
     panel.style[prop] = inset + 'px';
   }
-  if (typeof chart !== 'undefined' && chart && chart.reflow) chart.reflow();
+  if (typeof chart !== 'undefined' && chart && chart.reflow) {
+    chart.reflow();
+    if (typeof updateGroupingInfo === 'function') updateGroupingInfo();
+  }
 }
 
 window.addEventListener('load', applyNotchPadding);
@@ -204,7 +207,7 @@ function updateGroupingInfo(){
     if(!rs.groupingLabel){
       rs.groupingLabel = chart.renderer
         .text('',0,0)
-        .css({ fontSize:'0.8em' })
+        .css({ fontSize:'0.8em', alignmentBaseline:'middle', dominantBaseline:'middle' })
         .add(rs.group);
     }
     rs.groupingLabel.attr({ text: `(${text})` });
@@ -230,7 +233,7 @@ function updateGroupingInfo(){
       rs.inputGroup.translate(igX, igBB.y);
       igBB = rs.inputGroup.getBBox();
       const x = igBB.x + igBB.width + spacing/2;
-      const y = igBB.y + igBB.height/2 + lblBB.height/2;
+      const y = igBB.y + igBB.height/2;
       rs.groupingLabel.attr({ x, y });
     }
   }
