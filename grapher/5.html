@@ -92,6 +92,36 @@
 
   </div>
 </aside>
+<script>
+function getInset(side) {
+  const div = document.createElement('div');
+  div.style.cssText = `padding-${side}: env(safe-area-inset-${side});`;
+  document.body.appendChild(div);
+  const value = parseInt(getComputedStyle(div).getPropertyValue(`padding-${side}`)) || 0;
+  div.remove();
+  return value;
+}
+
+function notchSide() {
+  const left = getInset('left');
+  const right = getInset('right');
+  if (left !== right) {
+    return left > right ? 'gauche' : 'droite';
+  }
+  const o = window.orientation;
+  if (o === 90) return 'droite';
+  if (o === -90) return 'gauche';
+  return null;
+}
+
+function reportNotch() {
+  const side = notchSide();
+  alert(side ? `Le notch est \u00e0 ${side}` : `Tournez l'appareil en paysage`);
+}
+
+window.addEventListener('load', reportNotch);
+window.addEventListener('orientationchange', () => setTimeout(reportNotch, 50));
+</script>
 
 <script>
 /* ====== localStorage granular ====== */
