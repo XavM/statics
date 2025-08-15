@@ -12,8 +12,8 @@
 
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #fff; }
 
-  #chartWrap { position: relative; width: 100vw; height: 100svh; min-height: 100svh; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); background: #fff; overflow: hidden; box-sizing: border-box; }
-  #chart { width: 100%; height: 100%; min-height: 320px; }
+  #chartWrap { position: relative; width: 100vw; height: 100svh; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); background: #fff; overflow: hidden; box-sizing: border-box; }
+  #chart { width: 100%; height: 100%; }
 
   #fab { position: fixed; right: calc(16px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); width: var(--fab); height: var(--fab); border-radius: 50%; border: none; box-shadow: 0 4px 12px rgba(0,0,0,.24); background: #1976d2; color: #fff; font-size: 28px; line-height: 1; cursor: pointer; z-index: 1000; }
 
@@ -28,21 +28,26 @@
   textarea { min-height: 140px; resize: vertical; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   button { padding: 8px 12px; cursor: pointer; }
+  .actions button { flex: 1 1 calc(50% - 8px); min-height: 44px; font-size: 16px; }
+  @media (min-width: 600px) {
+    .actions button { flex: 0 0 auto; }
+  }
   .muted { color: #666; }
   .section-title { margin: 0; padding: 10px; position: sticky; top: 0; background: #fafafa; }
 
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-  th { background: #fafafa; position: sticky; top: 42px; z-index: 1; }
+  th { background: #fafafa; position: sticky; top: 42px; }
   td input, td select { width: 100%; box-sizing: border-box; }
 
   .dropzone { margin: 10px; border: 2px dashed #bbb; border-radius: 10px; padding: 28px; text-align: center; cursor: pointer; transition: border-color .15s ease, background .15s ease; background: #fafafa; }
   .dropzone.dragover { border-color: #1976d2; background: #eef4fb; }
+  #aggBadge { position: absolute; top: 8px; left: 8px; padding: 2px 6px; background: rgba(0,0,0,.6); color: #fff; border-radius: 4px; font-size: 12px; pointer-events: none; display:none; }
 </style>
 </head>
 <body>
 
-<div id="chartWrap"><div id="chart"></div></div>
+<div id="chartWrap"><div id="chart"></div><div id="aggBadge"></div></div>
 
 <button id="fab" title="Open/close controls" aria-controls="panel" aria-expanded="true">≡</button>
 
@@ -135,8 +140,24 @@ function applyNotchPadding() {
   if (typeof chart !== 'undefined' && chart && chart.reflow) chart.reflow();
 }
 
-window.addEventListener('load', applyNotchPadding);
-window.addEventListener('orientationchange', () => setTimeout(applyNotchPadding, 50));
+function adjustLayoutForOrientation(){
+  if (typeof chart === 'undefined' || !chart) return;
+  const chartWrap = document.getElementById('chartWrap');
+  const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+  const baseNav = 40;
+  const navH = isLandscape ? Math.round(baseNav * 0.7) : baseNav;
+  chart.update({ navigator: { height: navH } }, false);
+  chart.redraw();
+  if (isLandscape){
+    chartWrap.style.height = '100svh';
+  } else {
+    chartWrap.style.height = Math.round(window.innerHeight / 3) + 'px';
+  }
+  chart.reflow();
+}
+
+window.addEventListener('load', () => { applyNotchPadding(); adjustLayoutForOrientation(); });
+window.addEventListener('orientationchange', () => setTimeout(() => { applyNotchPadding(); adjustLayoutForOrientation(); }, 50));
 </script>
 
 <script>
@@ -186,14 +207,18 @@ let chart;
 
 function updateGroupingInfo(){
   const info = document.getElementById('groupingInfo');
-  if(!info || !chart) return;
+  const badge = document.getElementById('aggBadge');
+  if((!info && !badge) || !chart) return;
   const s = chart.series && chart.series.find? chart.series.find(x=>x.name !== 'Navigator 1') : null;
   const g = s && s.currentDataGrouping;
   if(g){
     const count = g.count || 1;
-    info.textContent = `Current grouping: ${count} ${g.unitName}${count>1?'s':''}`;
+    const txt = `${count} ${g.unitName}${count>1?'s':''}`;
+    if(info) info.textContent = `Current grouping: ${txt}`;
+    if(badge){ badge.textContent = txt; badge.style.display='block'; }
   } else {
-    info.textContent = 'Current grouping: none';
+    if(info) info.textContent = 'Current grouping: none';
+    if(badge){ badge.textContent=''; badge.style.display='none'; }
   }
 }
 
@@ -249,7 +274,7 @@ function updatePrimaryArea(){ const primary = document.getElementById('primaryAr
     `; const fileInput = document.getElementById('fileInput'); dz.addEventListener('click', ()=> fileInput.click()); dz.addEventListener('dragover', (e)=>{ e.preventDefault(); dz.classList.add('dragover'); }); dz.addEventListener('dragleave', ()=> dz.classList.remove('dragover')); dz.addEventListener('drop', (e)=>{ e.preventDefault(); dz.classList.remove('dragover'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(!f) return; handleFileImport(f, {alsoLoad:true, showAlert:true}); }); dz.querySelector('#manualUploadLink').addEventListener('click', (e)=>{ e.preventDefault(); fileInput.click(); }); primary.appendChild(dz); } else { const title = document.createElement('h3'); title.className = 'section-title'; title.textContent = 'Series'; primary.appendChild(title); const wrap = document.createElement('div'); wrap.id = 'seriesTableWrap'; primary.appendChild(wrap); buildSeriesTable(); } }
 
 /* ====== Series table ====== */
-function buildSeriesTable(){ const wrap = document.getElementById('seriesTableWrap') || document.getElementById('primaryArea'); const list = userSeries(); if(!list.length){ wrap.innerHTML = '<div class="muted">No series on chart.</div>'; return; } const tbl = document.createElement('table'); const thead = document.createElement('thead'); thead.innerHTML = `<tr><th>Name</th><th>Type</th><th>Aggregation</th><th></th></tr>`; const tbody = document.createElement('tbody'); list.forEach((s)=>{ const tr = document.createElement('tr'); const tdName = document.createElement('td'); const nameInput = document.createElement('input'); nameInput.type='text'; nameInput.value=s.name; nameInput.addEventListener('change', ()=>{ s.update({ name: nameInput.value }, false); chart.redraw(); saveActiveFromChart(); }); tdName.appendChild(nameInput); const tdType = document.createElement('td'); const selType = document.createElement('select'); TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; selType.appendChild(o); }); const uiType = s.userOptions && s.userOptions._uiType ? s.userOptions._uiType : (s.type==='column' && chart.options.plotOptions?.column?.stacking) ? 'column-stacked' : s.type; selType.value = uiType; selType.addEventListener('change', ()=>{ const chosen = selType.value; const { actualType } = normalizeType(chosen); const yAxisIdx = yAxisIndexForType(chosen); s.update({ type: actualType, yAxis: yAxisIdx, _uiType: chosen }, false); applyGlobalStacking(); chart.redraw(); saveActiveFromChart(); }); tdType.appendChild(selType); const tdAgg = document.createElement('td'); const selAgg = document.createElement('select'); AGG_OPTIONS.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; selAgg.appendChild(o); }); selAgg.value = (s.userOptions && s.userOptions._agg) ? s.userOptions._agg : 'auto'; selAgg.addEventListener('change', ()=>{ setSeriesAggregation(s, selAgg.value); chart.redraw(); saveActiveFromChart(); }); tdAgg.appendChild(selAgg); const tdAct = document.createElement('td'); const btnRemove = document.createElement('button'); btnRemove.textContent='Remove'; btnRemove.addEventListener('click', ()=>{ s.remove(false); applyGlobalStacking(); chart.redraw(); buildSeriesTable(); saveActiveFromChart(); updatePrimaryArea(); }); tdAct.appendChild(btnRemove); tr.append(tdName, tdType, tdAgg, tdAct); tbody.appendChild(tr); }); tbl.append(thead, tbody); wrap.innerHTML = ''; wrap.appendChild(tbl); }
+function buildSeriesTable(){ const wrap = document.getElementById('seriesTableWrap') || document.getElementById('primaryArea'); const list = userSeries(); if(!list.length){ wrap.innerHTML = '<div class="muted">No series on chart.</div>'; return; } const tbl = document.createElement('table'); const thead = document.createElement('thead'); thead.innerHTML = `<tr><th>Name</th><th>Type</th><th>Aggregation</th><th></th></tr>`; const tbody = document.createElement('tbody'); list.forEach((s)=>{ const tr = document.createElement('tr'); const tdName = document.createElement('td'); const nameInput = document.createElement('input'); nameInput.type='text'; nameInput.value=s.name; nameInput.addEventListener('change', ()=>{ s.update({ name: nameInput.value }, false); chart.redraw(); saveActiveFromChart(); }); tdName.appendChild(nameInput); const tdType = document.createElement('td'); const selType = document.createElement('select'); TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; selType.appendChild(o); }); const uiType = s.userOptions && s.userOptions._uiType ? s.userOptions._uiType : (s.type==='column' && chart.options.plotOptions?.column?.stacking) ? 'column-stacked' : s.type; selType.value = uiType; selType.addEventListener('change', ()=>{ const chosen = selType.value; const { actualType } = normalizeType(chosen); const yAxisIdx = yAxisIndexForType(chosen); s.update({ type: actualType, yAxis: yAxisIdx, _uiType: chosen }, false); applyGlobalStacking(); chart.redraw(); saveActiveFromChart(); }); tdType.appendChild(selType); const tdAgg = document.createElement('td'); const selAgg = document.createElement('select'); AGG_OPTIONS.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; selAgg.appendChild(o); }); selAgg.value = (s.userOptions && s.userOptions._agg) ? s.userOptions._agg : 'auto'; selAgg.addEventListener('change', ()=>{ setSeriesAggregation(s, selAgg.value); chart.redraw(); saveActiveFromChart(); }); tdAgg.appendChild(selAgg); const tdAct = document.createElement('td'); const btnRemove = document.createElement('button'); btnRemove.innerHTML='🗑️'; btnRemove.title='Remove'; btnRemove.addEventListener('click', ()=>{ s.remove(false); applyGlobalStacking(); chart.redraw(); buildSeriesTable(); saveActiveFromChart(); updatePrimaryArea(); }); tdAct.appendChild(btnRemove); tr.append(tdName, tdType, tdAgg, tdAct); tbody.appendChild(tr); }); tbl.append(thead, tbody); wrap.innerHTML = ''; wrap.appendChild(tbl); }
 
 /* ====== Saved datasets UI ====== */
 function renderSavedList(){ const container = document.getElementById('savedList'); const metas = getAllMetas(); if(!metas.length){ container.textContent='No saved datasets yet.'; return; } const active = lsGet(ACTIVE_KEY); const frag = document.createDocumentFragment(); metas.forEach(m=>{ const div=document.createElement('div'); const strong = document.createElement('strong'); strong.textContent = m.name; const span1 = document.createElement('span'); span1.className='muted'; span1.textContent = ` (${m.count} series)`; div.appendChild(strong); div.appendChild(document.createTextNode(' ')); div.appendChild(span1); if(m.id===active){ const activeSpan=document.createElement('span'); activeSpan.className='muted'; activeSpan.textContent=' • active'; div.appendChild(document.createTextNode(' ')); div.appendChild(activeSpan); } const row=document.createElement('div'); row.className='actions'; const btnLoad=document.createElement('button'); btnLoad.textContent='Load'; btnLoad.addEventListener('click', ()=>{ const ds=getDataset(m.id); if(!ds) return; (ds.series||[]).forEach(sdef=>addSeriesToChart(sdef.name, sdef.data, sdef.type||'spline', sdef.agg||'auto')); applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY, m.id); saveActiveFromChart(); updatePrimaryArea(); }); const btnDel=document.createElement('button'); btnDel.textContent='Delete'; btnDel.addEventListener('click', ()=>{ if(confirm(`Delete "${m.name}"?`)) { deleteDataset(m.id); renderSavedList(); } }); row.append(btnLoad, btnDel); div.appendChild(row); frag.appendChild(div); }); container.innerHTML=''; container.appendChild(frag); }
