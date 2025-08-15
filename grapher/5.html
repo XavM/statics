@@ -208,11 +208,9 @@ panel.classList.add('open');
 </script>
 <script>
 function detectNotchSide() {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const left = vv.offsetLeft;
-    const right = window.innerWidth - vv.width - vv.offsetLeft;
+    const style = getComputedStyle(document.documentElement);
+    const left = parseFloat(style.getPropertyValue('--safe-left')) || 0;
+    const right = parseFloat(style.getPropertyValue('--safe-right')) || 0;
 
     if (window.matchMedia("(orientation: landscape)").matches) {
         if (left > right) {
@@ -229,6 +227,8 @@ window.addEventListener("orientationchange", () => {
     // Attendre un peu que Safari mette à jour les safe-area-inset
     setTimeout(detectNotchSide, 200);
 });
+
+window.addEventListener("load", detectNotchSide);
 </script>
 </body>
 </html>
