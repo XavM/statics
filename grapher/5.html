@@ -8,7 +8,11 @@
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
 
 <style>
-  :root { --gap: 10px; --fab: 56px; --panel-w: 900px; }
+  :root {
+    --gap: 10px;
+    --fab: 56px;
+    --panel-w: 900px;
+  }
 
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #fff; }
 
@@ -199,6 +203,30 @@ if (groupUnitSel){ groupUnitSel.addEventListener('change', (e)=>{ currentGroupKe
 renderSavedList();
 updatePrimaryArea();
 panel.classList.add('open');
+</script>
+<script>
+function detectNotchSide() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const left = vv.offsetLeft;
+    const right = window.innerWidth - vv.width - vv.offsetLeft;
+
+    if (window.matchMedia("(orientation: landscape)").matches) {
+        if (left > right) {
+            alert("📱 Notch à gauche");
+        } else if (right > left) {
+            alert("📱 Notch à droite");
+        } else {
+            alert("Aucune encoche détectée");
+        }
+    }
+}
+
+window.addEventListener("orientationchange", () => {
+    // Attendre un peu que Safari mette à jour la mise en page
+    setTimeout(detectNotchSide, 200);
+});
 </script>
 </body>
 </html>
