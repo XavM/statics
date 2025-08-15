@@ -205,20 +205,24 @@ function updateGroupingInfo(){
       rs.groupingLabel = chart.renderer.text('',0,0).add(rs.group);
     }
     rs.groupingLabel.attr({ text });
-    const igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : {x:0,y:0,width:0,height:0};
-    const lblBB = rs.groupingLabel.getBBox();
-    rs.groupingLabel.attr({ x: igBB.x - lblBB.width - 8, y: igBB.y + igBB.height/2 + lblBB.height/2 });
 
+    const lblBB = rs.groupingLabel.getBBox();
     const btnWidth = rs.buttonGroup ? rs.buttonGroup.getBBox().width : 0;
+    let igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : {x:0,y:0,width:0,height:0};
     const total = btnWidth + lblBB.width + igBB.width + 20;
     const max = chart.chartWidth - 20;
     if(btnWidth && total > max){
       rs.buttonGroup.hide();
       rs.zoomText && rs.zoomText.hide();
+      igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : igBB;
     } else {
       rs.buttonGroup.show();
       rs.zoomText && rs.zoomText.show();
+      igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : igBB;
     }
+    const x = Math.max(8, igBB.x - lblBB.width - 8);
+    const y = igBB.y + igBB.height/2 + lblBB.height/2;
+    rs.groupingLabel.attr({ x, y });
   }
 }
 
