@@ -1,0 +1,13 @@
+{
+  "name": "grapher-sea",
+  "version": "1.0.0",
+  "description": "Simple Node.js SEA proxy server to bypass CORS for grapher 5.html",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node --experimental-sea-config sea-config.json && cp $(command -v node) sea && npx postject sea NODE_SEA_BLOB sea-prep.blob --sentinel-fuse"
+  },
+  "devDependencies": {
+    "postject": "^1.0.0"
+  }
+}
