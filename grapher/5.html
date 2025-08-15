@@ -186,14 +186,39 @@ let chart;
 
 function updateGroupingInfo(){
   const info = document.getElementById('groupingInfo');
-  if(!info || !chart) return;
-  const s = chart.series && chart.series.find? chart.series.find(x=>x.name !== 'Navigator 1') : null;
+  if(!chart) return;
+  const s = chart.series && chart.series.find ? chart.series.find(x=>x.name !== 'Navigator 1') : null;
   const g = s && s.currentDataGrouping;
+  let text;
   if(g){
     const count = g.count || 1;
-    info.textContent = `Current grouping: ${count} ${g.unitName}${count>1?'s':''}`;
+    text = `${count} ${g.unitName}${count>1?'s':''}`;
+    if(info) info.textContent = `Current grouping: ${text}`;
   } else {
-    info.textContent = 'Current grouping: none';
+    text = 'none';
+    if(info) info.textContent = 'Current grouping: none';
+  }
+
+  const rs = chart.rangeSelector;
+  if(rs){
+    if(!rs.groupingLabel){
+      rs.groupingLabel = chart.renderer.text('',0,0).add(rs.group);
+    }
+    rs.groupingLabel.attr({ text });
+    const igBB = rs.inputGroup && rs.inputGroup.getBBox ? rs.inputGroup.getBBox() : {x:0,y:0,width:0,height:0};
+    const lblBB = rs.groupingLabel.getBBox();
+    rs.groupingLabel.attr({ x: igBB.x - lblBB.width - 8, y: igBB.y + igBB.height/2 + lblBB.height/2 });
+
+    const btnWidth = rs.buttonGroup ? rs.buttonGroup.getBBox().width : 0;
+    const total = btnWidth + lblBB.width + igBB.width + 20;
+    const max = chart.chartWidth - 20;
+    if(btnWidth && total > max){
+      rs.buttonGroup.hide();
+      rs.zoomText && rs.zoomText.hide();
+    } else {
+      rs.buttonGroup.show();
+      rs.zoomText && rs.zoomText.show();
+    }
   }
 }
 
