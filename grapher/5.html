@@ -115,6 +115,8 @@ function notchSide() {
   return null;
 }
 
+let baseNavigatorHeight = 40;
+
 function applyNotchPadding() {
   const chartWrap = document.getElementById('chartWrap');
   const panel = document.getElementById('panel');
@@ -133,7 +135,10 @@ function applyNotchPadding() {
     panel.style[prop] = inset + 'px';
   }
   if (typeof chart !== 'undefined' && chart && chart.reflow) {
+    const target = isLandscape ? baseNavigatorHeight * 0.7 : baseNavigatorHeight;
+    chart.update({ navigator: { height: target } }, false);
     chart.reflow();
+    chart.redraw();
     if (typeof updateGroupingInfo === 'function') updateGroupingInfo();
   }
 }
@@ -207,15 +212,17 @@ function updateGroupingInfo(){
     if(!rs.groupingLabel){
       rs.groupingLabel = chart.renderer
         .text('',0,0)
-        .css({ fontSize:'0.8em', alignmentBaseline:'middle', dominantBaseline:'middle' })
+        .css({ fontSize:'0.8em', alignmentBaseline:'middle', dominantBaseline:'middle', textAnchor:'end' })
         .add(rs.group);
     }
-    rs.groupingLabel.attr({ text: `Group by : ${text}` });
+    rs.groupingLabel.attr({ text: `Group by: ${text}` });
     if(rs.inputGroup){
       const igBB = rs.inputGroup.getBBox();
       const spacing = 8;
-      const y = igBB.y + igBB.height/2;
-      rs.groupingLabel.attr({ x: spacing, y });
+      const labelBB = rs.groupingLabel.getBBox();
+      const x = igBB.x - spacing;
+      const y = igBB.y + igBB.height/2 + labelBB.height/4;
+      rs.groupingLabel.attr({ x, y });
     }
   }
 }
@@ -235,10 +242,12 @@ chart = Highcharts.stockChart('chart', {
   credits: { enabled: false },
   legend: { enabled: true },
   tooltip: { shared: true, split: false },
+  navigator: { height: 40 },
   yAxis: [ { title:{ text:'' }, opposite:false, alignTicks:true, labels: { align: 'right', x: -6, reserveSpace: true }, offset: 6 }, { title:{ text:'' }, opposite:true, alignTicks:true, labels: { align: 'left', x: 4, reserveSpace: true }, offset: 6 } ],
   plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
   series: []
 });
+baseNavigatorHeight = chart.options.navigator.height || baseNavigatorHeight;
 updateGroupingInfo();
 const userSeries = () => chart.series.filter(s => s.name !== 'Navigator 1');
 
