@@ -140,20 +140,38 @@ function applyNotchPadding() {
   if (typeof chart !== 'undefined' && chart && chart.reflow) chart.reflow();
 }
 
+function positionAggBadge(){
+  const badge = document.getElementById('aggBadge');
+  const chartWrap = document.getElementById('chartWrap');
+  if(!badge || !chart || !chart.container || !chartWrap) return;
+  const inputs = chart.container.querySelectorAll('input.highcharts-range-input');
+  if(!inputs.length) return;
+  const last = inputs[inputs.length-1];
+  const rect = last.getBoundingClientRect();
+  const wrapRect = chartWrap.getBoundingClientRect();
+  const top = rect.top - wrapRect.top + (rect.height - badge.offsetHeight)/2;
+  const left = rect.right - wrapRect.left + 8;
+  badge.style.top = top + 'px';
+  badge.style.left = left + 'px';
+}
+
 function adjustLayoutForOrientation(){
   if (typeof chart === 'undefined' || !chart) return;
   const chartWrap = document.getElementById('chartWrap');
   const isLandscape = window.matchMedia('(orientation: landscape)').matches;
   const baseNav = 40;
   const navH = isLandscape ? Math.round(baseNav * 0.7) : baseNav;
-  chart.update({ navigator: { height: navH } }, false);
+  const navMargin = isLandscape ? 2 : 10;
+  chart.update({ navigator: { height: navH, margin: navMargin }, chart:{ spacingBottom: navMargin } }, false);
   chart.redraw();
   if (isLandscape){
     chartWrap.style.height = '100svh';
   } else {
-    chartWrap.style.height = Math.round(window.innerHeight / 3) + 'px';
+    const mainH = Math.round(window.innerHeight * 0.3);
+    chartWrap.style.height = (mainH + navH) + 'px';
   }
   chart.reflow();
+  positionAggBadge();
 }
 
 window.addEventListener('load', () => { applyNotchPadding(); adjustLayoutForOrientation(); });
@@ -220,11 +238,13 @@ function updateGroupingInfo(){
     if(info) info.textContent = 'Current grouping: none';
     if(badge){ badge.textContent=''; badge.style.display='none'; }
   }
+  positionAggBadge();
 }
 
 chart = Highcharts.stockChart('chart', {
   chart: { spacingLeft: 8, spacingRight: 22, events:{ redraw: updateGroupingInfo } },
-  rangeSelector: { selected: 1, inputDateFormat: '%Y-%m-%d %H:%M', inputEditDateFormat: '%Y-%m-%d %H:%M', inputBoxWidth: 150 },
+  rangeSelector: { buttons: [], selected: 0, inputDateFormat: '%Y-%m-%d %H:%M', inputEditDateFormat: '%Y-%m-%d %H:%M', inputBoxWidth: 150, labelStyle:{display:'none'} },
+  navigation: { buttonOptions: { enabled: false } },
   xAxis: { events:{ afterSetExtremes: updateGroupingInfo } },
   title: { text: '' },
   credits: { enabled: false },
