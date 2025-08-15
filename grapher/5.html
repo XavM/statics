@@ -109,18 +109,32 @@ function notchSide() {
     return left > right ? 'gauche' : 'droite';
   }
   const o = window.orientation;
-  if (o === 90) return 'droite';
-  if (o === -90) return 'gauche';
+  if (o === 90) return 'gauche';
+  if (o === -90) return 'droite';
   return null;
 }
 
-function reportNotch() {
+function applyNotchPadding() {
+  const chartWrap = document.getElementById('chartWrap');
+  const panel = document.getElementById('panel');
   const side = notchSide();
-  alert(side ? `Le notch est \u00e0 ${side}` : `Tournez l'appareil en paysage`);
+  const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+
+  chartWrap.style.paddingLeft = '';
+  chartWrap.style.paddingRight = '';
+  panel.style.paddingLeft = '';
+  panel.style.paddingRight = '';
+
+  if (isLandscape && side) {
+    const inset = getInset(side === 'gauche' ? 'left' : 'right');
+    const prop = side === 'gauche' ? 'paddingLeft' : 'paddingRight';
+    chartWrap.style[prop] = inset + 'px';
+    panel.style[prop] = inset + 'px';
+  }
 }
 
-window.addEventListener('load', reportNotch);
-window.addEventListener('orientationchange', () => setTimeout(reportNotch, 50));
+window.addEventListener('load', applyNotchPadding);
+window.addEventListener('orientationchange', () => setTimeout(applyNotchPadding, 50));
 </script>
 
 <script>
