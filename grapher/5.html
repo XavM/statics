@@ -208,13 +208,16 @@ panel.classList.add('open');
 </script>
 <script>
 function detectNotchSide() {
-    const left = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-left')) || 0;
-    const right = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-right')) || 0;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const left = vv.offsetLeft;
+    const right = window.innerWidth - vv.width - vv.offsetLeft;
 
     if (window.matchMedia("(orientation: landscape)").matches) {
-        if (left > 0 && right === 0) {
+        if (left > right) {
             alert("📱 Notch à gauche");
-        } else if (right > 0 && left === 0) {
+        } else if (right > left) {
             alert("📱 Notch à droite");
         } else {
             alert("Aucune encoche détectée");
