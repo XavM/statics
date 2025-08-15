@@ -12,6 +12,8 @@
     --gap: 10px;
     --fab: 56px;
     --panel-w: 900px;
+    --safe-left: env(safe-area-inset-left);
+    --safe-right: env(safe-area-inset-right);
   }
 
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #fff; }
@@ -224,7 +226,7 @@ function detectNotchSide() {
 }
 
 window.addEventListener("orientationchange", () => {
-    // Attendre un peu que Safari mette à jour la mise en page
+    // Attendre un peu que Safari mette à jour les safe-area-inset
     setTimeout(detectNotchSide, 200);
 });
 </script>
