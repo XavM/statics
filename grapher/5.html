@@ -115,8 +115,6 @@ function notchSide() {
   return null;
 }
 
-let baseNavigatorHeight = 40;
-
 function applyNotchPadding() {
   const chartWrap = document.getElementById('chartWrap');
   const panel = document.getElementById('panel');
@@ -134,13 +132,7 @@ function applyNotchPadding() {
     chartWrap.style[prop] = inset + 'px';
     panel.style[prop] = inset + 'px';
   }
-  if (typeof chart !== 'undefined' && chart && chart.reflow) {
-    const target = isLandscape ? baseNavigatorHeight * 0.7 : baseNavigatorHeight;
-    chart.update({ navigator: { height: target } }, false);
-    chart.reflow();
-    chart.redraw();
-    if (typeof updateGroupingInfo === 'function') updateGroupingInfo();
-  }
+  if (typeof chart !== 'undefined' && chart && chart.reflow) chart.reflow();
 }
 
 window.addEventListener('load', applyNotchPadding);
@@ -194,60 +186,29 @@ let chart;
 
 function updateGroupingInfo(){
   const info = document.getElementById('groupingInfo');
-  if(!chart) return;
-  const s = chart.series && chart.series.find ? chart.series.find(x=>x.name !== 'Navigator 1') : null;
+  if(!info || !chart) return;
+  const s = chart.series && chart.series.find? chart.series.find(x=>x.name !== 'Navigator 1') : null;
   const g = s && s.currentDataGrouping;
-  let text;
   if(g){
     const count = g.count || 1;
-    text = `${count} ${g.unitName}${count>1?'s':''}`;
-    if(info) info.textContent = `Current grouping: ${text}`;
+    info.textContent = `Current grouping: ${count} ${g.unitName}${count>1?'s':''}`;
   } else {
-    text = 'none';
-    if(info) info.textContent = 'Current grouping: none';
-  }
-
-  const rs = chart.rangeSelector;
-  if(rs){
-    if(!rs.groupingLabel){
-      rs.groupingLabel = chart.renderer
-        .text('',0,0)
-        .css({ fontSize:'0.8em', alignmentBaseline:'middle', dominantBaseline:'middle', textAnchor:'end' })
-        .add(rs.group);
-    }
-    rs.groupingLabel.attr({ text: `Group by: ${text}` });
-    if(rs.inputGroup){
-      const igBB = rs.inputGroup.getBBox();
-      const spacing = 8;
-      const labelBB = rs.groupingLabel.getBBox();
-      const x = igBB.x - spacing;
-      const y = igBB.y + igBB.height/2 + labelBB.height/4;
-      rs.groupingLabel.attr({ x, y });
-    }
+    info.textContent = 'Current grouping: none';
   }
 }
 
 chart = Highcharts.stockChart('chart', {
   chart: { spacingLeft: 8, spacingRight: 22, events:{ redraw: updateGroupingInfo } },
-  rangeSelector: {
-    buttons: [],
-    inputEnabled: true,
-    inputDateFormat: '%Y-%m-%d %H:%M',
-    inputEditDateFormat: '%Y-%m-%d %H:%M',
-    inputBoxWidth: 150,
-    inputPosition: { align: 'right' }
-  },
+  rangeSelector: { selected: 1, inputDateFormat: '%Y-%m-%d %H:%M', inputEditDateFormat: '%Y-%m-%d %H:%M', inputBoxWidth: 150 },
   xAxis: { events:{ afterSetExtremes: updateGroupingInfo } },
   title: { text: '' },
   credits: { enabled: false },
   legend: { enabled: true },
   tooltip: { shared: true, split: false },
-  navigator: { height: 40 },
   yAxis: [ { title:{ text:'' }, opposite:false, alignTicks:true, labels: { align: 'right', x: -6, reserveSpace: true }, offset: 6 }, { title:{ text:'' }, opposite:true, alignTicks:true, labels: { align: 'left', x: 4, reserveSpace: true }, offset: 6 } ],
   plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
   series: []
 });
-baseNavigatorHeight = chart.options.navigator.height || baseNavigatorHeight;
 updateGroupingInfo();
 const userSeries = () => chart.series.filter(s => s.name !== 'Navigator 1');
 
