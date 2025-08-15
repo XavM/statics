@@ -74,6 +74,7 @@
           <option value="1d">1 jour</option>
         </select>
       </div>
+      <div id="groupingInfo" class="muted" style="padding:0 10px 10px"></div>
     </section>
 
     <section aria-label="Input">
@@ -181,7 +182,34 @@ function yAxisIndexForType(uiType){ return (uiType==='column'||uiType==='column-
 function normalizeType(t){ return (t==='column-stacked') ? { actualType:'column', stacked:true } : { actualType:(t||'spline'), stacked:false }; }
 function applyGlobalStacking(){ const any = userSeries().some(s=> (s.userOptions && s.userOptions._uiType==='column-stacked')); chart.update({ plotOptions:{ column:{ stacking: any ? 'normal' : null } } }, false); }
 
-let chart = Highcharts.stockChart('chart', { chart: { spacingLeft: 8, spacingRight: 22 }, rangeSelector: { selected: 1 }, title: { text: '' }, credits: { enabled: false }, legend: { enabled: true }, tooltip: { shared: true, split: false }, yAxis: [ { title:{ text:'' }, opposite:false, alignTicks:true, labels: { align: 'right', x: -6, reserveSpace: true }, offset: 6 }, { title:{ text:'' }, opposite:true, alignTicks:true, labels: { align: 'left', x: 4, reserveSpace: true }, offset: 6 } ], plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } }, series: [] });
+let chart;
+
+function updateGroupingInfo(){
+  const info = document.getElementById('groupingInfo');
+  if(!info || !chart) return;
+  const s = chart.series && chart.series.find? chart.series.find(x=>x.name !== 'Navigator 1') : null;
+  const g = s && s.currentDataGrouping;
+  if(g){
+    const count = g.count || 1;
+    info.textContent = `Current grouping: ${count} ${g.unitName}${count>1?'s':''}`;
+  } else {
+    info.textContent = 'Current grouping: none';
+  }
+}
+
+chart = Highcharts.stockChart('chart', {
+  chart: { spacingLeft: 8, spacingRight: 22, events:{ redraw: updateGroupingInfo } },
+  rangeSelector: { selected: 1, inputDateFormat: '%Y-%m-%d %H:%M', inputEditDateFormat: '%Y-%m-%d %H:%M', inputBoxWidth: 150 },
+  xAxis: { events:{ afterSetExtremes: updateGroupingInfo } },
+  title: { text: '' },
+  credits: { enabled: false },
+  legend: { enabled: true },
+  tooltip: { shared: true, split: false },
+  yAxis: [ { title:{ text:'' }, opposite:false, alignTicks:true, labels: { align: 'right', x: -6, reserveSpace: true }, offset: 6 }, { title:{ text:'' }, opposite:true, alignTicks:true, labels: { align: 'left', x: 4, reserveSpace: true }, offset: 6 } ],
+  plotOptions: { series: { turboThreshold: 0 }, column: { stacking: null } },
+  series: []
+});
+updateGroupingInfo();
 const userSeries = () => chart.series.filter(s => s.name !== 'Navigator 1');
 
 function addSeriesToChart(name, data, uiType, agg='auto'){ const { actualType } = normalizeType(uiType); const yIdx = yAxisIndexForType(uiType||'spline'); const s = chart.addSeries({ name, data, type: actualType, yAxis: yIdx }, false); s.update({ _uiType: (uiType||'spline') }, false); setSeriesAggregation(s, agg || 'auto'); return s; }
