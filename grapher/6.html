@@ -18,7 +18,6 @@
       font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;
       background:var(--bg); color:#000; overflow:hidden;
     }
-    body.white-bg, html.white-bg { background:#fff; }
     #settingsBtn {
       position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); right:calc(24px + env(safe-area-inset-right)); width:56px; height:56px; appearance:none; border:none; border-radius:50%; padding:0;
       display:flex; align-items:center; justify-content:center; background:var(--blue); color:#fff; font-size:28px; cursor:pointer;
@@ -30,7 +29,7 @@
 
     #chart { width:100%; height:100%; transition:transform .3s ease; }
     #panel {
-      position:fixed; left:0; right:0; bottom:0; max-height:80%;
+      position:fixed; left:0; right:0; bottom:0; max-height:70%;
       background:#fff; backdrop-filter:blur(30px);
       border-top-left-radius:var(--panel-radius); border-top-right-radius:var(--panel-radius);
       box-shadow:0 -4px 16px rgba(0,0,0,.1);
@@ -425,28 +424,16 @@
     const settingsBtn = $('settingsBtn');
     const chartWrapEl = $('chartWrap');
     const grabber = $('grabber');
-    const updateBodyBg = () => {
-      const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-      const useWhite = panel.classList.contains('open') || !isLandscape;
-      document.body.classList.toggle('white-bg', useWhite);
-      document.documentElement.classList.toggle('white-bg', useWhite);
-    };
     const togglePanel = () => {
       const willOpen=!panel.classList.contains('open');
       panel.classList.toggle('open');
       settingsBtn.setAttribute('aria-expanded', String(willOpen));
       chartWrapEl.classList.toggle('pushed', willOpen);
-      updateBodyBg();
       if(willOpen) panel.focus();
     };
     settingsBtn.addEventListener('click', togglePanel);
     grabber.addEventListener('click', togglePanel);
     window.addEventListener('keydown', e=>{ if(e.key==='Escape' && panel.classList.contains('open')) togglePanel(); });
-    window.addEventListener('pointerdown', e=>{
-      if(panel.classList.contains('open') && !panel.contains(e.target) && e.target!==settingsBtn) togglePanel();
-    });
-    window.addEventListener('orientationchange', updateBodyBg);
-    window.addEventListener('resize', updateBodyBg);
     let startY=null, dragging=false;
     panel.addEventListener('touchstart', e=>{
       if(!panel.classList.contains('open')) return;
@@ -470,7 +457,6 @@
     panel.classList.add('open');
     chartWrapEl.classList.add('pushed');
     applyNotchPadding();
-    updateBodyBg();
   </script>
 </body>
 </html>
