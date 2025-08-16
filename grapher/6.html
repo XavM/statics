@@ -182,6 +182,18 @@
     });
 
     const userSeries = () => chart.series.filter(s=>!s.options.isInternal);
+
+    const baseNavHeight = chart.options.navigator && chart.options.navigator.height || 40;
+    function adjustNavigatorHeight(){
+      const isLandscape = window.innerWidth > window.innerHeight;
+      // In landscape, shrink the navigator so the main chart gains vertical space
+      const h = isLandscape ? baseNavHeight * 0.5 : baseNavHeight;
+      chart.update({ navigator:{ height: h } }, false);
+      chart.redraw();
+    }
+    window.addEventListener('resize', adjustNavigatorHeight);
+    adjustNavigatorHeight();
+
     const yAxisIndexForType = t => (t==='column' || t==='column-stacked') ? 0 : 1;
     const normalizeType = t => t==='column-stacked'?{ actualType:'column', stacked:true }:{ actualType:(t||'spline'), stacked:false };
     function applyGlobalStacking(){
