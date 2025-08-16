@@ -169,7 +169,12 @@
     const chart = Highcharts.stockChart('chart', {
       chart:{ events:{ redraw: updateGroupingInfo } },
       xAxis:{ events:{ afterSetExtremes: updateGroupingInfo } },
-      rangeSelector: { selected:1 },
+      rangeSelector: {
+        selected:1,
+        inputDateFormat:'%Y-%m-%d %H:%M',
+        inputEditDateFormat:'%Y-%m-%d %H:%M',
+        inputBoxWidth:150
+      },
       title: { text: '' },
       credits: { enabled:false },
       tooltip: { shared:true, split:false },
