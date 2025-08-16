@@ -224,7 +224,13 @@ function updateGroupingInfo(){
 
 chart = Highcharts.stockChart('chart', {
   chart: { spacingLeft: 8, spacingRight: 22, events:{ redraw: updateGroupingInfo } },
-  rangeSelector: { selected: 1, inputDateFormat: '%Y-%m-%d %H:%M', inputEditDateFormat: '%Y-%m-%d %H:%M', inputBoxWidth: 150 },
+  rangeSelector: {
+    selected: 1,
+    inputDateFormat: '%Y-%m-%d %H:%M',
+    inputEditDateFormat: '%Y-%m-%d %H:%M',
+    inputBoxWidth: 110,
+    labelStyle: { display: 'none' }
+  },
   xAxis: { events:{ afterSetExtremes: updateGroupingInfo } },
   title: { text: '' },
   credits: { enabled: false },
