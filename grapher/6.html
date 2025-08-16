@@ -29,7 +29,7 @@
 
     #chart { width:100%; height:100%; transition:transform .3s ease; }
     #panel {
-      position:fixed; left:0; right:0; bottom:0; max-height:70%;
+      position:fixed; left:0; right:0; bottom:0; max-height:80%;
       background:#fff; backdrop-filter:blur(30px);
       border-top-left-radius:var(--panel-radius); border-top-right-radius:var(--panel-radius);
       box-shadow:0 -4px 16px rgba(0,0,0,.1);
@@ -434,6 +434,11 @@
     settingsBtn.addEventListener('click', togglePanel);
     grabber.addEventListener('click', togglePanel);
     window.addEventListener('keydown', e=>{ if(e.key==='Escape' && panel.classList.contains('open')) togglePanel(); });
+    const handleOutside = e => {
+      if(panel.classList.contains('open') && !panel.contains(e.target) && e.target!==settingsBtn) togglePanel();
+    };
+    document.addEventListener('click', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
     let startY=null, dragging=false;
     panel.addEventListener('touchstart', e=>{
       if(!panel.classList.contains('open')) return;
