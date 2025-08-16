@@ -246,7 +246,8 @@ const userSeries = () => chart.series.filter(s => s.name !== 'Navigator 1');
 const baseNavHeight = chart.options.navigator && chart.options.navigator.height || 40;
 function adjustNavigatorHeight(){
   const isLandscape = window.innerWidth > window.innerHeight;
-  const h = isLandscape ? baseNavHeight * 0.7 : baseNavHeight;
+  // In landscape, shrink the navigator so the main chart gains vertical space
+  const h = isLandscape ? baseNavHeight * 0.5 : baseNavHeight;
   chart.update({ navigator:{ height: h } }, false);
   chart.redraw();
 }
