@@ -30,11 +30,11 @@ function notchSide() {
   const left = getInset('left');
   const right = getInset('right');
   if (left !== right) {
-    return left > right ? 'gauche' : 'droite';
+    return left > right ? 'droite' : 'gauche';
   }
   const o = window.orientation;
-  if (o === 90) return 'droite';
-  if (o === -90) return 'gauche';
+  if (o === 90) return 'gauche';
+  if (o === -90) return 'droite';
   return null;
 }
 function update() {
