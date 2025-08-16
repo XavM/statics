@@ -8,7 +8,7 @@
   <style>
     :root {
       --blue: #0a84ff;
-      --bg: #f2f2f7;
+      --bg: #fff;
       --panel-radius: 20px;
     }
     html,body {
@@ -127,7 +127,7 @@
       panel.style.paddingLeft='';
       panel.style.paddingRight='';
       if(isLandscape && side){
-        const inset=getInset(side==='gauche'?'left':'right');
+        const inset=getInset(side==='gauche'?'left':'right')*0.7;
         const prop=side==='gauche'?'paddingLeft':'paddingRight';
         chartWrap.style[prop]=inset+'px';
         panel.style[prop]=inset+'px';
@@ -175,7 +175,7 @@
       tooltip: { shared:true, split:false },
       series: [],
       legend:{ enabled:true, align:'center', verticalAlign:'bottom' },
-      yAxis:[{ lineWidth:1, opposite:false }, { lineWidth:1, opposite:true }]
+      yAxis:[{ lineWidth:1, opposite:false }, { lineWidth:1, opposite:true, labels:{ align:'left', x:4 } }]
     });
 
     const userSeries = () => chart.series.filter(s=>!s.options.isInternal);
