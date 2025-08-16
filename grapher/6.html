@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>TS Viewer</title>
+  <script src="https://code.highcharts.com/stock/highstock.js"></script>
+  <style>
+    :root {
+      --blue: #0a84ff;
+      --bg: #f2f2f7;
+      --panel-radius: 20px;
+    }
+    html,body {
+      margin:0; padding:0; height:100%;
+      font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;
+      background:var(--bg); color:#000; overflow:hidden;
+    }
+    #topbar {
+      position:fixed; top:0; left:0; right:0; height:44px;
+      padding-top:env(safe-area-inset-top); padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
+      display:flex; align-items:center; justify-content:space-between;
+      background:rgba(255,255,255,.9); backdrop-filter:blur(20px);
+      box-shadow:0 1px 0 rgba(0,0,0,.1); z-index:1000;
+    }
+    #topbar h1 { font-size:17px; font-weight:600; margin:0 auto; }
+    #settingsBtn {
+      width:44px; height:44px; appearance:none; border:none; background:none; font-size:24px; color:var(--blue); cursor:pointer;
+    }
+    #chartWrap { position:absolute; top:44px; left:0; right:0; bottom:0; }
+    #chart { width:100%; height:100%; }
+    #panel {
+      position:fixed; left:0; right:0; bottom:0; max-height:70%;
+      background:rgba(255,255,255,.92); backdrop-filter:blur(30px);
+      border-top-left-radius:var(--panel-radius); border-top-right-radius:var(--panel-radius);
+      box-shadow:0 -4px 16px rgba(0,0,0,.1);
+      transform:translateY(100%); transition:transform .3s ease; z-index:1200;
+      display:flex; flex-direction:column;
+    }
+    #panel.open { transform:translateY(0); }
+    #grabber { width:40px; height:5px; background:#c7c7cc; border-radius:2.5px; margin:8px auto; }
+    .section { flex:1 1 auto; overflow-y:auto; padding:0 16px 16px; }
+    h3.section-title { margin:0; padding:10px 0; font-size:17px; font-weight:600; }
+    textarea, input[type="text"], select { width:100%; padding:8px; box-sizing:border-box; }
+    textarea { min-height:140px; resize:vertical; }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+    button { appearance:none; border:none; border-radius:10px; padding:10px 16px; font-size:16px; cursor:pointer; }
+    button.primary { background:var(--blue); color:#fff; }
+    button.secondary { background:#fff; color:var(--blue); border:1px solid var(--blue); }
+    button.destructive { background:#ff3b30; color:#fff; }
+    table { width:100%; border-collapse:collapse; }
+    th,td { text-align:left; padding:8px; border-bottom:1px solid #ddd; }
+    th { background:#f9f9f9; font-weight:600; }
+    .muted { color:#666; }
+    .dropzone { margin:10px 0; border:2px dashed #bbb; border-radius:10px; padding:28px; text-align:center; cursor:pointer; background:#fafafa; transition:border-color .15s ease, background .15s ease; }
+    .dropzone.dragover { border-color:var(--blue); background:#e7f0fe; }
+  </style>
+</head>
+<body>
+  <header id="topbar">
+    <h1>Stocks</h1>
+    <button id="settingsBtn" aria-controls="panel" aria-expanded="false">☰</button>
+  </header>
+  <div id="chartWrap"><div id="chart"></div></div>
+  <aside id="panel" aria-label="Controls" tabindex="-1">
+    <div id="grabber"></div>
+    <div class="section" id="primaryArea"></div>
+    <div class="section" id="savedSection">
+      <h3 class="section-title">Saved datasets</h3>
+      <div id="savedList" class="muted">No saved datasets yet.</div>
+      <div class="actions">
+        <button id="btnExportAll" class="secondary" type="button">Export all</button>
+        <button id="btnImportAll" class="secondary" type="button">Import</button>
+        <button id="btnLoadAllSaved" class="secondary" type="button">Load all</button>
+        <button id="btnClearAll" class="destructive" type="button">Delete all</button>
+        <input id="importAllInput" type="file" accept=".json" style="display:none" />
+      </div>
+    </div>
+    <div class="section" id="groupSection">
+      <h3 class="section-title">Grouping</h3>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <label for="groupUnit" class="muted">Granularity</label>
+        <select id="groupUnit" style="max-width:200px;">
+          <option value="auto" selected>auto</option>
+          <option value="1m">1 minute</option>
+          <option value="5m">5 minutes</option>
+          <option value="1h">1 hour</option>
+          <option value="1d">1 day</option>
+        </select>
+      </div>
+      <div id="groupingInfo" class="muted" style="padding-top:6px"></div>
+    </div>
+    <div class="section" id="inputSection">
+      <h3 class="section-title">Input</h3>
+      <input id="datasetName" type="text" placeholder="Dataset name" />
+      <input id="defaultSeriesName" type="text" placeholder="Default series name (if missing)" />
+      <input id="fileInput" type="file" accept=".json,.txt,application/json" style="display:none" />
+            <textarea id="jsonInput" placeholder="JSON here (map or array of series). Keys &quot;_meta&quot;/&quot;meta&quot; ignored."></textarea>
+      <div class="actions">
+        <button id="btnAdd" class="primary" type="button">Add to chart</button>
+        <button id="btnReplace" class="secondary" type="button">Replace chart</button>
+        <button id="btnClearInput" class="secondary" type="button">Clear</button>
+      </div>
+      <div id="status" class="muted"></div>
+    </div>
+  </aside>
+  <script type="module">
+    /* ========= Utility helpers ========= */
+    const $ = id => document.getElementById(id);
+    const STORAGE_KEY = 'ts_datasets_v6';
+    const ACTIVE_KEY = 'ts_active_dataset_id';
+    const TYPE_OPTIONS = ['spline','line','area','areaspline','column','column-stacked'];
+    const AGG_OPTIONS  = ['auto','none','count','sum','average','min','max'];
+    let currentGroupKey = 'auto';
+
+    /* ========= Storage ========= */
+    const loadStore = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch { return {}; } };
+    const saveStore = s => localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    const listIds = () => Object.keys(loadStore());
+    const getDataset = id => loadStore()[id];
+    const saveDataset = ds => { const s=loadStore(); s[ds.id]=ds; saveStore(s); };
+    const deleteDataset = id => { const s=loadStore(); delete s[id]; saveStore(s); };
+    const lsGet = k => localStorage.getItem(k);
+    const lsSet = (k,v) => localStorage.setItem(k,v);
+    const lsDel = k => localStorage.removeItem(k);
+
+    /* ========= Chart helpers ========= */
+    const chart = Highcharts.stockChart('chart', {
+      rangeSelector: { selected:1 },
+      title: { text: '' },
+      credits: { enabled:false },
+      series: [],
+      yAxis:[{ top:0, height:'60%', lineWidth:1 }, { top:'60%', height:'40%', offset:0, lineWidth:1 }]
+    });
+
+    const userSeries = () => chart.series.filter(s=>!s.options.isInternal);
+    const yAxisIndexForType = t => (t==='column'||t==='column-stacked')?0:1;
+    const normalizeType = t => t==='column-stacked'?{ actualType:'column', stacked:true }:{ actualType:(t||'spline'), stacked:false };
+    function applyGlobalStacking(){
+      const anyStacked = userSeries().some(s=>s.userOptions && s.userOptions._uiType==='column-stacked');
+      chart.update({ plotOptions:{ column:{ stacking:anyStacked?'normal':undefined } } }, false);
+    }
+    function setSeriesAggregation(series, agg){
+      if(!series) return;
+      series.update({ dataGrouping: agg==='auto'?{}:{ enabled: agg!=='none', approximation: agg==='none'?undefined:agg, forced: agg!=='auto', units: agg==='auto'?undefined:[[currentGroupKey,[1]]]} }, false);
+      series.userOptions._agg = agg;
+    }
+    function applyGroupingUnitsToAllSeries(){
+      userSeries().forEach(s=>setSeriesAggregation(s, s.userOptions._agg||'auto'));
+      chart.redraw();
+    }
+    const addSeriesToChart = (name, data, type='spline', agg='auto') => {
+      const { actualType } = normalizeType(type);
+      const yAxis = yAxisIndexForType(type);
+      const s = chart.addSeries({ name, data, type: actualType, yAxis, _uiType:type }, false);
+      setSeriesAggregation(s, agg);
+      return s;
+    };
+    const replaceChartWithSeries = list => {
+      while(userSeries().length) userSeries()[0].remove(false);
+      list.forEach(s=>addSeriesToChart(s.name, s.data, s.type||'spline', s.agg||'auto'));
+      chart.redraw();
+    };
+    const saveActiveFromChart = () => {
+      const id = lsGet(ACTIVE_KEY); if(!id) return;
+      const ds = { id, name:getDataset(id)?.name||'dataset', series:userSeries().map(s=>({ name:s.name, data:s.options.data, type:s.userOptions._uiType, agg:s.userOptions._agg })) };
+      saveDataset(ds);
+    };
+
+    /* ========= Parsing ========= */
+    const toMillis = ts => {
+      if(typeof ts==='number') return ts; const n=Number(ts); if(!Number.isNaN(n)&&n>1e10) return n; const d=Date.parse(ts); if(!Number.isNaN(d)) return d; throw new Error('Bad timestamp: '+ts);
+    };
+    const normalizeDataArray = arr => {
+      if(!Array.isArray(arr)) throw new Error('Series data must be an array');
+      if(!arr.length) return [];
+      if(Array.isArray(arr[0])) return arr.map(p=>[toMillis(p[0]), Number(p[1])]);
+      return arr.map(p=>[toMillis(p.timestamp??p.time??p.t), Number(p.value??p.v)]);
+    };
+    const parseInput = (text, defaultName='series') => {
+      const obj = JSON.parse(text);
+      if(obj && typeof obj==='object' && !Array.isArray(obj)){
+        return Object.entries(obj).filter(([k])=>k!=='_meta'&&k!=='meta').map(([name,data])=>({ name, data: normalizeDataArray(data) }));
+      }
+      if(Array.isArray(obj)){
+        if(obj.length && typeof obj[0]==='object' && !Array.isArray(obj[0]) && ('name'in obj[0]||'data'in obj[0])){
+          return obj.map((s,i)=>({ name: s.name||`${defaultName} ${i+1}`, data: normalizeDataArray(s.data||[]) }));
+        }
+        return [{ name: defaultName, data: normalizeDataArray(obj) }];
+      }
+      throw new Error('Unsupported JSON');
+    };
+
+    /* ========= UI builders ========= */
+    function buildDatasetObject(name, seriesList){
+      return { id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name, savedAt:Date.now(), updatedAt:Date.now(), series:seriesList.map(s=>({ name:s.name, data:s.data, type:s.type, agg:s.agg })) };
+    }
+    function tryParseAndReport(){
+      const status = $('status'); status.textContent='';
+      const { defaultSeriesName } = defaults();
+      const parsed = parseInput($('jsonInput').value, defaultSeriesName);
+      const n = parsed.reduce((a,s)=>a+(s.data?.length||0),0);
+      status.textContent = `Parsed ${parsed.length} series, ${n} points.`;
+      return parsed;
+    }
+    function defaults(){ return { datasetName: ($('datasetName').value.trim()||`Dataset ${new Date().toLocaleString()}`), defaultSeriesName: ($('defaultSeriesName').value.trim()||'series') }; }
+    function updatePrimaryArea(){
+      const primary = $('primaryArea'); primary.innerHTML='';
+      const series = userSeries();
+      if(!series.length){
+        const dz = document.createElement('div'); dz.className='dropzone'; dz.innerHTML=`<div style="font-weight:600;margin-bottom:6px;">Drop your JSON file here</div><div class="muted" style="margin-bottom:8px;">Map/array of series (keys "_meta"/"meta" ignored)</div><div><a href="#" id="manualUploadLink">or tap to select a file</a></div>`;
+        const fileInput=$('fileInput');
+        dz.addEventListener('click',()=>fileInput.click());
+        dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+        dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+        dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(!f) return;handleFileImport(f,{alsoLoad:true,showAlert:true});});
+        dz.querySelector('#manualUploadLink').addEventListener('click',e=>{e.preventDefault();fileInput.click();});
+        primary.appendChild(dz);
+      } else {
+        const title=document.createElement('h3');title.className='section-title';title.textContent='Series';primary.appendChild(title);
+        const wrap=document.createElement('div');wrap.id='seriesTableWrap';primary.appendChild(wrap);buildSeriesTable();
+      }
+    }
+    function buildSeriesTable(){
+      const wrap = document.getElementById('seriesTableWrap') || $('primaryArea');
+      const list = userSeries();
+      if(!list.length){ wrap.innerHTML='<div class="muted">No series on chart.</div>'; return; }
+      const tbl=document.createElement('table');
+      tbl.innerHTML='<thead><tr><th>Name</th><th>Type</th><th>Aggregation</th><th></th></tr></thead>';
+      const tbody=document.createElement('tbody');
+      list.forEach(s=>{
+        const tr=document.createElement('tr');
+        const tdName=document.createElement('td');
+        const nameInput=document.createElement('input'); nameInput.type='text'; nameInput.value=s.name; nameInput.addEventListener('change',()=>{s.update({ name:nameInput.value },false);chart.redraw();saveActiveFromChart();});
+        tdName.appendChild(nameInput);
+        const tdType=document.createElement('td');
+        const selType=document.createElement('select'); TYPE_OPTIONS.forEach(t=>{ const o=document.createElement('option'); o.value=t;o.textContent=t;selType.appendChild(o); });
+        const uiType=s.userOptions&&s.userOptions._uiType?s.userOptions._uiType:(s.type==='column'&&chart.options.plotOptions?.column?.stacking)?'column-stacked':s.type; selType.value=uiType;
+        selType.addEventListener('change',()=>{ const chosen=selType.value; const { actualType }=normalizeType(chosen); const yAxisIdx=yAxisIndexForType(chosen); s.update({ type:actualType,yAxis:yAxisIdx,_uiType:chosen },false); applyGlobalStacking(); chart.redraw(); saveActiveFromChart(); });
+        tdType.appendChild(selType);
+        const tdAgg=document.createElement('td');
+        const selAgg=document.createElement('select'); AGG_OPTIONS.forEach(a=>{ const o=document.createElement('option'); o.value=a;o.textContent=a;selAgg.appendChild(o); });
+        selAgg.value=(s.userOptions&&s.userOptions._agg)?s.userOptions._agg:'auto'; selAgg.addEventListener('change',()=>{ setSeriesAggregation(s, selAgg.value); chart.redraw(); saveActiveFromChart(); });
+        tdAgg.appendChild(selAgg);
+        const tdAct=document.createElement('td'); const iconRemove=document.createElement('span'); iconRemove.textContent='🗑️'; iconRemove.style.cursor='pointer'; iconRemove.addEventListener('click',()=>{s.remove(false);applyGlobalStacking();chart.redraw();buildSeriesTable();saveActiveFromChart();updatePrimaryArea();}); tdAct.appendChild(iconRemove);
+        tr.append(tdName,tdType,tdAgg,tdAct); tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody); wrap.innerHTML=''; wrap.appendChild(tbl);
+    }
+    function renderSavedList(){
+      const container=$('savedList'); const store=loadStore(); const ids=Object.keys(store); if(!ids.length){ container.textContent='No saved datasets yet.'; return; }
+      const active=lsGet(ACTIVE_KEY); const frag=document.createDocumentFragment();
+      ids.sort((a,b)=>(store[b].updatedAt??store[b].savedAt)-(store[a].updatedAt??store[a].savedAt));
+      ids.forEach(id=>{ const ds=store[id]; const div=document.createElement('div'); const strong=document.createElement('strong'); strong.textContent=ds.name; const span1=document.createElement('span'); span1.className='muted'; span1.textContent=` (${ds.series?.length||0} series)`; div.appendChild(strong); div.appendChild(document.createTextNode(' ')); div.appendChild(span1); if(id===active){ const activeSpan=document.createElement('span'); activeSpan.className='muted'; activeSpan.textContent=' • active'; div.appendChild(document.createTextNode(' ')); div.appendChild(activeSpan);} const row=document.createElement('div'); row.className='actions'; const btnLoad=document.createElement('button'); btnLoad.className='secondary'; btnLoad.textContent='Load'; btnLoad.addEventListener('click',()=>{ const ds=getDataset(id); if(!ds) return; (ds.series||[]).forEach(sdef=>addSeriesToChart(sdef.name,sdef.data,sdef.type||'spline',sdef.agg||'auto')); applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY,id); saveActiveFromChart(); updatePrimaryArea(); }); const btnDel=document.createElement('button'); btnDel.className='destructive'; btnDel.textContent='Delete'; btnDel.addEventListener('click',()=>{ if(confirm(`Delete "${ds.name}"?`)){ deleteDataset(id); renderSavedList(); } }); row.append(btnLoad,btnDel); div.appendChild(row); frag.appendChild(div); }); container.innerHTML=''; container.appendChild(frag);
+    }
+
+    /* ========= Import/Export/Clear ========= */
+    async function handleFileImport(file, opts={alsoLoad:true, showAlert:true}){
+      try{
+        const text = await file.text(); let obj; try{ obj=JSON.parse(text); }catch{ throw new Error('Invalid JSON'); }
+        const baseName=(file.name||'import').replace(/\.[^.]+$/,'').replace(/[_\-]+/g,' ').trim();
+        const datasets = datasetsFromAnyJson(obj, baseName);
+        let ok=0,fail=0,quota=false;
+        if(opts.alsoLoad){ datasets.forEach(ds=>{ (ds.series||[]).forEach(s=>addSeriesToChart(s.name,s.data,s.type||'spline',s.agg||'auto')); }); applyGlobalStacking(); chart.redraw(); buildSeriesTable(); updatePrimaryArea(); }
+        for(const ds of datasets){ try{ ds.updatedAt=Date.now(); if(!ds.savedAt) ds.savedAt=ds.updatedAt; saveDataset(ds); ok++; lsSet(ACTIVE_KEY, ds.id); }catch(e2){ fail++; if(String(e2).toLowerCase().includes('quota')){ quota=true; break; } } }
+        renderSavedList(); if(opts.showAlert){ if(fail===0) alert(`Imported ${ok} dataset(s).`); else if(quota) alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail} (localStorage quota).`); else alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail}.`); }
+      }catch(err){ if(opts.showAlert) alert('Import failed: '+(err?.message||err)); }
+    }
+    function datasetsFromAnyJson(obj, baseName){
+      const out=[];
+      if(Array.isArray(obj)){
+        if(obj.length && obj.every(x=>typeof x==='object' && !Array.isArray(x) && 'series' in x)) return obj;
+        out.push({ id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name:baseName, series:parseInput(JSON.stringify(obj), 'series') });
+      }else if(obj && typeof obj==='object'){
+        const series = parseInput(JSON.stringify(obj), 'series');
+        out.push({ id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name:baseName, series });
+      }
+      return out;
+    }
+
+    $('fileInput').addEventListener('change',async e=>{ const f=e.target.files?.[0]; if(!f) return; await handleFileImport(f,{alsoLoad:true,showAlert:true}); });
+
+    $('btnAdd').addEventListener('click',()=>{
+      try{ const parsed=tryParseAndReport(); const { datasetName } = defaults(); const list=parsed.map(s=>({ ...s, type:s.type||'spline', agg:s.agg||'auto' })); for(const s of list) addSeriesToChart(s.name,s.data,s.type,s.agg); applyGlobalStacking(); chart.redraw(); const ds=buildDatasetObject(datasetName,list); try{ saveDataset(ds); lsSet(ACTIVE_KEY,ds.id); saveActiveFromChart(); }catch(e){ alert('Saved in memory only (localStorage quota or write blocked). You can still export.'); } updatePrimaryArea(); renderSavedList(); }catch(e){ $('status').textContent=e.message; }
+    });
+    $('btnReplace').addEventListener('click',()=>{
+      try{ const parsed=tryParseAndReport(); const { datasetName } = defaults(); const list=parsed.map(s=>({ ...s, type:s.type||'spline', agg:s.agg||'auto' })); replaceChartWithSeries(list); const ds=buildDatasetObject(datasetName,list); try{ saveDataset(ds); lsSet(ACTIVE_KEY,ds.id); saveActiveFromChart(); }catch(e){ alert('Saved in memory only (localStorage quota or write blocked). You can still export.'); } updatePrimaryArea(); renderSavedList(); }catch(e){ $('status').textContent=e.message; }
+    });
+    $('btnClearInput').addEventListener('click',()=>{ $('jsonInput').value=''; $('status').textContent=''; });
+
+    $('btnExportAll').addEventListener('click',()=>{ const ids=listIds(); const out={}; ids.forEach(id=>{ const ds=getDataset(id); if(ds) out[id]=ds; }); const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='time_series_datasets.json'; a.click(); URL.revokeObjectURL(a.href); });
+    $('btnImportAll').addEventListener('click',()=>$('importAllInput').click());
+    $('importAllInput').addEventListener('change',async e=>{ const f=e.target.files?.[0]; if(!f) return; await handleFileImport(f,{alsoLoad:true,showAlert:true}); e.target.value=''; });
+    $('btnLoadAllSaved').addEventListener('click',()=>{ const metas=listIds().map(id=>({ id, ...getDataset(id) })); if(!metas.length) return alert('No saved datasets.'); metas.forEach(m=>{ const ds=getDataset(m.id); if(!ds) return; (ds.series||[]).forEach(sd=>addSeriesToChart(sd.name,sd.data,sd.type||'spline',sd.agg||'auto')); }); applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY, metas[0].id); saveActiveFromChart(); updatePrimaryArea(); });
+    $('btnClearAll').addEventListener('click',()=>{ if(!confirm('Delete ALL saved datasets in this browser?')) return; listIds().forEach(id=>deleteDataset(id)); lsDel(ACTIVE_KEY); renderSavedList(); updatePrimaryArea(); });
+
+    $('groupUnit').addEventListener('change',e=>{ currentGroupKey = e.target.value || 'auto'; applyGroupingUnitsToAllSeries(); });
+
+    const panel = $('panel');
+    const settingsBtn = $('settingsBtn');
+    const togglePanel = () => { const willOpen=!panel.classList.contains('open'); panel.classList.toggle('open'); settingsBtn.setAttribute('aria-expanded', String(willOpen)); if(willOpen) panel.focus(); };
+    settingsBtn.addEventListener('click', togglePanel);
+    $('grabber').addEventListener('click', togglePanel);
+    window.addEventListener('keydown', e=>{ if(e.key==='Escape' && panel.classList.contains('open')) togglePanel(); });
+
+    renderSavedList();
+    updatePrimaryArea();
+    panel.classList.add('open');
+  </script>
+</body>
+</html>
