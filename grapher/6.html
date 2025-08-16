@@ -17,11 +17,11 @@
       background:var(--bg); color:#000; overflow:hidden;
     }
     #settingsBtn {
-      position:fixed; bottom:24px; right:24px; width:56px; height:56px; appearance:none; border:none; border-radius:50%; padding:0;
+      position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); right:calc(24px + env(safe-area-inset-right)); width:56px; height:56px; appearance:none; border:none; border-radius:50%; padding:0;
       display:flex; align-items:center; justify-content:center; background:var(--blue); color:#fff; font-size:28px; cursor:pointer;
       box-shadow:0 4px 12px rgba(0,0,0,.2); z-index:1100;
     }
-    #chartWrap { position:absolute; top:0; left:0; right:0; bottom:0; transition:transform .3s ease; }
+    #chartWrap { position:absolute; top:0; left:0; right:0; bottom:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); box-sizing:border-box; transition:transform .3s ease; }
     #chartWrap.pushed { transform:scale(.95); }
     #chart { width:100%; height:100%; }
     #panel {
@@ -30,13 +30,13 @@
       border-top-left-radius:var(--panel-radius); border-top-right-radius:var(--panel-radius);
       box-shadow:0 -4px 16px rgba(0,0,0,.1);
       transform:translateY(100%); transition:transform .3s ease; z-index:1200;
-      display:flex; flex-direction:column; overflow:hidden;
+      display:flex; flex-direction:column; overflow:hidden; padding-bottom:env(safe-area-inset-bottom);
     }
     #panel.open { transform:translateY(0); }
     #grabber { width:40px; height:5px; background:#c7c7cc; border-radius:2.5px; margin:8px auto; flex:0 0 auto; }
     #panelContent { flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-    .section { padding:0 16px 16px; position:sticky; top:0; background:inherit; z-index:1; }
-    h3.section-title { margin:0; padding:10px 0; font-size:17px; font-weight:600; }
+    .section { padding:0 16px 16px; }
+    h3.section-title { margin:0; padding:10px 0; font-size:17px; font-weight:600; position:sticky; top:0; background:#fff; z-index:2; }
     textarea, input[type="text"], select { width:100%; padding:8px; box-sizing:border-box; }
     textarea { min-height:140px; resize:vertical; }
     .actions { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
@@ -100,6 +100,42 @@
     </div>
   </aside>
   <script type="module">
+    function getInset(side){
+      const div=document.createElement('div');
+      div.style.cssText=`padding-${side}: env(safe-area-inset-${side});`;
+      document.body.appendChild(div);
+      const value=parseInt(getComputedStyle(div).getPropertyValue(`padding-${side}`))||0;
+      div.remove();
+      return value;
+    }
+    function notchSide(){
+      const left=getInset('left');
+      const right=getInset('right');
+      if(left!==right) return left>right?'gauche':'droite';
+      const o=window.orientation;
+      if(o===90) return 'gauche';
+      if(o===-90) return 'droite';
+      return null;
+    }
+    function applyNotchPadding(){
+      const chartWrap=$('chartWrap');
+      const panel=$('panel');
+      const side=notchSide();
+      const isLandscape=window.matchMedia('(orientation: landscape)').matches;
+      chartWrap.style.paddingLeft='';
+      chartWrap.style.paddingRight='';
+      panel.style.paddingLeft='';
+      panel.style.paddingRight='';
+      if(isLandscape && side){
+        const inset=getInset(side==='gauche'?'left':'right');
+        const prop=side==='gauche'?'paddingLeft':'paddingRight';
+        chartWrap.style[prop]=inset+'px';
+        panel.style[prop]=inset+'px';
+      }
+      if(typeof chart!=='undefined' && chart && chart.reflow) chart.reflow();
+    }
+    window.addEventListener('load', applyNotchPadding);
+    window.addEventListener('orientationchange',()=>setTimeout(applyNotchPadding,50));
     /* ========= Utility helpers ========= */
     const $ = id => document.getElementById(id);
     const STORAGE_KEY = 'ts_datasets_v6';
@@ -138,11 +174,12 @@
       credits: { enabled:false },
       tooltip: { shared:true, split:false },
       series: [],
-      yAxis:{ lineWidth:1 }
+      legend:{ enabled:true, align:'center', verticalAlign:'bottom' },
+      yAxis:[{ lineWidth:1 }, { lineWidth:1, opposite:true }]
     });
 
     const userSeries = () => chart.series.filter(s=>!s.options.isInternal);
-    const yAxisIndexForType = t => 0;
+    const yAxisIndexForType = t => (t==='column' || t==='column-stacked') ? 0 : 1;
     const normalizeType = t => t==='column-stacked'?{ actualType:'column', stacked:true }:{ actualType:(t||'spline'), stacked:false };
     function applyGlobalStacking(){
       const anyStacked = userSeries().some(s=>s.userOptions && s.userOptions._uiType==='column-stacked');
@@ -366,7 +403,12 @@
     grabber.addEventListener('click', togglePanel);
     window.addEventListener('keydown', e=>{ if(e.key==='Escape' && panel.classList.contains('open')) togglePanel(); });
     let startY=null, dragging=false;
-    grabber.addEventListener('touchstart', e=>{ if(!panel.classList.contains('open')) return; startY=e.touches[0].clientY; dragging=true; });
+    panel.addEventListener('touchstart', e=>{
+      if(!panel.classList.contains('open')) return;
+      const rect=panel.getBoundingClientRect();
+      if(e.touches[0].clientY-rect.top>40) return;
+      startY=e.touches[0].clientY; dragging=true;
+    });
     window.addEventListener('touchmove', e=>{ if(!dragging) return; const dy=e.touches[0].clientY-startY; if(dy>0) panel.style.transform=`translateY(${dy}px)`; });
     window.addEventListener('touchend', e=>{ if(!dragging) return; const dy=e.changedTouches[0].clientY-startY; panel.style.transform=''; if(dy>100) togglePanel(); dragging=false; startY=null; });
 
@@ -375,6 +417,7 @@
     updateGroupingInfo();
     panel.classList.add('open');
     chartWrapEl.classList.add('pushed');
+    applyNotchPadding();
   </script>
 </body>
 </html>
