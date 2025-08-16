@@ -175,7 +175,10 @@
       tooltip: { shared:true, split:false },
       series: [],
       legend:{ enabled:true, align:'center', verticalAlign:'bottom' },
-      yAxis:[{ lineWidth:1, opposite:false }, { lineWidth:1, opposite:true, labels:{ align:'left', x:4 } }]
+      yAxis:[
+        { lineWidth:0, tickWidth:0, opposite:false, labels:{ enabled:true } },
+        { lineWidth:0, tickWidth:0, opposite:true, labels:{ align:'left', x:4, enabled:true } }
+      ]
     });
 
     const userSeries = () => chart.series.filter(s=>!s.options.isInternal);
