@@ -54,7 +54,7 @@
 </head>
 <body>
   <div id="chartWrap"><div id="chart"></div></div>
-  <button id="settingsBtn" aria-controls="panel" aria-expanded="false">⚙️</button>
+  <button id="settingsBtn" aria-controls="panel" aria-expanded="false">&#9776;</button>
   <aside id="panel" aria-label="Controls" tabindex="-1">
     <div id="grabber"></div>
     <div id="panelContent">
@@ -175,7 +175,7 @@
       tooltip: { shared:true, split:false },
       series: [],
       legend:{ enabled:true, align:'center', verticalAlign:'bottom' },
-      yAxis:[{ lineWidth:1 }, { lineWidth:1, opposite:true }]
+      yAxis:[{ lineWidth:1, opposite:false }, { lineWidth:1, opposite:true }]
     });
 
     const userSeries = () => chart.series.filter(s=>!s.options.isInternal);
