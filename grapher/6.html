@@ -23,8 +23,8 @@
       display:flex; align-items:center; justify-content:center; background:var(--blue); color:#fff; font-size:28px; cursor:pointer;
       box-shadow:0 4px 12px rgba(0,0,0,.2); z-index:1100;
     }
-    #chartWrap { position:absolute; top:0; left:0; right:0; bottom:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); box-sizing:border-box; transition:transform .3s ease; }
-    #chartWrap.pushed { transform:scale(.90); }
+    #chartWrap { position:absolute; top:0; left:0; right:0; bottom:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); box-sizing:border-box; transition:transform .3s ease; background:#fff; }
+    #chartWrap.pushed { transform:scale(.90); background:var(--bg); }
     #chartWrap.pushed > #chart { border-radius: 20px 20px 0 0; }
 
     #chart { width:100%; height:100%; transition:transform .3s ease; }
