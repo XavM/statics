@@ -328,21 +328,47 @@
       return parsed;
     }
     function defaults(){ return { datasetName: ($('datasetName').value.trim()||`Dataset ${new Date().toLocaleString()}`), defaultSeriesName: ($('defaultSeriesName').value.trim()||'series') }; }
+    function buildDropzone(){
+      const dz = document.createElement('div');
+      dz.className = 'dropzone';
+      dz.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">Drop your JSON file here</div>`+
+        `<div class="muted" style="margin-bottom:8px;">Map/array of series (keys "_meta"/"meta" ignored)</div>`+
+        `<div><a href="#" id="manualUploadLink">or tap to select a file</a></div>`;
+      const fileInput = $('fileInput');
+      dz.addEventListener('click', () => fileInput.click());
+      dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+      dz.addEventListener('drop', e => {
+        e.preventDefault();
+        dz.classList.remove('dragover');
+        const f = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!f) return;
+        handleFileImport(f, { alsoLoad: true, showAlert: true });
+      });
+      dz.querySelector('#manualUploadLink').addEventListener('click', e => {
+        e.preventDefault();
+        fileInput.click();
+      });
+      return dz;
+    }
+
     function updatePrimaryArea(){
-      const primary = $('primaryArea'); primary.innerHTML='';
+      const primary = $('primaryArea');
+      primary.innerHTML='';
+
+      // Always show dropzone so additional series can be added
+      primary.appendChild(buildDropzone());
+
       const series = userSeries();
-      if(!series.length){
-        const dz = document.createElement('div'); dz.className='dropzone'; dz.innerHTML=`<div style="font-weight:600;margin-bottom:6px;">Drop your JSON file here</div><div class="muted" style="margin-bottom:8px;">Map/array of series (keys "_meta"/"meta" ignored)</div><div><a href="#" id="manualUploadLink">or tap to select a file</a></div>`;
-        const fileInput=$('fileInput');
-        dz.addEventListener('click',()=>fileInput.click());
-        dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
-        dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
-        dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(!f) return;handleFileImport(f,{alsoLoad:true,showAlert:true});});
-        dz.querySelector('#manualUploadLink').addEventListener('click',e=>{e.preventDefault();fileInput.click();});
-        primary.appendChild(dz);
-      } else {
-        const title=document.createElement('h3');title.className='section-title';title.textContent='Series';primary.appendChild(title);
-        const wrap=document.createElement('div');wrap.id='seriesTableWrap';primary.appendChild(wrap);buildSeriesTable();
+      if(series.length){
+        const title=document.createElement('h3');
+        title.className='section-title';
+        title.textContent='Series';
+        primary.appendChild(title);
+        const wrap=document.createElement('div');
+        wrap.id='seriesTableWrap';
+        primary.appendChild(wrap);
+        buildSeriesTable();
       }
     }
     function buildSeriesTable(){
@@ -366,7 +392,7 @@
         const selAgg=document.createElement('select'); AGG_OPTIONS.forEach(a=>{ const o=document.createElement('option'); o.value=a;o.textContent=a;selAgg.appendChild(o); });
         selAgg.value=(s.userOptions&&s.userOptions._agg)?s.userOptions._agg:'auto'; selAgg.addEventListener('change',()=>{ setSeriesAggregation(s, selAgg.value); chart.redraw(); saveActiveFromChart(); });
         tdAgg.appendChild(selAgg);
-        const tdAct=document.createElement('td'); const iconRemove=document.createElement('span'); iconRemove.textContent='🗑️'; iconRemove.style.cursor='pointer'; iconRemove.addEventListener('click',()=>{s.remove(false);applyGlobalStacking();chart.redraw();buildSeriesTable();saveActiveFromChart();updatePrimaryArea();}); tdAct.appendChild(iconRemove);
+        const tdAct=document.createElement('td'); const iconRemove=document.createElement('span'); iconRemove.textContent='🗑️'; iconRemove.style.cursor='pointer'; iconRemove.addEventListener('click',()=>{s.remove(false);applyGlobalStacking();chart.redraw();saveActiveFromChart();updatePrimaryArea();}); tdAct.appendChild(iconRemove);
         tr.append(tdName,tdType,tdAgg,tdAct); tbody.appendChild(tr);
       });
       tbl.appendChild(tbody); wrap.innerHTML=''; wrap.appendChild(tbl);
@@ -385,7 +411,7 @@
         const baseName=(file.name||'import').replace(/\.[^.]+$/,'').replace(/[_\-]+/g,' ').trim();
         const datasets = datasetsFromAnyJson(obj, baseName);
         let ok=0,fail=0,quota=false;
-        if(opts.alsoLoad){ datasets.forEach(ds=>{ (ds.series||[]).forEach(s=>addSeriesToChart(s.name,s.data,s.type||'spline',s.agg||'auto')); }); applyGlobalStacking(); chart.redraw(); buildSeriesTable(); updatePrimaryArea(); }
+        if(opts.alsoLoad){ datasets.forEach(ds=>{ (ds.series||[]).forEach(s=>addSeriesToChart(s.name,s.data,s.type||'spline',s.agg||'auto')); }); applyGlobalStacking(); chart.redraw(); updatePrimaryArea(); }
         for(const ds of datasets){ try{ ds.updatedAt=Date.now(); if(!ds.savedAt) ds.savedAt=ds.updatedAt; saveDataset(ds); ok++; lsSet(ACTIVE_KEY, ds.id); }catch(e2){ fail++; if(String(e2).toLowerCase().includes('quota')){ quota=true; break; } } }
         renderSavedList(); if(opts.showAlert){ if(fail===0) alert(`Imported ${ok} dataset(s).`); else if(quota) alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail} (localStorage quota).`); else alert(`Imported ${ok} dataset(s) to chart. Skipped ${fail}.`); }
       }catch(err){ if(opts.showAlert) alert('Import failed: '+(err?.message||err)); }
