@@ -425,11 +425,13 @@
     const chartWrapEl = $('chartWrap');
     const grabber = $('grabber');
     const panelContent = $('panelContent');
+    const rootEl = document.documentElement;
     const togglePanel = () => {
       const willOpen=!panel.classList.contains('open');
       panel.classList.toggle('open');
       settingsBtn.setAttribute('aria-expanded', String(willOpen));
       chartWrapEl.classList.toggle('pushed', willOpen);
+      rootEl.style.setProperty('--bg', willOpen ? 'white' : 'black');
       if(willOpen) panel.focus();
     };
     settingsBtn.addEventListener('click', togglePanel);
