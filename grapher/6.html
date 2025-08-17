@@ -424,6 +424,7 @@
     const settingsBtn = $('settingsBtn');
     const chartWrapEl = $('chartWrap');
     const grabber = $('grabber');
+    const panelContent = $('panelContent');
     const togglePanel = () => {
       const willOpen=!panel.classList.contains('open');
       panel.classList.toggle('open');
@@ -439,22 +440,32 @@
     };
     document.addEventListener('click', handleOutside);
     document.addEventListener('touchstart', handleOutside);
-    let startY=null, dragging=false;
+    let startX=null,startY=null,dragging=false;
     panel.addEventListener('touchstart', e=>{
       if(!panel.classList.contains('open')) return;
-      const rect=panel.getBoundingClientRect();
-      if(e.touches[0].clientY-rect.top>40) return;
-      startY=e.touches[0].clientY; dragging=true;
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+      dragging=false;
     });
     window.addEventListener('touchmove', e=>{
-      if(!dragging) return;
+      if(startX===null) return;
+      const dx=e.touches[0].clientX-startX;
       const dy=e.touches[0].clientY-startY;
-      if(dy>0){
-        const isLandscape=window.matchMedia('(orientation: landscape)').matches;
-        panel.style.transform=isLandscape?`translate(-50%, ${dy}px)`:`translateY(${dy}px)`;
+      if(!dragging){
+        if(panelContent.scrollTop>0 || Math.abs(dx)<=Math.abs(dy) || Math.abs(dx)<10) return;
+        dragging=true;
       }
+      e.preventDefault();
+      const isLandscape=window.matchMedia('(orientation: landscape)').matches;
+      panel.style.transform=isLandscape?`translate(calc(-50% + ${dx}px),0)`:`translateX(${dx}px)`;
+    },{passive:false});
+    window.addEventListener('touchend', e=>{
+      if(startX===null) return;
+      const dx=e.changedTouches[0].clientX-startX;
+      panel.style.transform='';
+      if(dragging && Math.abs(dx)>80) togglePanel();
+      startX=null; startY=null; dragging=false;
     });
-    window.addEventListener('touchend', e=>{ if(!dragging) return; const dy=e.changedTouches[0].clientY-startY; panel.style.transform=''; if(dy>100) togglePanel(); dragging=false; startY=null; });
 
     renderSavedList();
     updatePrimaryArea();
