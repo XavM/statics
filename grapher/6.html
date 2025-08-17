@@ -369,6 +369,7 @@
         wrap.id='seriesTableWrap';
         primary.appendChild(wrap);
         buildSeriesTable();
+        if(!panel.classList.contains('open')) togglePanel();
       }
     }
     function buildSeriesTable(){
