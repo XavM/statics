@@ -431,7 +431,7 @@
       panel.classList.toggle('open');
       settingsBtn.setAttribute('aria-expanded', String(willOpen));
       chartWrapEl.classList.toggle('pushed', willOpen);
-      rootEl.style.setProperty('--bg', willOpen ? 'white' : 'black');
+      rootEl.style.setProperty('--bg', willOpen ? 'black' : 'white');
       if(willOpen) panel.focus();
     };
     settingsBtn.addEventListener('click', togglePanel);
