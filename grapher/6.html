@@ -440,31 +440,29 @@
     };
     document.addEventListener('click', handleOutside);
     document.addEventListener('touchstart', handleOutside);
-    let startX=null,startY=null,dragging=false;
+    let startY=null,dragging=false;
     panel.addEventListener('touchstart', e=>{
       if(!panel.classList.contains('open')) return;
-      startX=e.touches[0].clientX;
       startY=e.touches[0].clientY;
       dragging=false;
     });
     window.addEventListener('touchmove', e=>{
-      if(startX===null) return;
-      const dx=e.touches[0].clientX-startX;
+      if(startY===null) return;
       const dy=e.touches[0].clientY-startY;
       if(!dragging){
-        if(panelContent.scrollTop>0 || Math.abs(dx)<=Math.abs(dy) || Math.abs(dx)<10) return;
+        if(panelContent.scrollTop>0 || dy<0 || Math.abs(dy)<10) return;
         dragging=true;
       }
       e.preventDefault();
       const isLandscape=window.matchMedia('(orientation: landscape)').matches;
-      panel.style.transform=isLandscape?`translate(calc(-50% + ${dx}px),0)`:`translateX(${dx}px)`;
+      panel.style.transform=isLandscape?`translate(-50%, ${dy}px)`:`translateY(${dy}px)`;
     },{passive:false});
     window.addEventListener('touchend', e=>{
-      if(startX===null) return;
-      const dx=e.changedTouches[0].clientX-startX;
+      if(startY===null) return;
+      const dy=e.changedTouches[0].clientY-startY;
       panel.style.transform='';
-      if(dragging && Math.abs(dx)>80) togglePanel();
-      startX=null; startY=null; dragging=false;
+      if(dragging && dy>100) togglePanel();
+      startY=null; dragging=false;
     });
 
     renderSavedList();
