@@ -291,6 +291,15 @@
       saveDataset(ds);
     };
 
+    const loadDatasetToChart = id => {
+      const ds = typeof id === 'string' ? getDataset(id) : id;
+      if(!ds) return null;
+      (ds.series || []).forEach(sd => addSeriesToChart(sd.name, sd.data, sd.type || 'spline', sd.agg || 'auto'));
+      applyGlobalStacking();
+      chart.redraw();
+      return ds;
+    };
+
     /* ========= Parsing ========= */
     const toMillis = ts => {
       if(typeof ts==='number') return ts; const n=Number(ts); if(!Number.isNaN(n)&&n>1e10) return n; const d=Date.parse(ts); if(!Number.isNaN(d)) return d; throw new Error('Bad timestamp: '+ts);
@@ -402,7 +411,7 @@
       const container=$('savedList'); const store=loadStore(); const ids=Object.keys(store); if(!ids.length){ container.textContent='No saved datasets yet.'; return; }
       const active=lsGet(ACTIVE_KEY); const frag=document.createDocumentFragment();
       ids.sort((a,b)=>(store[b].updatedAt??store[b].savedAt)-(store[a].updatedAt??store[a].savedAt));
-      ids.forEach(id=>{ const ds=store[id]; const div=document.createElement('div'); const strong=document.createElement('strong'); strong.textContent=ds.name; const span1=document.createElement('span'); span1.className='muted'; span1.textContent=` (${ds.series?.length||0} series)`; div.appendChild(strong); div.appendChild(document.createTextNode(' ')); div.appendChild(span1); if(id===active){ const activeSpan=document.createElement('span'); activeSpan.className='muted'; activeSpan.textContent=' • active'; div.appendChild(document.createTextNode(' ')); div.appendChild(activeSpan);} const row=document.createElement('div'); row.className='actions'; const btnLoad=document.createElement('button'); btnLoad.className='secondary'; btnLoad.textContent='Load'; btnLoad.addEventListener('click',()=>{ const ds=getDataset(id); if(!ds) return; (ds.series||[]).forEach(sdef=>addSeriesToChart(sdef.name,sdef.data,sdef.type||'spline',sdef.agg||'auto')); applyGlobalStacking(); chart.redraw(); lsSet(ACTIVE_KEY,id); saveActiveFromChart(); updatePrimaryArea(); }); const btnDel=document.createElement('button'); btnDel.className='destructive'; btnDel.textContent='Delete'; btnDel.addEventListener('click',()=>{ if(confirm(`Delete "${ds.name}"?`)){ deleteDataset(id); renderSavedList(); } }); row.append(btnLoad,btnDel); div.appendChild(row); frag.appendChild(div); }); container.innerHTML=''; container.appendChild(frag);
+      ids.forEach(id=>{ const ds=store[id]; const div=document.createElement('div'); const strong=document.createElement('strong'); strong.textContent=ds.name; const span1=document.createElement('span'); span1.className='muted'; span1.textContent=` (${ds.series?.length||0} series)`; div.appendChild(strong); div.appendChild(document.createTextNode(' ')); div.appendChild(span1); if(id===active){ const activeSpan=document.createElement('span'); activeSpan.className='muted'; activeSpan.textContent=' • active'; div.appendChild(document.createTextNode(' ')); div.appendChild(activeSpan);} const row=document.createElement('div'); row.className='actions'; const btnLoad=document.createElement('button'); btnLoad.className='secondary'; btnLoad.textContent='Load'; btnLoad.addEventListener('click',()=>{ if(!loadDatasetToChart(id)) return; lsSet(ACTIVE_KEY,id); saveActiveFromChart(); updatePrimaryArea(); }); const btnDel=document.createElement('button'); btnDel.className='destructive'; btnDel.textContent='Delete'; btnDel.addEventListener('click',()=>{ if(confirm(`Delete "${ds.name}"?`)){ deleteDataset(id); renderSavedList(); } }); row.append(btnLoad,btnDel); div.appendChild(row); frag.appendChild(div); }); container.innerHTML=''; container.appendChild(frag);
     }
 
     /* ========= Import/Export/Clear ========= */
@@ -494,6 +503,8 @@
       startY=null; dragging=false;
     });
 
+    const activeId = lsGet(ACTIVE_KEY);
+    if(activeId) loadDatasetToChart(activeId);
     renderSavedList();
     updatePrimaryArea();
     updateGroupingInfo();
